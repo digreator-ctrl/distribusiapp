@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="DistribusiApp — Sistem Manajemen Penjualan & Konsinyasi. Kelola produk, distribusi, konsinyasi, agen, sales, toko, dan retur dalam satu platform." />
     <meta name="theme-color" content="#5c7cfa" />
@@ -14,5 +15,15 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(
+            (registration) => { console.log('SW registered: ', registration); },
+            (err) => { console.log('SW registration failed: ', err); }
+          );
+        });
+      }
+    </script>
   </body>
 </html>

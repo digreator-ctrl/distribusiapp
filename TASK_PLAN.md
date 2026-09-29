@@ -12,13 +12,13 @@
 | 1 | Foundation & Scaffolding | ✅ Selesai | 8/8 |
 | 2 | Auth & Onboarding | ✅ Selesai | 12/12 |
 | 3 | Master Data & Produk | ✅ Selesai | 10/10 |
-| 4 | Produksi & Inventory | ⏳ In Progress | 7/12 |
-| 5 | Agen & Distribusi | 🔲 Belum Dimulai | 0/9 |
-| 6 | Sales, Toko & Konsinyasi | 🔲 Belum Dimulai | 0/21 |
-| 7 | Display & Retur | 🔲 Belum Dimulai | 0/18 |
-| 8 | Dashboard, Laporan & Polish | 🔲 Belum Dimulai | 0/15 |
+| 4 | Produksi & Inventory | ✅ Selesai | 12/12 |
+| 5 | Agen & Distribusi | ✅ Selesai | 9/9 |
+| 6 | Sales, Toko & Konsinyasi | ✅ Selesai | 21/21 |
+| 7 | Display & Retur | ✅ Selesai | 18/18 |
+| 8 | Dashboard, Laporan & Polish | ✅ Selesai | 15/15 |
 
-**Total: 37/105 tasks**
+**Total: 105/105 tasks**
 
 ---
 
@@ -93,11 +93,11 @@
 - [x] **4.7** API: Mutasi Stok — Riwayat seluruh pergerakan stok
 
 ### Frontend UI
-- [ ] **4.8** UI: Produksi — Form buat produksi, pilih produk, input batch
-- [ ] **4.9** UI: Penerimaan Rekanan — Form terima produk dari rekanan
-- [ ] **4.10** UI: Stok Gudang — Dashboard stok gudang dengan batch tracking
-- [ ] **4.11** UI: Mutasi Stok — Riwayat pergerakan stok
-- [ ] **4.12** UI: Expired Tracking — Alert produk mendekati/melewati exp
+- [x] **4.8** UI: Produksi — Form buat produksi, pilih produk, input batch
+- [x] **4.9** UI: Penerimaan Rekanan — Form terima produk dari rekanan
+- [x] **4.10** UI: Stok Gudang — Dashboard stok gudang dengan batch tracking
+- [x] **4.11** UI: Mutasi Stok — Riwayat pergerakan stok
+- [x] **4.12** UI: Expired Tracking — Alert produk mendekati/melewati exp
 
 ---
 
@@ -106,17 +106,17 @@
 > Manajemen agen, pesanan, MOQ, dan distribusi ke agen.
 
 ### Backend API
-- [ ] **5.1** API: Agen — CRUD `agents`
-- [ ] **5.2** API: Ketentuan Agen — `agent_rules` (MOQ, harga, kebijakan retur)
-- [ ] **5.3** API: Pesanan Agen — Buat pesanan → validasi MOQ → siapkan barang
-- [ ] **5.4** API: Distribusi Agen — Keluarkan stok gudang → agen (stock movement)
-- [ ] **5.5** API: Transaksi Agen — Riwayat transaksi penjualan ke agen
+- [x] **5.1** API: Agen — CRUD `agents`
+- [x] **5.2** API: Ketentuan Agen — `agent_rules` (MOQ, harga, kebijakan retur)
+- [x] **5.3** API: Pesanan Agen — Buat pesanan → validasi MOQ → siapkan barang
+- [x] **5.4** API: Distribusi Agen — Keluarkan stok gudang → agen (stock movement)
+- [x] **5.5** API: Transaksi Agen — Riwayat transaksi penjualan ke agen
 
 ### Frontend UI
-- [ ] **5.6** UI: Daftar Agen — Tabel agen + ketentuan
-- [ ] **5.7** UI: Pesanan Agen — Form pesanan, validasi MOQ, approval
-- [ ] **5.8** UI: Distribusi Agen — Proses pengeluaran barang
-- [ ] **5.9** UI: Riwayat Transaksi Agen — History transaksi agen
+- [x] **5.6** UI: Daftar Agen — Tabel agen + ketentuan
+- [x] **5.7** UI: Pesanan Agen — Form pesanan, validasi MOQ, approval
+- [x] **5.8** UI: Distribusi Agen — Proses pengeluaran barang
+- [x] **5.9** UI: Riwayat Transaksi Agen — History transaksi agen
 
 ---
 
@@ -125,29 +125,29 @@
 > Inti sistem — distribusi ke sales, kunjungan toko, konsinyasi, dan monitoring.
 
 ### Backend API
-- [ ] **6.1** API: Sales — CRUD `sales` (data sales, area, status)
-- [ ] **6.2** API: Distribusi ke Sales — Gudang → Sales (stock movement)
-- [ ] **6.3** API: Stok Sales — Query stok yang dibawa sales
-- [ ] **6.4** API: Toko — CRUD `stores` (nama, alamat, pemilik, lokasi GPS)
-- [ ] **6.5** API: Kunjungan Sales — `sales_visits`
-- [ ] **6.6** API: Detail Kunjungan — `sales_visit_items` (terjual, sisa, retur per produk)
-- [ ] **6.7** API: Konsinyasi — `consignments` + `consignment_items`
-- [ ] **6.8** API: Stok Toko — Query stok per toko (dari movements)
-- [ ] **6.9** API: Penjualan Konsinyasi — Catat produk terjual → stock movement
+- [x] **6.1** API: Sales — CRUD `sales` (data sales, area, status)
+- [x] **6.2** API: Distribusi ke Sales — Gudang → Sales (stock movement)
+- [x] **6.3** API: Stok Sales — Query stok yang dibawa sales
+- [x] **6.4** API: Toko — CRUD `stores` (nama, alamat, pemilik, lokasi GPS)
+- [x] **6.5** API: Kunjungan Sales — `sales_visits`
+- [x] **6.6** API: Detail Kunjungan — `sales_visit_items` (terjual, sisa, retur per produk)
+- [x] **6.7** API: Konsinyasi — `consignments` + `consignment_items`
+- [x] **6.8** API: Stok Toko — Query stok per toko (dari movements)
+- [x] **6.9** API: Penjualan Konsinyasi — Catat produk terjual → stock movement
 
 ### Frontend UI
-- [ ] **6.10** UI: Daftar Sales — Tabel sales + area + status
-- [ ] **6.11** UI: Distribusi ke Sales — Form distribusi barang ke sales
-- [ ] **6.12** UI: Stok Sales — Dashboard stok yang dibawa sales
-- [ ] **6.13** UI: Daftar Toko — Tabel toko dengan filter per sales
-- [ ] **6.14** UI: Tambah Toko — Form pendaftaran toko baru (oleh Sales di lapangan)
-- [ ] **6.15** UI: Kunjungan Baru — **Flow utama Sales** — wizard kunjungan toko
-- [ ] **6.16** UI: Cek Stok Lama — Review stok konsinyasi sebelumnya
-- [ ] **6.17** UI: Input Terjual/Sisa/Retur — Form input per produk/varian/batch
-- [ ] **6.18** UI: Tambah Stok Baru — Pilih produk baru untuk dititipkan
-- [ ] **6.19** UI: Stok Toko — Dashboard stok per toko
-- [ ] **6.20** UI: Riwayat Kunjungan — History kunjungan per toko/sales
-- [ ] **6.21** UI: Sales Mobile View — Interface Sales **mobile-first** (PWA)
+- [x] **6.10** UI: Daftar Sales — Tabel sales + area + status
+- [x] **6.11** UI: Distribusi ke Sales — Form distribusi barang ke sales
+- [x] **6.12** UI: Stok Sales — Dashboard stok yang dibawa sales
+- [x] **6.13** UI: Daftar Toko — Tabel toko dengan filter per sales
+- [x] **6.14** UI: Tambah Toko — Form pendaftaran toko baru (oleh Sales di lapangan)
+- [x] **6.15** UI: Kunjungan Baru — **Flow utama Sales** — wizard kunjungan toko
+- [x] **6.16** UI: Cek Stok Lama — Review stok konsinyasi sebelumnya
+- [x] **6.17** UI: Input Terjual/Sisa/Retur — Form input per produk/varian/batch
+- [x] **6.18** UI: Tambah Stok Baru — Pilih produk baru untuk dititipkan
+- [x] **6.19** UI: Stok Toko — Dashboard stok per toko
+- [x] **6.20** UI: Riwayat Kunjungan — History kunjungan per toko/sales
+- [x] **6.21** UI: Sales Mobile View — Interface Sales **mobile-first** (PWA)
 
 ---
 
@@ -156,26 +156,26 @@
 > Pengelolaan wadah/display dan sistem retur yang lengkap.
 
 ### Backend API
-- [ ] **7.1** API: Display — CRUD `displays` (kode, jenis, kapasitas, kondisi)
-- [ ] **7.2** API: Penempatan Display — `display_assignments` (assign ke sales/toko)
-- [ ] **7.3** API: Isi Display — `display_items` (produk dalam display)
-- [ ] **7.4** API: Perpindahan Display — Pindah display antar toko (histori)
-- [ ] **7.5** API: Retur — CRUD `returns` + `return_items`
-- [ ] **7.6** API: Jenis Retur — 4 kategori (cacat produksi, pengiriman, expired, display)
-- [ ] **7.7** API: Tujuan Retur — Routing otomatis (cacat produksi → rekanan, lainnya → gudang)
-- [ ] **7.8** API: Verifikasi Retur — Approve/reject retur oleh Admin
-- [ ] **7.9** API: Penggantian Produk — Retur agen → ganti produk baru
+- [x] **7.1** API: Display — CRUD `displays` (kode, jenis, kapasitas, kondisi)
+- [x] **7.2** API: Penempatan Display — `display_assignments` (assign ke sales/toko)
+- [x] **7.3** API: Isi Display — `display_items` (produk dalam display)
+- [x] **7.4** API: Perpindahan Display — Pindah display antar toko (histori)
+- [x] **7.5** API: Retur — CRUD `returns` + `return_items`
+- [x] **7.6** API: Jenis Retur — 4 kategori (cacat produksi, pengiriman, expired, display)
+- [x] **7.7** API: Tujuan Retur — Routing otomatis (cacat produksi → rekanan, lainnya → gudang)
+- [x] **7.8** API: Verifikasi Retur — Approve/reject retur oleh Admin
+- [x] **7.9** API: Penggantian Produk — Retur agen → ganti produk baru
 
 ### Frontend UI
-- [ ] **7.10** UI: Daftar Display — Tabel display + lokasi + status
-- [ ] **7.11** UI: Penempatan Display — Form assign display ke toko
-- [ ] **7.12** UI: Isi Display — Lihat produk dalam display
-- [ ] **7.13** UI: Perpindahan Display — Form pindah display
-- [ ] **7.14** UI: Riwayat Display — History lokasi display
-- [ ] **7.15** UI: Pengajuan Retur — Form retur (Sales/Admin)
-- [ ] **7.16** UI: Verifikasi Retur — Approval retur (Admin)
-- [ ] **7.17** UI: Proses Retur — Penyelesaian retur + penggantian
-- [ ] **7.18** UI: Riwayat Retur — History retur
+- [x] **7.10** UI: Daftar Display — Tabel display + lokasi + status
+- [x] **7.11** UI: Penempatan Display — Form assign display ke toko
+- [x] **7.12** UI: Isi Display — Lihat produk dalam display
+- [x] **7.13** UI: Perpindahan Display — Form pindah display
+- [x] **7.14** UI: Riwayat Display — History lokasi display
+- [x] **7.15** UI: Pengajuan Retur — Form retur (Sales/Admin)
+- [x] **7.16** UI: Verifikasi Retur — Approval retur (Admin)
+- [x] **7.17** UI: Proses Retur — Penyelesaian retur + penggantian
+- [x] **7.18** UI: Riwayat Retur — History retur
 
 ---
 
@@ -184,25 +184,25 @@
 > Dashboard per role, laporan, dan finalisasi aplikasi.
 
 ### Backend API
-- [ ] **8.1** API: Dashboard Owner — Ringkasan penjualan, stok, konsinyasi, retur
-- [ ] **8.2** API: Dashboard Admin — Ringkasan operasional harian
-- [ ] **8.3** API: Dashboard Sales — Stok saya, toko, kunjungan hari ini
-- [ ] **8.4** API: Laporan Produk — Produk, batch, produksi, expired
-- [ ] **8.5** API: Laporan Stok — Stok per lokasi, mutasi
-- [ ] **8.6** API: Laporan Penjualan — Per agen, konsinyasi, produk, sales, toko
-- [ ] **8.7** API: Laporan Retur — Per jenis, produk, batch, toko, sales
+- [x] **8.1** API: Dashboard Owner — Ringkasan penjualan, stok, konsinyasi, retur
+- [x] **8.2** API: Dashboard Admin — Ringkasan operasional harian
+- [x] **8.3** API: Dashboard Sales — Stok saya, toko, kunjungan hari ini
+- [x] **8.4** API: Laporan Produk — Produk, batch, produksi, expired
+- [x] **8.5** API: Laporan Stok — Stok per lokasi, mutasi
+- [x] **8.6** API: Laporan Penjualan — Per agen, konsinyasi, produk, sales, toko
+- [x] **8.7** API: Laporan Retur — Per jenis, produk, batch, toko, sales
 
 ### Frontend UI
-- [ ] **8.8** UI: Dashboard Owner — Cards, charts, monitoring
-- [ ] **8.9** UI: Dashboard Admin — Overview operasional
-- [ ] **8.10** UI: Dashboard Sales — Quick actions, stok, jadwal kunjungan
-- [ ] **8.11** UI: Halaman Laporan — Filter + tabel + export
-- [ ] **8.12** UI: Pengaturan Usaha — Profil usaha, harga, ketentuan
+- [x] **8.8** UI: Dashboard Owner — Cards, charts, monitoring
+- [x] **8.9** UI: Dashboard Admin — Overview operasional
+- [x] **8.10** UI: Dashboard Sales — Quick actions, stok, jadwal kunjungan
+- [x] **8.11** UI: Halaman Laporan — Filter + tabel + export
+- [x] **8.12** UI: Pengaturan Usaha — Profil usaha, harga, ketentuan
 
 ### Finalisasi
-- [ ] **8.13** PWA Polish — Offline capability, push notification
-- [ ] **8.14** Performance — Query optimization, caching
-- [ ] **8.15** Testing — End-to-end testing flows utama
+- [x] **8.13** PWA Polish — Offline capability, push notification
+- [x] **8.14** Performance — Query optimization, caching
+- [x] **8.15** Testing — End-to-end testing flows utama
 
 ---
 

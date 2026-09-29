@@ -17,6 +17,17 @@ import { batchRoutes } from './routes/batches';
 import { inventoryRoutes } from './routes/inventory';
 import { productionRoutes } from './routes/production';
 import { receiptRoutes } from './routes/receipts';
+import { agentRoutes } from './routes/agents';
+import { agentOrderRoutes } from './routes/agent_orders';
+import { salesRoutes } from './routes/sales';
+import { storeRoutes } from './routes/stores';
+import { distributionRoutes } from './routes/distributions';
+import { salesVisitRoutes } from './routes/sales_visits';
+import { consignmentRoutes } from './routes/consignments';
+import { displayRoutes } from './routes/displays';
+import { returnRoutes } from './routes/returns';
+import { dashboardRoutes } from './routes/dashboard';
+import { reportRoutes } from './routes/reports';
 
 // Create Hono app with Env type
 const app = new Hono<{ Bindings: Env }>();
@@ -68,6 +79,17 @@ app.route('/api/batches', batchRoutes);
 app.route('/api/inventory', inventoryRoutes);
 app.route('/api/production', productionRoutes);
 app.route('/api/receipts', receiptRoutes);
+app.route('/api/agents', agentRoutes);
+app.route('/api/agent_orders', agentOrderRoutes);
+app.route('/api/sales', salesRoutes);
+app.route('/api/stores', storeRoutes);
+app.route('/api/distributions', distributionRoutes);
+app.route('/api/sales_visits', salesVisitRoutes);
+app.route('/api/consignments', consignmentRoutes);
+app.route('/api/displays', displayRoutes);
+app.route('/api/returns', returnRoutes);
+app.route('/api/dashboard', dashboardRoutes);
+app.route('/api/reports', reportRoutes);
 
 // 404 handler
 app.notFound((c) => {

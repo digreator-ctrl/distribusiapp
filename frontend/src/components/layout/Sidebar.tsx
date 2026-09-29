@@ -12,7 +12,17 @@ import {
   LogOut,
   Settings,
   Menu,
-  X
+  X,
+  Archive,
+  Factory,
+  Download,
+  ShoppingCart,
+  UserCircle,
+  MapPin,
+  LayoutGrid,
+  CornerUpLeft,
+  BarChart3,
+  Briefcase
 } from "lucide-react";
 import { useState } from "react";
 
@@ -28,7 +38,17 @@ const MENUS: MenuType[] = [
   { name: "Produk", to: "/products", icon: <Package className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
   { name: "Kategori Produk", to: "/categories", icon: <Tags className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
   { name: "Rekanan", to: "/suppliers", icon: <Truck className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-  { name: "Sales & Toko", to: "/stores", icon: <Store className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
+  { name: "Stok Gudang", to: "/inventory", icon: <Archive className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
+  { name: "Produksi", to: "/production/create", icon: <Factory className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
+  { name: "Terima Barang", to: "/receipts/create", icon: <Download className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
+  { name: "Agen", to: "/agents", icon: <Briefcase className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
+  { name: "Pesanan Agen", to: "/agent-orders", icon: <ShoppingCart className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
+  { name: "Sales", to: "/sales", icon: <UserCircle className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
+  { name: "Toko", to: "/stores", icon: <Store className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
+  { name: "Kunjungan", to: "/sales-visits", icon: <MapPin className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
+  { name: "Display", to: "/displays", icon: <LayoutGrid className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
+  { name: "Retur Barang", to: "/returns", icon: <CornerUpLeft className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
+  { name: "Laporan", to: "/reports", icon: <BarChart3 className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
   { name: "Pengguna", to: "/users", icon: <Users className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
   { name: "Pengaturan", to: "/settings", icon: <Settings className="h-5 w-5" />, roles: ["role-owner"] },
 ];
