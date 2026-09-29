@@ -10,10 +10,30 @@ export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { mutate: login, isLoading } = useLogin();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login({ email, password });
+    setErrorMessage(null);
+
+    login(
+      { email, password },
+      {
+        onSuccess: (result) => {
+          if (!result.success) {
+            setErrorMessage(
+              (result.error as { message?: string } | undefined)?.message ??
+                "Email atau password salah.",
+            );
+          }
+        },
+        onError: (error) => {
+          setErrorMessage(
+            (error as Error)?.message || "Tidak dapat terhubung ke server.",
+          );
+        },
+      },
+    );
   };
 
   return (
@@ -53,6 +73,14 @@ export const Login = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
+            {errorMessage && (
+              <div
+                role="alert"
+                className="w-full rounded-md border border-coral-200 bg-coral-50 px-3 py-2 text-sm text-coral-700 dark:border-coral-800 dark:bg-coral-900/30 dark:text-coral-200"
+              >
+                {errorMessage}
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Memproses..." : "Masuk"}
             </Button>

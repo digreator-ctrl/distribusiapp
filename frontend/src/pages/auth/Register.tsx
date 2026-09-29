@@ -12,10 +12,30 @@ export const Register = () => {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const { mutate: register, isLoading } = useRegister();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    register({ name, email, phone, password });
+    setErrorMessage(null);
+
+    register(
+      { name, email, phone, password },
+      {
+        onSuccess: (result) => {
+          if (!result.success) {
+            setErrorMessage(
+              (result.error as { message?: string } | undefined)?.message ??
+                "Registrasi gagal. Silakan coba lagi.",
+            );
+          }
+        },
+        onError: (error) => {
+          setErrorMessage(
+            (error as Error)?.message || "Tidak dapat terhubung ke server.",
+          );
+        },
+      },
+    );
   };
 
   return (
@@ -76,6 +96,14 @@ export const Register = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
+            {errorMessage && (
+              <div
+                role="alert"
+                className="w-full rounded-md border border-coral-200 bg-coral-50 px-3 py-2 text-sm text-coral-700 dark:border-coral-800 dark:bg-coral-900/30 dark:text-coral-200"
+              >
+                {errorMessage}
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Memproses..." : "Daftar Akun"}
             </Button>

@@ -212,10 +212,10 @@
 - Setiap fase menghasilkan fungsionalitas yang **dapat diuji secara independen**.
 - Task plan ini akan di-update seiring progress implementasi.
 
----
+---~
 
 ## 🔄 Changelog
-
+"
 | Tanggal | Perubahan |
 |---------|-----------|
 | 2026-09-29 | Initial task plan dibuat |
