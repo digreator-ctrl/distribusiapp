@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-collapsible": "^1.1.20",
     "@refinedev/core": "^5.0.12",
     "@refinedev/react-router": "^2.0.4",
     "@tailwindcss/vite": "^4.3.3",

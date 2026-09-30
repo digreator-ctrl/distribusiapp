@@ -1,7 +1,6 @@
 import { useLogout, useGetIdentity } from "@refinedev/core";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/Button";
 import { 
   LayoutDashboard, 
   Package, 
@@ -11,7 +10,6 @@ import {
   Store, 
   LogOut,
   Settings,
-  Menu,
   X,
   Archive,
   Factory,
@@ -22,71 +20,350 @@ import {
   LayoutGrid,
   CornerUpLeft,
   BarChart3,
-  Briefcase
+  Briefcase,
+  ChevronDown,
+  ChevronRight,
+  Activity,
+  Box,
+  ClipboardList,
+  FileText
 } from "lucide-react";
 import { useState } from "react";
 
-type MenuType = {
+type SubMenuItem = {
   name: string;
   to: string;
-  icon: React.ReactNode;
-  roles: string[];
 };
 
 type MenuCategory = {
   title: string;
-  items: MenuType[];
+  icon: React.ReactNode;
+  to?: string; 
+  items?: SubMenuItem[];
 };
 
-const MENU_CATEGORIES: MenuCategory[] = [
-  {
-    title: "Utama",
+const OWNER_MENUS: MenuCategory[] = [
+  { title: "Beranda", icon: <LayoutDashboard className="h-5 w-5" />, to: "/" },
+  { 
+    title: "Monitoring", 
+    icon: <Activity className="h-5 w-5" />, 
     items: [
-      { name: "Dashboard", to: "/", icon: <LayoutDashboard className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
+      { name: "Ringkasan Penjualan", to: "/owner/monitoring/sales" },
+      { name: "Ringkasan Stok", to: "/owner/monitoring/stock" },
+      { name: "Stok Gudang", to: "/inventory" },
+      { name: "Stok Sales", to: "/sales/stock" },
+      { name: "Stok Toko", to: "/stores/stock" },
+      { name: "Stok Display", to: "/displays/stock" },
+      { name: "Konsinyasi", to: "/consignment" },
+      { name: "Agen", to: "/agents" },
+      { name: "Sales", to: "/sales" },
+      { name: "Retur", to: "/returns" },
     ]
   },
   {
-    title: "Master Data",
+    title: "Produk",
+    icon: <Package className="h-5 w-5" />,
     items: [
-      { name: "Produk", to: "/products", icon: <Package className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Kategori Produk", to: "/categories", icon: <Tags className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Rekanan", to: "/suppliers", icon: <Truck className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-    ]
-  },
-  {
-    title: "Inventaris & Produksi",
-    items: [
-      { name: "Stok Gudang", to: "/inventory", icon: <Archive className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Produksi", to: "/production/create", icon: <Factory className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Terima Barang", to: "/receipts/create", icon: <Download className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Retur Barang", to: "/returns", icon: <CornerUpLeft className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
+      { name: "Semua Produk", to: "/products" },
+      { name: "Produksi Sendiri", to: "/products/own" },
+      { name: "Produk Rekanan", to: "/products/supplier" },
     ]
   },
   {
     title: "Distribusi",
+    icon: <Truck className="h-5 w-5" />,
     items: [
-      { name: "Agen", to: "/agents", icon: <Briefcase className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Pesanan Agen", to: "/agent-orders", icon: <ShoppingCart className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
+      { name: "Agen", to: "/agent-orders" },
+      { name: "Konsinyasi", to: "/consignment" },
     ]
   },
   {
-    title: "Sales & Lapangan",
+    title: "Sales",
+    icon: <UserCircle className="h-5 w-5" />,
     items: [
-      { name: "Sales", to: "/sales", icon: <UserCircle className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Toko", to: "/stores", icon: <Store className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
-      { name: "Kunjungan", to: "/sales-visits", icon: <MapPin className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
-      { name: "Display", to: "/displays", icon: <LayoutGrid className="h-5 w-5" />, roles: ["role-owner", "role-admin", "role-sales"] },
+      { name: "Daftar Sales", to: "/sales" },
+      { name: "Aktivitas Sales", to: "/sales/activities" },
+      { name: "Kunjungan", to: "/sales-visits" },
     ]
   },
   {
-    title: "Sistem",
+    title: "Toko",
+    icon: <Store className="h-5 w-5" />,
     items: [
-      { name: "Laporan", to: "/reports", icon: <BarChart3 className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Pengguna", to: "/users", icon: <Users className="h-5 w-5" />, roles: ["role-owner", "role-admin"] },
-      { name: "Pengaturan", to: "/settings", icon: <Settings className="h-5 w-5" />, roles: ["role-owner"] },
+      { name: "Daftar Toko", to: "/stores" },
+      { name: "Status Konsinyasi", to: "/stores/consignment" },
+      { name: "Riwayat Kunjungan", to: "/stores/visits" },
+    ]
+  },
+  {
+    title: "Display",
+    icon: <LayoutGrid className="h-5 w-5" />,
+    items: [
+      { name: "Daftar Display", to: "/displays" },
+      { name: "Display Aktif", to: "/displays/active" },
+      { name: "Riwayat Display", to: "/displays/history" },
+    ]
+  },
+  {
+    title: "Retur",
+    icon: <CornerUpLeft className="h-5 w-5" />,
+    items: [
+      { name: "Semua Retur", to: "/returns" },
+      { name: "Retur Produksi", to: "/returns/production" },
+      { name: "Retur Pengiriman", to: "/returns/delivery" },
+      { name: "Retur Expired", to: "/returns/expired" },
+      { name: "Retur Display", to: "/returns/display" },
+    ]
+  },
+  {
+    title: "Laporan",
+    icon: <BarChart3 className="h-5 w-5" />,
+    items: [
+      { name: "Laporan Penjualan", to: "/reports/sales" },
+      { name: "Laporan Stok", to: "/reports/stock" },
+      { name: "Laporan Konsinyasi", to: "/reports/consignment" },
+      { name: "Laporan Agen", to: "/reports/agents" },
+      { name: "Laporan Sales", to: "/reports/sales-perf" },
+      { name: "Laporan Toko", to: "/reports/stores" },
+      { name: "Laporan Retur", to: "/reports/returns" },
+      { name: "Laporan Display", to: "/reports/displays" },
+    ]
+  },
+  {
+    title: "Pengguna",
+    icon: <Users className="h-5 w-5" />,
+    items: [
+      { name: "Daftar Pengguna", to: "/users" },
+      { name: "Admin", to: "/users/admins" },
+      { name: "Sales", to: "/users/sales" },
+    ]
+  },
+  {
+    title: "Pengaturan",
+    icon: <Settings className="h-5 w-5" />,
+    items: [
+      { name: "Profil Usaha", to: "/settings/profile" },
+      { name: "Pengaturan Harga", to: "/settings/pricing" },
+      { name: "Aturan Agen", to: "/settings/agent-rules" },
+      { name: "Aturan Konsinyasi", to: "/settings/consignment-rules" },
+      { name: "Aturan Retur", to: "/settings/return-rules" },
+      { name: "Pengaturan Sistem", to: "/settings/system" },
     ]
   }
 ];
+
+const ADMIN_MENUS: MenuCategory[] = [
+  { title: "Beranda", icon: <LayoutDashboard className="h-5 w-5" />, to: "/" },
+  {
+    title: "Produk",
+    icon: <Package className="h-5 w-5" />,
+    items: [
+      { name: "Semua Produk", to: "/products" },
+      { name: "Kategori", to: "/categories" },
+      { name: "Varian", to: "/products/variants" },
+      { name: "Satuan", to: "/products/units" },
+      { name: "Harga", to: "/products/pricing" },
+    ]
+  },
+  {
+    title: "Produksi",
+    icon: <Factory className="h-5 w-5" />,
+    items: [
+      { name: "Produksi Sendiri", to: "/production" },
+      { name: "Penerimaan Rekanan", to: "/receipts" },
+      { name: "Batch Produksi", to: "/production/batches" },
+      { name: "Riwayat Produksi", to: "/production/history" },
+    ]
+  },
+  {
+    title: "Stok",
+    icon: <Archive className="h-5 w-5" />,
+    items: [
+      { name: "Stok Gudang", to: "/inventory" },
+      { name: "Stok Sales", to: "/sales/stock" },
+      { name: "Stok Toko", to: "/stores/stock" },
+      { name: "Stok Display", to: "/displays/stock" },
+      { name: "Mutasi Stok", to: "/inventory/movements" },
+      { name: "Stock Opname", to: "/inventory/opname" },
+    ]
+  },
+  {
+    title: "Distribusi",
+    icon: <Truck className="h-5 w-5" />,
+    items: [
+      { name: "Ke Agen", to: "/distributions/agents" },
+      { name: "Ke Sales", to: "/distributions/sales" },
+      { name: "Riwayat Distribusi", to: "/distributions/history" },
+    ]
+  },
+  {
+    title: "Agen",
+    icon: <Briefcase className="h-5 w-5" />,
+    items: [
+      { name: "Daftar Agen", to: "/agents" },
+      { name: "Ketentuan Agen", to: "/agents/rules" },
+      { name: "Pesanan Agen", to: "/agent-orders" },
+      { name: "Penjualan Agen", to: "/agents/sales" },
+      { name: "Retur Agen", to: "/agents/returns" },
+    ]
+  },
+  {
+    title: "Sales",
+    icon: <UserCircle className="h-5 w-5" />,
+    items: [
+      { name: "Daftar Sales", to: "/sales" },
+      { name: "Stok Sales", to: "/sales/stock" },
+      { name: "Distribusi Sales", to: "/distributions/sales" },
+      { name: "Aktivitas Sales", to: "/sales/activities" },
+      { name: "Kunjungan", to: "/sales-visits" },
+    ]
+  },
+  {
+    title: "Toko",
+    icon: <Store className="h-5 w-5" />,
+    items: [
+      { name: "Daftar Toko", to: "/stores" },
+      { name: "Data Konsinyasi", to: "/stores/consignment" },
+      { name: "Stok Toko", to: "/stores/stock" },
+      { name: "Penjualan Toko", to: "/stores/sales" },
+      { name: "Retur Toko", to: "/stores/returns" },
+      { name: "Riwayat Kunjungan", to: "/stores/visits" },
+    ]
+  },
+  {
+    title: "Display",
+    icon: <LayoutGrid className="h-5 w-5" />,
+    items: [
+      { name: "Daftar Display", to: "/displays" },
+      { name: "Penempatan Display", to: "/displays/placements" },
+      { name: "Isi Display", to: "/displays/contents" },
+      { name: "Perpindahan", to: "/displays/movements" },
+      { name: "Riwayat Display", to: "/displays/history" },
+    ]
+  },
+  {
+    title: "Retur",
+    icon: <CornerUpLeft className="h-5 w-5" />,
+    items: [
+      { name: "Semua Retur", to: "/returns" },
+      { name: "Menunggu Verifikasi", to: "/returns/pending" },
+      { name: "Retur Produksi", to: "/returns/production" },
+      { name: "Retur Pengiriman", to: "/returns/delivery" },
+      { name: "Retur Expired", to: "/returns/expired" },
+      { name: "Retur Display", to: "/returns/display" },
+      { name: "Riwayat Retur", to: "/returns/history" },
+    ]
+  },
+  {
+    title: "Rekanan",
+    icon: <Truck className="h-5 w-5" />,
+    items: [
+      { name: "Daftar Rekanan", to: "/suppliers" },
+      { name: "Produk Rekanan", to: "/products/supplier" },
+      { name: "Riwayat Penerimaan", to: "/receipts/history" },
+    ]
+  },
+  {
+    title: "Laporan",
+    icon: <BarChart3 className="h-5 w-5" />,
+    items: [
+      { name: "Semua Laporan", to: "/reports" },
+    ]
+  },
+];
+
+const SALES_MENUS: MenuCategory[] = [
+  { title: "Beranda", icon: <LayoutDashboard className="h-5 w-5" />, to: "/" },
+  { title: "Kunjungan", icon: <MapPin className="h-5 w-5" />, to: "/sales-visits" },
+  { title: "Toko", icon: <Store className="h-5 w-5" />, to: "/stores" },
+  { title: "Stok Saya", icon: <Box className="h-5 w-5" />, to: "/inventory/my-stock" },
+  { title: "Lainnya", icon: <ClipboardList className="h-5 w-5" />, items: [
+    { name: "Display", to: "/displays/my-displays" },
+    { name: "Riwayat Kunjungan", to: "/sales-visits/history" },
+    { name: "Riwayat Retur", to: "/returns/history" },
+    { name: "Profil", to: "/profile" },
+    { name: "Pengaturan", to: "/settings" },
+  ]}
+];
+
+// Reusable Collapsible Menu Item
+const CollapsibleMenuItem = ({ 
+  category, 
+  pathname, 
+  setIsOpen 
+}: { 
+  category: MenuCategory; 
+  pathname: string;
+  setIsOpen: (v: boolean) => void;
+}) => {
+  // Check if any sub-item is active
+  const isActive = category.to 
+    ? (pathname === category.to || (category.to !== "/" && pathname.startsWith(category.to)))
+    : category.items?.some(item => pathname === item.to || pathname.startsWith(item.to));
+
+  const [expanded, setExpanded] = useState(isActive);
+
+  if (!category.items || category.items.length === 0) {
+    return (
+      <Link
+        to={category.to || "#"}
+        onClick={() => setIsOpen(false)}
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          isActive 
+            ? "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400" 
+            : "text-surface-600 hover:bg-surface-50 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-100"
+        )}
+      >
+        {category.icon}
+        {category.title}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className={cn(
+          "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+          isActive 
+            ? "bg-primary-50/50 text-primary-700 dark:bg-primary-900/10 dark:text-primary-400" 
+            : "text-surface-600 hover:bg-surface-50 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-100"
+        )}
+      >
+        <div className="flex items-center gap-3">
+          {category.icon}
+          {category.title}
+        </div>
+        {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+      
+      {expanded && (
+        <div className="pl-11 space-y-1 mt-1 pb-2">
+          {category.items.map((item) => {
+            const isSubActive = pathname === item.to || pathname.startsWith(item.to + "/");
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  "block rounded-lg px-3 py-2 text-sm transition-colors",
+                  isSubActive
+                    ? "font-medium text-primary-700 bg-primary-50 dark:text-primary-400 dark:bg-primary-900/20"
+                    : "text-surface-500 hover:text-surface-900 hover:bg-surface-50 dark:text-surface-400 dark:hover:text-surface-100 dark:hover:bg-surface-800"
+                )}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const Sidebar = ({ 
   isOpen, 
@@ -103,6 +380,13 @@ export const Sidebar = ({
 
   const businessStr = localStorage.getItem("business");
   const business = businessStr ? JSON.parse(businessStr) : null;
+
+  let activeMenus = ADMIN_MENUS;
+  if (role === 'role-owner') activeMenus = OWNER_MENUS;
+  if (role === 'role-sales') activeMenus = SALES_MENUS;
+
+  // On mobile for sales, we might want to hide this completely later, but for now we render it
+  // and handle the PWA bottom navigation elsewhere.
 
   return (
     <>
@@ -128,51 +412,23 @@ export const Sidebar = ({
               {business?.name || "DistribusiApp"}
             </h2>
           </div>
-          <button onClick={() => setIsOpen(false)} className="lg:hidden text-surface-500">
+          <button onClick={() => setIsOpen(false)} className="lg:hidden text-surface-500 hover:text-surface-900">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6">
-          {MENU_CATEGORIES.map((category, idx) => {
-            const visibleItems = category.items.filter(menu => !role || menu.roles.includes(role));
-            if (visibleItems.length === 0) return null;
-            
-            return (
-              <div key={idx} className="space-y-1">
-                {category.title !== "Utama" && (
-                  <h3 className="px-3 mb-2 text-xs font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-wider">
-                    {category.title}
-                  </h3>
-                )}
-                <nav className="space-y-1">
-                  {visibleItems.map((menu) => {
-                    const isActive = location.pathname === menu.to || 
-                                     (menu.to !== "/" && location.pathname.startsWith(menu.to));
-                    return (
-                      <Link
-                        key={menu.to}
-                        to={menu.to}
-                        onClick={() => setIsOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                          isActive 
-                            ? "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400" 
-                            : "text-surface-600 hover:bg-surface-50 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-100"
-                        )}
-                      >
-                        {menu.icon}
-                        {menu.name}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
-            );
-          })}
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+          {activeMenus.map((category, idx) => (
+            <CollapsibleMenuItem 
+              key={idx} 
+              category={category} 
+              pathname={location.pathname} 
+              setIsOpen={setIsOpen} 
+            />
+          ))}
         </div>
 
-        <div className="border-t border-surface-200 dark:border-surface-800 p-4">
+        <div className="border-t border-surface-200 dark:border-surface-800 p-4 shrink-0">
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-100 dark:bg-surface-800">
               <span className="font-semibold text-surface-600 dark:text-surface-300">
@@ -185,7 +441,7 @@ export const Sidebar = ({
             </div>
             <button 
               onClick={() => logout()}
-              className="text-surface-400 hover:text-red-500 dark:hover:text-red-400"
+              className="text-surface-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
               title="Logout"
             >
               <LogOut className="h-5 w-5" />

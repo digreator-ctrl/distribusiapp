@@ -54,6 +54,7 @@ import { ReportList } from './pages/reports/ReportList';
 import { Settings } from './pages/settings/Settings';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { PlaceholderPage } from './components/PlaceholderPage';
 import './index.css';
 
 function App() {
@@ -227,9 +228,12 @@ function App() {
             {/* Phase 8 UI */}
             <Route path="/reports" element={<ReportList />} />
             <Route path="/settings" element={<Settings />} />
+
+            {/* Fallback for unmapped sidebar routes within Layout */}
+            <Route path="*" element={<PlaceholderPage title="Segera Hadir" />} />
           </Route>
 
-          {/* Fallback */}
+          {/* Global Fallback for unauthenticated or base unmapped paths */}
           <Route path="*" element={<CatchAllNavigate to="/" />} />
         </Routes>
 
