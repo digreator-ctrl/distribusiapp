@@ -54,10 +54,10 @@ const OWNER_MENUS: MenuCategory[] = [
       { name: "Stok Sales", to: "/sales/stock" },
       { name: "Stok Toko", to: "/stores/stock" },
       { name: "Stok Display", to: "/displays/stock" },
-      { name: "Konsinyasi", to: "/consignment" },
+      { name: "Konsinyasi", to: "/owner/monitoring/consignment" },
       { name: "Agen", to: "/agents" },
       { name: "Sales", to: "/sales" },
-      { name: "Retur", to: "/returns" },
+      { name: "Retur", to: "/owner/monitoring/returns" },
     ]
   },
   {

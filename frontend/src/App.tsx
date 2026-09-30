@@ -36,6 +36,7 @@ import { AgentOrderShow } from './pages/agent-orders/AgentOrderShow';
 
 // Phase 6
 import { SalesList } from './pages/sales/SalesList';
+import { MyStock } from './pages/sales/MyStock';
 import { StoreList } from './pages/stores/StoreList';
 import { StoreShow } from './pages/stores/StoreShow';
 import { DistributionCreate } from './pages/distributions/DistributionCreate';
@@ -52,6 +53,18 @@ import { ReturnShow } from './pages/returns/ReturnShow';
 // Phase 8
 import { ReportList } from './pages/reports/ReportList';
 import { Settings } from './pages/settings/Settings';
+
+// Monitoring (Owner)
+import { SalesSummary } from './pages/monitoring/SalesSummary';
+import { StockSummary } from './pages/monitoring/StockSummary';
+import { ConsignmentSummary } from './pages/monitoring/ConsignmentSummary';
+import { ReturnSummary } from './pages/monitoring/ReturnSummary';
+
+// Inventory (Admin)
+import { InventoryDashboard } from './pages/inventory/InventoryDashboard';
+import { StockMovements } from './pages/inventory/StockMovements';
+import { DistributionHistory } from './pages/inventory/DistributionHistory';
+import { DistributeForm } from './pages/inventory/DistributeForm';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PlaceholderPage } from './components/PlaceholderPage';
@@ -183,11 +196,7 @@ function App() {
             <Route path="/categories" element={<CategoryList />} />
             <Route path="/suppliers" element={<SupplierList />} />
             
-            {/* Phase 4 UI */}
-            <Route path="/inventory">
-               <Route index element={<InventoryList />} />
-               <Route path="movements" element={<MovementList />} />
-            </Route>
+            {/* Phase 4 UI (Inventory removed since we have Inventory Admin) */}
             <Route path="/production/create" element={<ProductionCreate />} />
             <Route path="/receipts/create" element={<ReceiptCreate />} />
             
@@ -203,7 +212,10 @@ function App() {
             </Route>
 
             {/* Phase 6 UI */}
-            <Route path="/sales" element={<SalesList />} />
+            <Route path="/sales">
+               <Route index element={<SalesList />} />
+               <Route path="mystock" element={<MyStock />} />
+            </Route>
             <Route path="/stores">
               <Route index element={<StoreList />} />
               <Route path=":id" element={<StoreShow />} />
@@ -226,8 +238,32 @@ function App() {
             </Route>
 
             {/* Phase 8 UI */}
-            <Route path="/reports" element={<ReportList />} />
+            <Route path="/reports">
+               <Route index element={<ReportList />} />
+               <Route path=":tab" element={<ReportList />} />
+            </Route>
             <Route path="/settings" element={<Settings />} />
+
+            {/* Owner Monitoring */}
+            <Route path="/owner/monitoring">
+               <Route path="sales" element={<SalesSummary />} />
+               <Route path="stock" element={<StockSummary />} />
+               <Route path="consignment" element={<ConsignmentSummary />} />
+               <Route path="returns" element={<ReturnSummary />} />
+            </Route>
+
+            {/* Inventory (Admin) */}
+            <Route path="/inventory">
+               <Route index element={<InventoryDashboard />} />
+               <Route path="movements" element={<StockMovements />} />
+            </Route>
+
+            {/* Distribution (Admin) */}
+            <Route path="/distribute">
+               <Route path="sales" element={<DistributeForm />} />
+               <Route path="agents" element={<DistributeForm />} />
+               <Route path="history" element={<DistributionHistory />} />
+            </Route>
 
             {/* Fallback for unmapped sidebar routes within Layout */}
             <Route path="*" element={<PlaceholderPage title="Segera Hadir" />} />

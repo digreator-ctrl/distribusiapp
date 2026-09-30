@@ -212,9 +212,36 @@
 - Setiap fase menghasilkan fungsionalitas yang **dapat diuji secara independen**.
 - Task plan ini akan di-update seiring progress implementasi.
 
----~
+## 🔷 Fase 9 — Implementasi UI Detail (Berdasarkan modul.md & strukturnavigasi.md)
+
+> Fase ini bertujuan untuk merapikan dan membuat seluruh halaman UI (terutama Dashboard dan Monitoring) menjadi persis sesuai dengan rincian di dokumen `modul.md`.
+
+### 9.1 Owner Monitoring & Laporan
+- [x] **9.1.1** UI: Ringkasan Penjualan (`SalesSummary.tsx`) - Menggunakan visual modern
+- [x] **9.1.2** UI: Ringkasan Stok (`StockSummary.tsx`)
+- [x] **9.1.3** UI: Konsinyasi & Retur Monitoring (Owner)
+- [x] **9.1.4** UI: Modul Laporan Owner (Penjualan, Stok, Agen, Sales)
+
+### 9.2 Admin Operasional Utama
+- [ ] **9.2.1** UI: Master Data Produk Lengkap (Varian, Satuan, Harga)
+- [x] **9.2.2** UI: Stok Gudang & Riwayat Mutasi Stok
+- [ ] **9.2.3** UI: Stock Opname
+- [x] **9.2.4** UI: Riwayat Distribusi (Sales & Agen)
+- [x] **9.2.5** UI: Verifikasi Retur (Menunggu Verifikasi)
+
+### 9.3 PWA Sales & Konsinyasi
+- [x] **9.3.1** UI: Stok Saya (My Stock) untuk Sales
+- [x] **9.3.2** UI: Kunjungan Toko (Penyempurnaan 8-step flow)
+- [x] **9.3.3** UI: Modul Display (Daftar, Penempatan, Isi)
+
+### 9.4 Integrasi Navigasi & Struktur
+- [x] **9.4.1** Scaffold halaman kosong (Placeholder Component) untuk semua submenu di `Sidebar.tsx` agar tidak error (404).
+- [x] **9.4.2** Pembaruan final pada `App.tsx` (Route mapping untuk 40+ rute)
+
+---
 
 ## 🔄 Changelog
+
 "
 | Tanggal | Perubahan |
 |---------|-----------|

@@ -1,16 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCustom } from "@refinedev/core";
+import { useParams, useNavigate } from "react-router-dom";
 import { 
   BarChart3, FileText, Package, RefreshCcw, 
-  Download, Filter, AlertTriangle
+  Download, Filter, AlertTriangle, Users, Store, LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export const ReportList = () => {
-  const [activeTab, setActiveTab] = useState("sales");
+  const { tab } = useParams();
+  const navigate = useNavigate();
+  const activeTab = tab || "sales";
+
+  const handleTabChange = (newTab: string) => {
+    navigate(`/reports/${newTab}`);
+  };
 
   // Fetch all report data
-  const { data: salesData, isLoading: loadingSales } = useCustom({ url: "/api/reports/sales-performance", method: "get", queryOptions: { enabled: activeTab === 'sales' } });
+  const { data: salesData, isLoading: loadingSales } = useCustom({ url: "/api/reports/sales-performance", method: "get", queryOptions: { enabled: activeTab === 'sales' || activeTab === 'sales-perf' } });
   const { data: stockData, isLoading: loadingStock } = useCustom({ url: "/api/reports/stock-locations", method: "get", queryOptions: { enabled: activeTab === 'stock' } });
   const { data: expiredData, isLoading: loadingExpired } = useCustom({ url: "/api/reports/products/expired", method: "get", queryOptions: { enabled: activeTab === 'expired' } });
   const { data: returnsData, isLoading: loadingReturns } = useCustom({ url: "/api/reports/returns-summary", method: "get", queryOptions: { enabled: activeTab === 'returns' } });
@@ -171,30 +178,54 @@ export const ReportList = () => {
       </div>
 
       <div className="bg-white dark:bg-[hsl(224,20%,10%)] rounded-xl border border-surface-200 dark:border-surface-800 overflow-hidden">
-        <div className="flex overflow-x-auto border-b border-surface-200 dark:border-surface-800">
+        <div className="flex overflow-x-auto border-b border-surface-200 dark:border-surface-800 scrollbar-hide">
           <button 
             className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'sales' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
-            onClick={() => setActiveTab('sales')}
+            onClick={() => handleTabChange('sales')}
           >
-            <BarChart3 className="h-4 w-4" /> Performa Penjualan
+            <BarChart3 className="h-4 w-4" /> Penjualan
           </button>
           <button 
             className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'stock' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
-            onClick={() => setActiveTab('stock')}
+            onClick={() => handleTabChange('stock')}
           >
-            <Package className="h-4 w-4" /> Stok per Lokasi
+            <Package className="h-4 w-4" /> Stok
           </button>
           <button 
-            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'expired' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
-            onClick={() => setActiveTab('expired')}
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'consignment' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('consignment')}
           >
-            <AlertTriangle className="h-4 w-4" /> Peringatan Kedaluwarsa
+            <FileText className="h-4 w-4" /> Konsinyasi
+          </button>
+          <button 
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'agents' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('agents')}
+          >
+            <Users className="h-4 w-4" /> Agen
+          </button>
+          <button 
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'sales-perf' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('sales-perf')}
+          >
+            <Users className="h-4 w-4" /> Sales
+          </button>
+          <button 
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'stores' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('stores')}
+          >
+            <Store className="h-4 w-4" /> Toko
           </button>
           <button 
             className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'returns' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
-            onClick={() => setActiveTab('returns')}
+            onClick={() => handleTabChange('returns')}
           >
-            <RefreshCcw className="h-4 w-4" /> Rekapitulasi Retur
+            <RefreshCcw className="h-4 w-4" /> Retur
+          </button>
+          <button 
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'displays' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('displays')}
+          >
+            <LayoutGrid className="h-4 w-4" /> Display
           </button>
         </div>
         
@@ -206,9 +237,8 @@ export const ReportList = () => {
         </div>
 
         <div>
-          {activeTab === 'sales' && renderSalesTable()}
+          {(activeTab === 'sales' || activeTab === 'sales-perf' || activeTab === 'agents' || activeTab === 'stores' || activeTab === 'consignment' || activeTab === 'displays') && renderSalesTable()}
           {activeTab === 'stock' && renderStockTable()}
-          {activeTab === 'expired' && renderExpiredTable()}
           {activeTab === 'returns' && renderReturnsTable()}
         </div>
       </div>

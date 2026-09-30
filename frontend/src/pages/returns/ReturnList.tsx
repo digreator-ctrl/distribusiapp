@@ -8,6 +8,7 @@ import { useState } from "react";
 export const ReturnList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
 
   const {
     tableQuery: { data, isLoading },
@@ -24,7 +25,20 @@ export const ReturnList = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setFilters([{ field: "search", operator: "eq", value: searchTerm }]);
+    const newFilters: any[] = [{ field: "search", operator: "eq", value: searchTerm }];
+    if (activeTab !== "all") {
+      newFilters.push({ field: "status", operator: "eq", value: activeTab });
+    }
+    setFilters(newFilters);
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const newFilters: any[] = [{ field: "search", operator: "eq", value: searchTerm }];
+    if (tab !== "all") {
+      newFilters.push({ field: "status", operator: "eq", value: tab });
+    }
+    setFilters(newFilters);
   };
 
   const getStatusColor = (status: string) => {
@@ -74,6 +88,39 @@ export const ReturnList = () => {
       </div>
 
       <div className="bg-white dark:bg-[hsl(224,20%,10%)] rounded-xl border border-surface-200 dark:border-surface-800 overflow-hidden">
+        <div className="flex overflow-x-auto border-b border-surface-200 dark:border-surface-800 scrollbar-hide">
+          <button 
+            className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'all' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('all')}
+          >
+            Semua Retur
+          </button>
+          <button 
+            className={`px-6 py-4 text-sm font-medium flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'pending' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('pending')}
+          >
+            Menunggu Verifikasi
+            <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Baru</span>
+          </button>
+          <button 
+            className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'approved' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('approved')}
+          >
+            Disetujui / Diproses
+          </button>
+          <button 
+            className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'completed' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('completed')}
+          >
+            Selesai
+          </button>
+          <button 
+            className={`px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'rejected' ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400' : 'text-surface-500 hover:text-surface-900 dark:hover:text-surface-100'}`}
+            onClick={() => handleTabChange('rejected')}
+          >
+            Ditolak
+          </button>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-surface-50 dark:bg-[hsl(224,20%,12%)] text-surface-600 dark:text-surface-400 font-medium border-b border-surface-200 dark:border-surface-800">
