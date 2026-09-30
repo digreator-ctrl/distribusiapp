@@ -3,22 +3,37 @@ import {
   Users, Store, ShoppingBag, ArrowRightLeft,
   Package, MapPin, AlertCircle, RefreshCcw
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 export const Dashboard = () => {
   const { data: identity } = useGetIdentity<{ id: string, name: string, role: string, business_id: string }>();
   
+  const businessId = localStorage.getItem('businessId');
+  
+  // If no business yet, redirect to onboarding
+  if (!businessId) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  
   const isSales = identity?.role === 'role-sales';
 
-  const { data: dashboardData, isLoading } = useCustom({
+  const { data: dashboardData, isLoading, isError } = useCustom({
     url: isSales ? `/api/dashboard/sales?sales_id=${identity?.id}` : "/api/dashboard/overview",
     method: "get",
-    queryOptions: { enabled: !!identity }
+    queryOptions: { enabled: !!identity, retry: false }
   });
 
   const data = dashboardData?.data?.data;
 
   if (isLoading) return <div className="p-8 text-center text-surface-500">Memuat dashboard...</div>;
+
+  if (isError) return (
+    <div className="p-8 text-center text-surface-500">
+      <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-400" />
+      <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100 mb-2">Gagal memuat dashboard</h2>
+      <p>Pastikan Anda sudah menyelesaikan setup usaha. <Link to="/onboarding" className="text-primary-600 underline">Klik di sini</Link> untuk setup.</p>
+    </div>
+  );
 
   return (
     <div className="space-y-6">

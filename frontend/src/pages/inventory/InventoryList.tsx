@@ -8,9 +8,9 @@ export const InventoryList = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const {
-    tableQueryResult: { data, isLoading },
-    current,
-    setCurrent,
+    tableQuery: { data, isLoading },
+    currentPage,
+    setCurrentPage,
     pageCount,
     setFilters,
   } = useTable({
@@ -124,19 +124,19 @@ export const InventoryList = () => {
             <Button
               variant="outline"
               size="sm"
-              disabled={current === 1}
-              onClick={() => setCurrent(current - 1)}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
             >
               Sebelumnya
             </Button>
             <span className="text-sm text-surface-600 dark:text-surface-400">
-              Halaman {current} dari {pageCount}
+              Halaman {currentPage} dari {pageCount}
             </span>
             <Button
               variant="outline"
               size="sm"
-              disabled={current === pageCount}
-              onClick={() => setCurrent(current + 1)}
+              disabled={currentPage === pageCount}
+              onClick={() => setCurrentPage(currentPage + 1)}
             >
               Selanjutnya
             </Button>

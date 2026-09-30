@@ -8,12 +8,12 @@ import { useState } from "react";
 export const ProductList = () => {
   const [search, setSearch] = useState("");
   
-  const { tableQueryResult, current, setCurrent, pageSize, setPageSize, setFilters } = useTable({
+  const { tableQuery, currentPage, setCurrentPage, pageSize, setPageSize, setFilters } = useTable({
     resource: "products",
-    pagination: { current: 1, pageSize: 10 },
+    pagination: { currentPage: 1, pageSize: 10 },
   });
   
-  const { data, isLoading } = tableQueryResult;
+  const { data, isLoading } = tableQuery;
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -108,8 +108,8 @@ export const ProductList = () => {
           <div className="mt-4 flex items-center justify-between">
              <span className="text-sm text-surface-500">Total {data?.total || 0} produk</span>
              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setCurrent((p) => Math.max(1, p - 1))} disabled={current === 1}>Prev</Button>
-                <Button variant="outline" size="sm" onClick={() => setCurrent((p) => p + 1)} disabled={data?.data?.length < pageSize}>Next</Button>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>Prev</Button>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => p + 1)} disabled={data?.data?.length < pageSize}>Next</Button>
              </div>
           </div>
         </CardContent>

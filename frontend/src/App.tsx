@@ -53,6 +53,7 @@ import { ReturnShow } from './pages/returns/ReturnShow';
 import { ReportList } from './pages/reports/ReportList';
 import { Settings } from './pages/settings/Settings';
 
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './index.css';
 
 function App() {
@@ -164,7 +165,9 @@ function App() {
                 key="authenticated-layout"
                 fallback={<CatchAllNavigate to="/login" />}
               >
-                <AppLayout />
+                <ErrorBoundary>
+                  <AppLayout />
+                </ErrorBoundary>
               </Authenticated>
             }
           >

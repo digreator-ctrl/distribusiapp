@@ -11,9 +11,9 @@ export const StoreList = () => {
   const [newStore, setNewStore] = useState({ name: "", owner_name: "", phone: "", address: "", type: "retail" });
 
   const {
-    tableQueryResult: { data, isLoading, refetch },
-    current,
-    setCurrent,
+    tableQuery: { data, isLoading, refetch },
+    currentPage,
+    setCurrentPage,
     pageCount,
     setFilters,
   } = useTable({
@@ -143,9 +143,9 @@ export const StoreList = () => {
       {pageCount > 1 && (
         <div className="flex justify-center mt-6">
           <div className="flex items-center gap-4 bg-white dark:bg-[hsl(224,20%,10%)] px-4 py-2 rounded-full border border-surface-200 dark:border-surface-800">
-            <Button variant="ghost" size="sm" disabled={current === 1} onClick={() => setCurrent(current - 1)}>Prev</Button>
-            <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{current} / {pageCount}</span>
-            <Button variant="ghost" size="sm" disabled={current === pageCount} onClick={() => setCurrent(current + 1)}>Next</Button>
+            <Button variant="ghost" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Prev</Button>
+            <span className="text-sm font-medium text-surface-900 dark:text-surface-100">{currentPage} / {pageCount}</span>
+            <Button variant="ghost" size="sm" disabled={currentPage === pageCount} onClick={() => setCurrentPage(currentPage + 1)}>Next</Button>
           </div>
         </div>
       )}

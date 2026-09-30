@@ -127,5 +127,48 @@ export const dataProvider: DataProvider = {
     };
   },
 
+  custom: async ({ url, method, headers: customHeaders, payload }) => {
+    const options: RequestInit = {
+      method: method.toUpperCase(),
+      headers: {
+        ...buildHeaders(),
+        ...(customHeaders as Record<string, string>),
+      },
+    };
+
+    if (payload && method !== 'get') {
+      options.body = JSON.stringify(payload);
+    }
+
+    const response = await fetch(url, options);
+    const result = await handleResponse(response);
+
+    return {
+      data: result,
+    };
+  },
+
+  customMutation: async ({ url, method, headers: customHeaders, payload, values }) => {
+    const body = payload || values;
+    const options: RequestInit = {
+      method: (method || 'POST').toUpperCase(),
+      headers: {
+        ...buildHeaders(),
+        ...(customHeaders as Record<string, string>),
+      },
+    };
+
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, options);
+    const result = await handleResponse(response);
+
+    return {
+      data: result,
+    };
+  },
+
   getApiUrl: () => API_URL,
 };

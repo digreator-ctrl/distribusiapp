@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/Button";
 import { Plus, Truck } from "lucide-react";
 
 export const SupplierList = () => {
-  const { tableQueryResult } = useTable({ resource: "suppliers" });
-  const { data, isLoading } = tableQueryResult;
+  const { tableQuery } = useTable({ resource: "suppliers" });
+  const { data, isLoading } = tableQuery;
 
   return (
     <div className="space-y-6 animate-fade-in">

@@ -11,9 +11,9 @@ export const AgentList = () => {
   const [newAgent, setNewAgent] = useState({ name: "", code: "", contact_person: "", phone: "", email: "" });
 
   const {
-    tableQueryResult: { data, isLoading, refetch },
-    current,
-    setCurrent,
+    tableQuery: { data, isLoading, refetch },
+    currentPage,
+    setCurrentPage,
     pageCount,
     setFilters,
   } = useTable({
@@ -136,9 +136,9 @@ export const AgentList = () => {
 
         {pageCount > 1 && (
           <div className="px-6 py-4 border-t border-surface-200 dark:border-surface-800 flex items-center justify-between">
-            <Button variant="outline" size="sm" disabled={current === 1} onClick={() => setCurrent(current - 1)}>Sebelumnya</Button>
-            <span className="text-sm text-surface-600 dark:text-surface-400">Halaman {current} dari {pageCount}</span>
-            <Button variant="outline" size="sm" disabled={current === pageCount} onClick={() => setCurrent(current + 1)}>Selanjutnya</Button>
+            <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Sebelumnya</Button>
+            <span className="text-sm text-surface-600 dark:text-surface-400">Halaman {currentPage} dari {pageCount}</span>
+            <Button variant="outline" size="sm" disabled={currentPage === pageCount} onClick={() => setCurrentPage(currentPage + 1)}>Selanjutnya</Button>
           </div>
         )}
       </div>

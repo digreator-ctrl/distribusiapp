@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/Button";
 import { Plus, Tags } from "lucide-react";
 
 export const CategoryList = () => {
-  const { tableQueryResult } = useTable({ resource: "product_categories" });
-  const { data, isLoading } = tableQueryResult;
+  const { tableQuery } = useTable({ resource: "product_categories" });
+  const { data, isLoading } = tableQuery;
 
   return (
     <div className="space-y-6 animate-fade-in">

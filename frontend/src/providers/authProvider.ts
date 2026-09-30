@@ -118,12 +118,16 @@ export const authProvider: AuthProvider = {
   },
 
   getPermissions: async () => {
-    const role = localStorage.getItem('role');
-    return role || null;
+    const rawRole = localStorage.getItem('role');
+    const role = rawRole ? (rawRole.startsWith('role-') ? rawRole : `role-${rawRole}`) : null;
+    return role;
   },
 
   getIdentity: async () => {
     const userStr = localStorage.getItem('user');
+    const rawRole = localStorage.getItem('role') || null;
+    const role = rawRole ? (rawRole.startsWith('role-') ? rawRole : `role-${rawRole}`) : null;
+    
     if (userStr) {
       const user = JSON.parse(userStr);
       return {
@@ -131,6 +135,7 @@ export const authProvider: AuthProvider = {
         name: user.name,
         email: user.email,
         avatar: user.avatar_url,
+        role: role,
       };
     }
     return null;
