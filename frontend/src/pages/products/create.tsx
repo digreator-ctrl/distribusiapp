@@ -36,6 +36,7 @@ export const ProductCreate = () => {
   // State produk yang sudah ada (untuk autocomplete Kategori & Merk)
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
   const [existingBrands, setExistingBrands] = useState<string[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
 
   useEffect(() => {
     fetch(`${API_URL}/products`)
@@ -45,10 +46,18 @@ export const ProductCreate = () => {
         setExistingBrands(Array.from(new Set(data.map(p => p.brand).filter(Boolean))));
       })
       .catch(() => {});
+
+    fetch(`${API_URL}/suppliers`)
+      .then(r => r.json())
+      .then((data: any[]) => {
+        setSuppliers(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {});
   }, []);
 
   const [formData, setFormData] = useState({ 
     name: "", 
+    supplier_id: "",
     category: "",
     brand: "",
     base_production_price: "", 
@@ -119,6 +128,7 @@ export const ProductCreate = () => {
           name: formData.name,
           category: formData.category,
           brand: formData.brand,
+          supplier_id: formData.supplier_id || null,
           base_production_price: Number(formData.base_production_price),
           base_sales_price: Number(formData.base_sales_price),
           base_agent_price: Number(formData.base_agent_price),
@@ -159,7 +169,7 @@ export const ProductCreate = () => {
   };
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm max-w-3xl mx-auto">
+    <div className="bg-card p-8 rounded-2xl border shadow-sm">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       
       <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -178,21 +188,38 @@ export const ProductCreate = () => {
       <form onSubmit={handleSubmit} noValidate className="space-y-8">
         {/* Bagian Informasi Dasar */}
         <div className="space-y-5">
-          <div>
-            <label className={`block text-sm font-semibold mb-1 ${errors.name ? 'text-red-600' : ''}`}>
-              Nama Produk Induk <span className="text-red-500">*</span>
-            </label>
-            <input 
-              type="text" 
-              value={formData.name}
-              onChange={(e) => {
-                setFormData({...formData, name: e.target.value});
-                if (errors.name) setErrors({...errors, name: undefined});
-              }}
-              className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none ${errors.name ? 'border-red-500 bg-red-50' : 'bg-background'}`} 
-              placeholder="Contoh: Kopi Kapsul Premium"
-            />
-            {errors.name && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.name}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            <div>
+              <label className={`block text-sm font-semibold mb-1 ${errors.name ? 'text-red-600' : ''}`}>
+                Nama Produk Induk <span className="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                value={formData.name}
+                onChange={(e) => {
+                  setFormData({...formData, name: e.target.value});
+                  if (errors.name) setErrors({...errors, name: undefined});
+                }}
+                className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none ${errors.name ? 'border-red-500 bg-red-50' : 'bg-background'}`} 
+                placeholder="Contoh: Kopi Kapsul Premium"
+              />
+              {errors.name && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.name}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">
+                Supplier (Asal Produk)
+              </label>
+              <select 
+                value={formData.supplier_id}
+                onChange={(e) => setFormData({...formData, supplier_id: e.target.value})}
+                className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none bg-background"
+              >
+                <option value="">Produksi Internal Sendiri</option>
+                {suppliers.map(sup => (
+                  <option key={sup.id} value={sup.id}>{sup.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">

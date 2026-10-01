@@ -16,6 +16,18 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY(tenant_id) REFERENCES tenants(id)
 );
 
+-- Tabel Master Supplier / Produsen Rekanan (Untuk sistem titipan)
+CREATE TABLE IF NOT EXISTS suppliers (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    contact_person TEXT,
+    phone TEXT,
+    address TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id)
+);
+
 -- Tabel Master Produk (Induk)
 CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
@@ -24,8 +36,10 @@ CREATE TABLE IF NOT EXISTS products (
     base_production_price REAL NOT NULL,
     base_sales_price REAL NOT NULL,
     base_agent_price REAL NOT NULL,
+    supplier_id TEXT, -- NULL berarti produk internal (produksi sendiri), jika ada ID berarti titipan supplier
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(tenant_id) REFERENCES tenants(id)
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id),
+    FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
 );
 
 -- Tabel Varian Produk (Anak)
@@ -50,8 +64,10 @@ CREATE TABLE IF NOT EXISTS inbound_batches (
     quantity INTEGER NOT NULL,
     production_date DATE NOT NULL,
     expired_date DATE NOT NULL,
+    supplier_id TEXT, -- Asal pengiriman jika dari supplier
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id),
+    FOREIGN KEY(supplier_id) REFERENCES suppliers(id),
     FOREIGN KEY(variant_id) REFERENCES product_variants(id)
 );
 

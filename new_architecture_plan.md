@@ -13,6 +13,13 @@ Berdasarkan `dokumentasialursistem.md` dan `rancanganarsitek.md`, dokumen ini me
 ## 2. Struktur Database (Cloudflare D1)
 Sistem *multi-tenant* mengharuskan setiap tabel transaksi dan master (kecuali tabel global) memiliki kolom `tenant_id`.
 
+Entitas Utama:
+- **Tenants**: Data penyewa SaaS (Misal: PT Distributor A).
+- **Users**: Admin, Owner, Sales.
+- **Suppliers / Produsen**: Data mitra atau produsen eksternal untuk sistem titipan/konsinyasi barang masuk.
+- **Products & Variants**: Master produk dan SKU. Produk bisa jadi milik internal atau titipan dari `supplier_id` tertentu.
+- **Inbound Batches**: Catatan stok masuk (produksi sendiri atau kiriman dari supplier).
+
 *   `tenants`: Entitas usaha/pemilik (*Owner*).
 *   `users`: Pengguna aplikasi dengan hak akses (`owner`, `admin`, `sales`).
 *   `products`: Data master produk beserta 3 tingkatan harga (produksi, sales, agen).

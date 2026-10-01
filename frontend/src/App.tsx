@@ -10,6 +10,10 @@ import { ProductCreate } from "./pages/products/create";
 import { ProductShow } from "./pages/products/show";
 import { ProductEdit } from "./pages/products/edit";
 import { InboundList } from "./pages/inbound/list";
+import { InboundCreate } from "./pages/inbound/create";
+import { SupplierList } from "./pages/suppliers/list";
+import { SupplierCreate } from "./pages/suppliers/create";
+import { SupplierShow } from "./pages/suppliers/show";
 import { UserList } from "./pages/users/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { MobileVisit } from "./pages/sales/visit";
@@ -44,6 +48,14 @@ function App() {
             name: "inbound_batches",
             meta: { label: "Inbound (Stok Masuk)" },
             list: "/inbound_batches",
+            create: "/inbound_batches/create",
+          },
+          {
+            name: "suppliers",
+            meta: { label: "Supplier" },
+            list: "/suppliers",
+            create: "/suppliers/create",
+            show: "/suppliers/:id",
           },
           {
             name: "users",
@@ -67,7 +79,7 @@ function App() {
                   Dashboard {localStorage.getItem("distribusi_role") === "owner" ? "Owner" : "Admin Gudang"}
                 </h1>
                 <p className="text-muted-foreground mt-2">Selamat datang di Sistem Manajemen Distribusi dan Konsinyasi.</p>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
                   {/* Khusus Owner */}
                   {localStorage.getItem("distribusi_role") === "owner" && (
@@ -101,6 +113,10 @@ function App() {
             <Route path="/products/:id" element={<ProductShow />} />
             <Route path="/products/:id/edit" element={<ProductEdit />} />
             <Route path="/inbound_batches" element={<InboundList />} />
+            <Route path="/inbound_batches/create" element={<InboundCreate />} />
+            <Route path="/suppliers" element={<SupplierList />} />
+            <Route path="/suppliers/create" element={<SupplierCreate />} />
+            <Route path="/suppliers/:id" element={<SupplierShow />} />
             <Route path="/users" element={<UserList />} />
           </Route>
 
@@ -148,9 +164,9 @@ function App() {
                 <div className="bg-card p-8 rounded-2xl shadow-xl border w-full max-w-sm text-center">
                   <h1 className="text-3xl font-black text-primary tracking-tight mb-2">Distribusi<span className="text-muted-foreground font-medium">App</span></h1>
                   <p className="text-muted-foreground text-sm mb-8">Masuk untuk mengelola sistem operasional Anda.</p>
-                  
+
                   <div className="space-y-3">
-                    <button 
+                    <button
                       onClick={() => {
                         localStorage.setItem("distribusi_token", "dummy");
                         localStorage.setItem("distribusi_role", "owner");
@@ -161,7 +177,7 @@ function App() {
                       Masuk (Demo Owner)
                     </button>
 
-                    <button 
+                    <button
                       onClick={() => {
                         localStorage.setItem("distribusi_token", "dummy");
                         localStorage.setItem("distribusi_role", "admin");
@@ -171,8 +187,8 @@ function App() {
                     >
                       Masuk (Demo Admin Gudang)
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={() => {
                         // Bypass login untuk keperluan demonstrasi
                         localStorage.setItem("distribusi_token", "dummy");

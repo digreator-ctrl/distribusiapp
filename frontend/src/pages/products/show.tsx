@@ -90,7 +90,7 @@ export const ProductShow = () => {
   if (!product) return null;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Delete Confirmation Modal */}
@@ -108,7 +108,8 @@ export const ProductShow = () => {
         </div>
       )}
 
-      {/* Header */}
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
       <div className="bg-card p-6 rounded-2xl border shadow-sm">
         <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
           <div>
@@ -212,5 +213,6 @@ export const ProductShow = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };

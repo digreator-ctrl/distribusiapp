@@ -1,6 +1,8 @@
 import { useList } from "@refinedev/core";
+import { useNavigate } from "react-router-dom";
 
 export const InboundList = () => {
+  const navigate = useNavigate();
   const { data, isLoading } = useList({
     resource: "inbound_batches",
   });
@@ -14,7 +16,10 @@ export const InboundList = () => {
           <h1 className="text-3xl font-bold tracking-tight">Stok Masuk (Inbound)</h1>
           <p className="text-muted-foreground mt-1">Pencatatan batch produk masuk dari internal atau rekanan.</p>
         </div>
-        <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium shadow hover:opacity-90 transition">
+        <button 
+          onClick={() => navigate("/inbound_batches/create")}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium shadow hover:opacity-90 transition"
+        >
           + Catat Stok Masuk
         </button>
       </div>

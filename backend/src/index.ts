@@ -26,7 +26,13 @@ app.get('/api/products', async (c) => {
   const totalCount = countResult ? (countResult.count as number) : 0
   
   // Mengambil produk master
-  const { results: products } = await c.env.DB.prepare('SELECT * FROM products WHERE tenant_id = ? ORDER BY created_at DESC').bind(tenant_id).all()
+  const { results: products } = await c.env.DB.prepare(`
+    SELECT p.*, s.name as supplier_name 
+    FROM products p 
+    LEFT JOIN suppliers s ON p.supplier_id = s.id 
+    WHERE p.tenant_id = ? 
+    ORDER BY p.created_at DESC
+  `).bind(tenant_id).all()
   
   // Ambil semua varian untuk produk-produk ini
   const { results: variants } = await c.env.DB.prepare('SELECT * FROM product_variants WHERE product_id IN (SELECT id FROM products WHERE tenant_id = ?)').bind(tenant_id).all()
@@ -60,8 +66,8 @@ app.post('/api/products', async (c) => {
   
   // Insert Produk Induk
   await c.env.DB.prepare(
-    'INSERT INTO products (id, tenant_id, name, category, brand, base_production_price, base_sales_price, base_agent_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, tenant_id, body.name, body.category || null, body.brand || null, body.base_production_price, body.base_sales_price, body.base_agent_price).run()
+    'INSERT INTO products (id, tenant_id, name, category, brand, base_production_price, base_sales_price, base_agent_price, supplier_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, tenant_id, body.name, body.category || null, body.brand || null, body.base_production_price, body.base_sales_price, body.base_agent_price, body.supplier_id || null).run()
   
   // Insert Varian (jika ada)
   if (body.variants && Array.isArray(body.variants)) {
@@ -82,8 +88,8 @@ app.put('/api/products/:id', async (c) => {
   const body = await c.req.json()
   
   await c.env.DB.prepare(
-    'UPDATE products SET name = ?, category = ?, brand = ?, base_production_price = ?, base_sales_price = ?, base_agent_price = ?, is_active = ? WHERE id = ?'
-  ).bind(body.name, body.category || null, body.brand || null, body.base_production_price, body.base_sales_price, body.base_agent_price, body.is_active ?? 1, id).run()
+    'UPDATE products SET name = ?, category = ?, brand = ?, base_production_price = ?, base_sales_price = ?, base_agent_price = ?, is_active = ?, supplier_id = ? WHERE id = ?'
+  ).bind(body.name, body.category || null, body.brand || null, body.base_production_price, body.base_sales_price, body.base_agent_price, body.is_active ?? 1, body.supplier_id || null, id).run()
   
   const product = await c.env.DB.prepare('SELECT * FROM products WHERE id = ?').bind(id).first()
   return c.json(product)
@@ -142,6 +148,42 @@ app.get('/api/users', async (c) => {
   
   c.header('x-total-count', totalCount.toString())
   return c.json(results)
+})
+
+// ==========================================
+// SUPPLIERS API
+// ==========================================
+app.get('/api/suppliers', async (c) => {
+  const tenant_id = 'tenant-1'
+  const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM suppliers WHERE tenant_id = ?').bind(tenant_id).first()
+  const totalCount = countResult ? (countResult.count as number) : 0
+  
+  const { results } = await c.env.DB.prepare('SELECT * FROM suppliers WHERE tenant_id = ? ORDER BY created_at DESC').bind(tenant_id).all()
+  
+  c.header('x-total-count', totalCount.toString())
+  return c.json(results)
+})
+
+app.get('/api/suppliers/:id', async (c) => {
+  const id = c.req.param('id')
+  const supplier = await c.env.DB.prepare('SELECT * FROM suppliers WHERE id = ?').bind(id).first()
+  
+  if (!supplier) return c.json({ message: 'Not found' }, 404)
+  
+  return c.json(supplier)
+})
+
+app.post('/api/suppliers', async (c) => {
+  const body = await c.req.json()
+  const id = crypto.randomUUID()
+  const tenant_id = 'tenant-1'
+  
+  await c.env.DB.prepare(
+    'INSERT INTO suppliers (id, tenant_id, name, contact_person, phone, address) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(id, tenant_id, body.name, body.contact_person || null, body.phone || null, body.address || null).run()
+  
+  const supplier = await c.env.DB.prepare('SELECT * FROM suppliers WHERE id = ?').bind(id).first()
+  return c.json(supplier, 201)
 })
 
 export default app
