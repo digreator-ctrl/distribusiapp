@@ -1,280 +1,197 @@
-import { Authenticated, Refine } from '@refinedev/core';
-import routerProvider, {
-  CatchAllNavigate,
-  DocumentTitleHandler,
-  UnsavedChangesNotifier,
-} from '@refinedev/react-router';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Refine, Authenticated } from "@refinedev/core";
+import dataProvider from "@refinedev/simple-rest";
+import { BrowserRouter, Route, Routes, Outlet, Navigate } from "react-router-dom";
+import routerProvider, { CatchAllNavigate, NavigateToResource } from "@refinedev/react-router-v6";
 
-import { dataProvider } from './providers/dataProvider';
-import { authProvider } from './providers/authProvider';
+import { authProvider } from "./providers/authProvider";
+import { AppLayout } from "./components/layout/AppLayout";
+import { ProductList } from "./pages/products/list";
+import { ProductCreate } from "./pages/products/create";
+import { ProductShow } from "./pages/products/show";
+import { ProductEdit } from "./pages/products/edit";
+import { InboundList } from "./pages/inbound/list";
+import { UserList } from "./pages/users/list";
+import { SalesLayout } from "./components/layout/SalesLayout";
+import { MobileVisit } from "./pages/sales/visit";
+import { MobileOpname } from "./pages/sales/opname";
+import { MobileAsset } from "./pages/sales/asset";
 
-import { AppLayout } from './components/layout/AppLayout';
-import { Login } from './pages/auth/Login';
-import { Register } from './pages/auth/Register';
-import { Onboarding } from './pages/onboarding/Onboarding';
-import { Dashboard } from './pages/dashboard/Dashboard';
-import { UserList } from './pages/users/UserList';
-
-import { ProductList } from './pages/products/ProductList';
-import { ProductCreate } from './pages/products/ProductCreate';
-import { CategoryList } from './pages/categories/CategoryList';
-import { SupplierList } from './pages/suppliers/SupplierList';
-
-// Phase 4
-import { InventoryList } from './pages/inventory/InventoryList';
-import { MovementList } from './pages/inventory/MovementList';
-import { ProductionCreate } from './pages/production/ProductionCreate';
-import { ReceiptCreate } from './pages/receipts/ReceiptCreate';
-
-// Phase 5
-import { AgentList } from './pages/agents/AgentList';
-import { AgentShow } from './pages/agents/AgentShow';
-import { AgentOrderList } from './pages/agent-orders/AgentOrderList';
-import { AgentOrderCreate } from './pages/agent-orders/AgentOrderCreate';
-import { AgentOrderShow } from './pages/agent-orders/AgentOrderShow';
-
-// Phase 6
-import { SalesList } from './pages/sales/SalesList';
-import { MyStock } from './pages/sales/MyStock';
-import { StoreList } from './pages/stores/StoreList';
-import { StoreShow } from './pages/stores/StoreShow';
-import { DistributionCreate } from './pages/distributions/DistributionCreate';
-import { SalesVisitList } from './pages/sales-visits/SalesVisitList';
-import { SalesVisitCreate } from './pages/sales-visits/SalesVisitCreate';
-
-// Phase 7
-import { DisplayList } from './pages/displays/DisplayList';
-import { DisplayShow } from './pages/displays/DisplayShow';
-import { ReturnList } from './pages/returns/ReturnList';
-import { ReturnCreate } from './pages/returns/ReturnCreate';
-import { ReturnShow } from './pages/returns/ReturnShow';
-
-// Phase 8
-import { ReportList } from './pages/reports/ReportList';
-import { Settings } from './pages/settings/Settings';
-
-// Monitoring (Owner)
-import { SalesSummary } from './pages/monitoring/SalesSummary';
-import { StockSummary } from './pages/monitoring/StockSummary';
-import { ConsignmentSummary } from './pages/monitoring/ConsignmentSummary';
-import { ReturnSummary } from './pages/monitoring/ReturnSummary';
-
-// Inventory (Admin)
-import { InventoryDashboard } from './pages/inventory/InventoryDashboard';
-import { StockMovements } from './pages/inventory/StockMovements';
-import { DistributionHistory } from './pages/inventory/DistributionHistory';
-import { DistributeForm } from './pages/inventory/DistributeForm';
-
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { PlaceholderPage } from './components/PlaceholderPage';
-import './index.css';
+// Endpoint Hono lokal (Port default wrangler dev biasanya 8787)
+const API_URL = "http://localhost:8787/api";
 
 function App() {
   return (
     <BrowserRouter>
       <Refine
-        dataProvider={dataProvider}
-        authProvider={authProvider}
         routerProvider={routerProvider}
+        dataProvider={dataProvider(API_URL)}
+        authProvider={authProvider}
         resources={[
           {
             name: "dashboard",
+            meta: { label: "Dashboard" },
             list: "/",
           },
           {
-            name: "users",
-            list: "/users",
-          },
-          {
             name: "products",
+            meta: { label: "Katalog Produk" },
             list: "/products",
             create: "/products/create",
+            show: "/products/:id",
+            edit: "/products/:id/edit",
           },
           {
-            name: "product_categories",
-            list: "/categories",
+            name: "inbound_batches",
+            meta: { label: "Inbound (Stok Masuk)" },
+            list: "/inbound_batches",
           },
           {
-            name: "suppliers",
-            list: "/suppliers",
+            name: "users",
+            meta: { label: "Karyawan" },
+            list: "/users",
           },
-          {
-            name: "inventory",
-            list: "/inventory",
-          },
-          {
-            name: "production",
-            create: "/production/create",
-          },
-          {
-            name: "receipts",
-            create: "/receipts/create",
-          },
-          {
-            name: "agents",
-            list: "/agents",
-            show: "/agents/:id",
-          },
-          {
-            name: "agent_orders",
-            list: "/agent-orders",
-            create: "/agent-orders/create",
-            show: "/agent-orders/:id",
-          },
-          {
-            name: "stores",
-            list: "/stores",
-            show: "/stores/:id",
-          },
-          {
-            name: "sales",
-            list: "/sales",
-          },
-          {
-            name: "distributions",
-            create: "/distributions/create",
-          },
-          {
-            name: "sales_visits",
-            list: "/sales-visits",
-            create: "/sales-visits/create",
-          },
-          {
-            name: "displays",
-            list: "/displays",
-            show: "/displays/:id",
-          },
-          {
-            name: "returns",
-            list: "/returns",
-            create: "/returns/create",
-            show: "/returns/:id",
-          },
-          {
-            name: "reports",
-            list: "/reports",
-          },
-          {
-            name: "settings",
-            list: "/settings",
-          }
         ]}
-        options={{
-          syncWithLocation: true,
-          warnWhenUnsavedChanges: true,
-          projectId: 'distribusi-app',
-        }}
       >
         <Routes>
-          {/* Public Auth Pages */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-
-          {/* Authenticated Routes */}
+          {/* Rute yang memerlukan login */}
           <Route
             element={
-              <Authenticated
-                key="authenticated-layout"
-                fallback={<CatchAllNavigate to="/login" />}
-              >
-                <ErrorBoundary>
-                  <AppLayout />
-                </ErrorBoundary>
+              <Authenticated key="authenticated-routes" fallback={<CatchAllNavigate to="/login" />}>
+                <AppLayout />
               </Authenticated>
             }
           >
-            <Route index element={<Dashboard />} />
+            <Route index element={
+              <div className="bg-card p-8 rounded-2xl border shadow-sm">
+                <h1 className="text-3xl font-bold tracking-tight">
+                  Dashboard {localStorage.getItem("distribusi_role") === "owner" ? "Owner" : "Admin Gudang"}
+                </h1>
+                <p className="text-muted-foreground mt-2">Selamat datang di Sistem Manajemen Distribusi dan Konsinyasi.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                  {/* Khusus Owner */}
+                  {localStorage.getItem("distribusi_role") === "owner" && (
+                    <div className="p-6 rounded-xl bg-purple-500/5 border border-purple-500/20 md:col-span-3">
+                      <h3 className="text-purple-600 font-semibold mb-1">Ringkasan Keuangan (Bulan Ini)</h3>
+                      <div className="flex justify-between items-end mt-2">
+                        <p className="text-4xl font-black text-purple-700">Rp 145.500.000</p>
+                        <p className="text-xs font-semibold bg-purple-100 text-purple-700 px-2 py-1 rounded-full border border-purple-200">Hak Akses: Eksekutif / Owner</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Operational Data (Admin & Owner) */}
+                  <div className="p-6 rounded-xl bg-primary/5 border border-primary/20">
+                    <h3 className="text-primary font-semibold mb-1">Total Produk Aktif</h3>
+                    <p className="text-4xl font-black">24</p>
+                  </div>
+                  <div className="p-6 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                    <h3 className="text-blue-600 font-semibold mb-1">Stok Masuk (Hari Ini)</h3>
+                    <p className="text-4xl font-black text-blue-700">1.250 <span className="text-sm font-normal">pcs</span></p>
+                  </div>
+                  <div className="p-6 rounded-xl bg-green-500/5 border border-green-500/20">
+                    <h3 className="text-green-600 font-semibold mb-1">Pengiriman Berjalan</h3>
+                    <p className="text-4xl font-black text-green-700">8 <span className="text-sm font-normal">rute</span></p>
+                  </div>
+                </div>
+              </div>
+            } />
+            <Route path="/products" element={<ProductList />} />
+            <Route path="/products/create" element={<ProductCreate />} />
+            <Route path="/products/:id" element={<ProductShow />} />
+            <Route path="/products/:id/edit" element={<ProductEdit />} />
+            <Route path="/inbound_batches" element={<InboundList />} />
             <Route path="/users" element={<UserList />} />
-            
-            {/* Phase 3 UI */}
-            <Route path="/products">
-               <Route index element={<ProductList />} />
-               <Route path="create" element={<ProductCreate />} />
-            </Route>
-            <Route path="/categories" element={<CategoryList />} />
-            <Route path="/suppliers" element={<SupplierList />} />
-            
-            {/* Phase 4 UI (Inventory removed since we have Inventory Admin) */}
-            <Route path="/production/create" element={<ProductionCreate />} />
-            <Route path="/receipts/create" element={<ReceiptCreate />} />
-            
-            {/* Phase 5 UI */}
-            <Route path="/agents">
-               <Route index element={<AgentList />} />
-               <Route path=":id" element={<AgentShow />} />
-            </Route>
-            <Route path="/agent-orders">
-               <Route index element={<AgentOrderList />} />
-               <Route path="create" element={<AgentOrderCreate />} />
-               <Route path=":id" element={<AgentOrderShow />} />
-            </Route>
-
-            {/* Phase 6 UI */}
-            <Route path="/sales">
-               <Route index element={<SalesList />} />
-               <Route path="mystock" element={<MyStock />} />
-            </Route>
-            <Route path="/stores">
-              <Route index element={<StoreList />} />
-              <Route path=":id" element={<StoreShow />} />
-            </Route>
-            <Route path="/distributions/create" element={<DistributionCreate />} />
-            <Route path="/sales-visits">
-              <Route index element={<SalesVisitList />} />
-              <Route path="create" element={<SalesVisitCreate />} />
-            </Route>
-
-            {/* Phase 7 UI */}
-            <Route path="/displays">
-              <Route index element={<DisplayList />} />
-              <Route path=":id" element={<DisplayShow />} />
-            </Route>
-            <Route path="/returns">
-              <Route index element={<ReturnList />} />
-              <Route path="create" element={<ReturnCreate />} />
-              <Route path=":id" element={<ReturnShow />} />
-            </Route>
-
-            {/* Phase 8 UI */}
-            <Route path="/reports">
-               <Route index element={<ReportList />} />
-               <Route path=":tab" element={<ReportList />} />
-            </Route>
-            <Route path="/settings" element={<Settings />} />
-
-            {/* Owner Monitoring */}
-            <Route path="/owner/monitoring">
-               <Route path="sales" element={<SalesSummary />} />
-               <Route path="stock" element={<StockSummary />} />
-               <Route path="consignment" element={<ConsignmentSummary />} />
-               <Route path="returns" element={<ReturnSummary />} />
-            </Route>
-
-            {/* Inventory (Admin) */}
-            <Route path="/inventory">
-               <Route index element={<InventoryDashboard />} />
-               <Route path="movements" element={<StockMovements />} />
-            </Route>
-
-            {/* Distribution (Admin) */}
-            <Route path="/distribute">
-               <Route path="sales" element={<DistributeForm />} />
-               <Route path="agents" element={<DistributeForm />} />
-               <Route path="history" element={<DistributionHistory />} />
-            </Route>
-
-            {/* Fallback for unmapped sidebar routes within Layout */}
-            <Route path="*" element={<PlaceholderPage title="Segera Hadir" />} />
           </Route>
 
-          {/* Global Fallback for unauthenticated or base unmapped paths */}
-          <Route path="*" element={<CatchAllNavigate to="/" />} />
-        </Routes>
+          {/* Rute Aplikasi Sales (Mobile-first PWA) */}
+          <Route
+            path="/sales"
+            element={
+              <Authenticated key="authenticated-sales" fallback={<CatchAllNavigate to="/login" />}>
+                <SalesLayout />
+              </Authenticated>
+            }
+          >
+            <Route index element={<MobileVisit />} />
+            <Route path="opname" element={<MobileOpname />} />
+            <Route path="asset" element={<MobileAsset />} />
+            <Route path="profile" element={
+              <div className="bg-card p-6 rounded-xl border text-center shadow-sm">
+                <div className="w-20 h-20 bg-primary/10 text-primary mx-auto rounded-full flex items-center justify-center text-2xl font-bold mb-4">S</div>
+                <h2 className="font-bold text-xl">Andi (Sales)</h2>
+                <p className="text-muted-foreground text-sm">Area: Jakarta Selatan</p>
+                <div className="mt-6 flex justify-center gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-primary">12</p>
+                    <p className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">Kunjungan</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-primary">100%</p>
+                    <p className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">Target</p>
+                  </div>
+                </div>
+              </div>
+            } />
+          </Route>
 
-        <UnsavedChangesNotifier />
-        <DocumentTitleHandler />
+          {/* Rute Halaman Login */}
+          <Route
+            element={
+              <Authenticated key="auth-pages" fallback={<Outlet />}>
+                <NavigateToResource />
+              </Authenticated>
+            }
+          >
+            <Route path="/login" element={
+              <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center p-8">
+                <div className="bg-card p-8 rounded-2xl shadow-xl border w-full max-w-sm text-center">
+                  <h1 className="text-3xl font-black text-primary tracking-tight mb-2">Distribusi<span className="text-muted-foreground font-medium">App</span></h1>
+                  <p className="text-muted-foreground text-sm mb-8">Masuk untuk mengelola sistem operasional Anda.</p>
+                  
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => {
+                        localStorage.setItem("distribusi_token", "dummy");
+                        localStorage.setItem("distribusi_role", "owner");
+                        window.location.href = "/";
+                      }}
+                      className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all active:scale-[0.98]"
+                    >
+                      Masuk (Demo Owner)
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        localStorage.setItem("distribusi_token", "dummy");
+                        localStorage.setItem("distribusi_role", "admin");
+                        window.location.href = "/";
+                      }}
+                      className="w-full px-4 py-3 bg-primary text-primary-foreground font-semibold rounded-xl shadow-md hover:bg-primary/90 transition-all active:scale-[0.98]"
+                    >
+                      Masuk (Demo Admin Gudang)
+                    </button>
+                    
+                    <button 
+                      onClick={() => {
+                        // Bypass login untuk keperluan demonstrasi
+                        localStorage.setItem("distribusi_token", "dummy");
+                        localStorage.setItem("distribusi_role", "sales");
+                        window.location.href = "/sales";
+                      }}
+                      className="w-full px-4 py-3 bg-muted text-foreground font-semibold rounded-xl border hover:bg-muted/80 transition-all active:scale-[0.98]"
+                    >
+                      Masuk (Demo Sales Mobile)
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-6">Versi SaaS Multi-tenant (v2.0)</p>
+                </div>
+              </div>
+            } />
+          </Route>
+
+          <Route path="*" element={<CatchAllNavigate to="/login" />} />
+        </Routes>
       </Refine>
     </BrowserRouter>
   );

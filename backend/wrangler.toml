@@ -1,19 +1,9 @@
-name = "distribusi-backend"
-main = "src/index.ts"
-compatibility_date = "2025-09-01"
+name = "distribusiapp-backend"
+compatibility_date = "2024-03-20"
 
-[dev]
-port = 8787
+
 
 [[d1_databases]]
 binding = "DB"
-database_name = "distribusi-db"
-database_id = "local-dev-db"
-
-[[r2_buckets]]
-binding = "STORAGE"
-bucket_name = "distribusi-storage"
-
-[vars]
-JWT_SECRET = "dev-secret-change-in-production"
-CORS_ORIGIN = "http://localhost:5173"
+database_name = "distribusiapp-db"
+database_id = "your-database-id-here"

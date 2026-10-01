@@ -1,212 +1,92 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* ============================================================
-   Design System — Soft Color Palette + Dark Mode
-   ============================================================ */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-@custom-variant dark (&:is(.dark *));
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
 
-@theme {
-  /* Soft Color Palette */
-  --color-primary-50: #f0f4ff;
-  --color-primary-100: #dbe4ff;
-  --color-primary-200: #bac8ff;
-  --color-primary-300: #91a7ff;
-  --color-primary-400: #748ffc;
-  --color-primary-500: #5c7cfa;
-  --color-primary-600: #4c6ef5;
-  --color-primary-700: #4263eb;
-  --color-primary-800: #3b5bdb;
-  --color-primary-900: #364fc7;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-  --color-sage-50: #f1f5f2;
-  --color-sage-100: #dce5de;
-  --color-sage-200: #b5ccba;
-  --color-sage-300: #8eb396;
-  --color-sage-400: #6a9a74;
-  --color-sage-500: #4d8058;
-  --color-sage-600: #3d6647;
-  --color-sage-700: #2f4d36;
-  --color-sage-800: #233a28;
-  --color-sage-900: #18261b;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
 
-  --color-cream-50: #fefcf8;
-  --color-cream-100: #fdf8ed;
-  --color-cream-200: #faf0d7;
-  --color-cream-300: #f5e4b8;
-  --color-cream-400: #eed596;
-  --color-cream-500: #e4c26e;
-  --color-cream-600: #d4a94a;
-  --color-cream-700: #b88e3a;
-  --color-cream-800: #96732f;
-  --color-cream-900: #7a5e27;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-  --color-coral-50: #fff5f5;
-  --color-coral-100: #ffe0e0;
-  --color-coral-200: #ffb8b8;
-  --color-coral-300: #ff8a8a;
-  --color-coral-400: #ff6b6b;
-  --color-coral-500: #fa5252;
-  --color-coral-600: #e03131;
-  --color-coral-700: #c92a2a;
-  --color-coral-800: #a82424;
-  --color-coral-900: #8b1e1e;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-  /* Surface colors */
-  --color-surface-50: #fafafa;
-  --color-surface-100: #f5f5f5;
-  --color-surface-200: #eeeeee;
-  --color-surface-300: #e0e0e0;
-  --color-surface-400: #bdbdbd;
-  --color-surface-500: #9e9e9e;
-  --color-surface-600: #757575;
-  --color-surface-700: #616161;
-  --color-surface-800: #424242;
-  --color-surface-900: #212121;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
-  /* Typography */
-  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
 
-  /* Border Radius */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
 
-  /* Shadows */
-  --shadow-soft: 0 2px 8px -2px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
-  --shadow-elevated: 0 4px 16px -4px rgba(0, 0, 0, 0.12), 0 8px 24px -8px rgba(0, 0, 0, 0.08);
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
 }
-
-/* ============================================================
-   CSS Variables for shadcn/ui compatibility
-   ============================================================ */
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 47.4% 11.2%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 47.4% 11.2%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --primary: 228 73% 67%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 143 20% 56%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --accent: 39 70% 67%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 210 40% 98%;
-  --ring: 228 73% 67%;
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: 224 20% 10%;
-  --foreground: 213 31% 91%;
-  --muted: 223 20% 16%;
-  --muted-foreground: 215.4 16.3% 56.9%;
-  --popover: 224 20% 12%;
-  --popover-foreground: 213 31% 91%;
-  --card: 224 20% 12%;
-  --card-foreground: 213 31% 91%;
-  --border: 216 20% 20%;
-  --input: 216 20% 20%;
-  --primary: 228 73% 67%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 143 20% 40%;
-  --secondary-foreground: 213 31% 91%;
-  --accent: 39 70% 55%;
-  --accent-foreground: 213 31% 91%;
-  --destructive: 0 62% 50%;
-  --destructive-foreground: 210 40% 98%;
-  --ring: 228 73% 67%;
-}
-
-/* ============================================================
-   Base Styles
-   ============================================================ */
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
-
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-feature-settings: "rlig" 1, "calt" 1;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    @apply bg-background text-foreground;
   }
 }
 
-/* ============================================================
-   Animations
-   ============================================================ */
-
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Toast animation */
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-@keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out forwards;
-}
-
-.animate-slide-in-right {
-  animation: slide-in-right 0.3s ease-out forwards;
-}
-
-.animate-scale-in {
-  animation: scale-in 0.2s ease-out forwards;
-}
-
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-/* ============================================================
-   Scrollbar
-   ============================================================ */
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }

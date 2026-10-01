@@ -1,56 +1,52 @@
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
-import { Sidebar } from "./Sidebar";
-import { BottomNav } from "./BottomNav";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { useGetIdentity } from "@refinedev/core";
-import { cn } from "@/lib/utils";
+import { useLogout, useMenu } from "@refinedev/core";
+import { Link, Outlet, useLocation } from "react-router-dom";
 
 export const AppLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { data: user } = useGetIdentity<{ name: string; role: string }>();
+  const { menuItems } = useMenu();
+  const { mutate: logout } = useLogout();
+  const location = useLocation();
   
-  const rawRole = localStorage.getItem('role') || null;
-  const role = rawRole ? (rawRole.startsWith('role-') ? rawRole : `role-${rawRole}`) : null;
-  const isSales = role === 'role-sales';
-
   return (
-    <div className="flex h-screen bg-surface-50 dark:bg-[hsl(224,20%,8%)] overflow-hidden">
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-      
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile Topbar (Hidden for Sales since they have BottomNav) */}
-        {!isSales && (
-          <header className="flex h-16 shrink-0 items-center gap-4 border-b border-surface-200 bg-white px-6 shadow-sm dark:border-surface-800 dark:bg-[hsl(224,20%,10%)] lg:hidden">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsSidebarOpen(true)}
-              className="-ml-2"
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Open sidebar</span>
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-lg font-semibold text-surface-900 dark:text-surface-100 truncate">
-                Hai, {user?.name?.split(' ')[0] || 'User'}
-              </h1>
-            </div>
-          </header>
-        )}
+    <div className="flex h-screen bg-muted/20">
+      {/* Sidebar untuk tampilan Owner/Admin */}
+      <aside className="w-64 bg-card border-r flex flex-col shadow-sm">
+        <div className="p-6 border-b border-border/50">
+          <h2 className="text-xl font-black text-primary tracking-tight">Distribusi<span className="text-muted-foreground font-medium">App</span></h2>
+        </div>
+        <nav className="flex-1 p-4 space-y-2">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.route;
+            return (
+              <Link
+                key={item.key}
+                to={item.route || "/"}
+                className={`block px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${
+                  isActive 
+                  ? 'bg-primary text-primary-foreground shadow-sm' 
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="p-4 border-t border-border/50">
+          <button 
+            onClick={() => logout()}
+            className="w-full px-4 py-2.5 text-sm font-semibold text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+          >
+            Keluar
+          </button>
+        </div>
+      </aside>
 
-        {/* Main Content Area */}
-        {/* If it's sales on mobile, we add pb-20 so the content isn't hidden behind the bottom nav */}
-        <main className={cn("flex-1 overflow-y-auto p-4 md:p-8", isSales && "pb-24 lg:pb-8")}>
-          <div className="mx-auto max-w-7xl">
-            <Outlet />
-          </div>
-        </main>
-      </div>
-
-      {isSales && <BottomNav onOpenMore={() => setIsSidebarOpen(true)} />}
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto p-8">
+        <div className="max-w-6xl mx-auto">
+          <Outlet />
+        </div>
+      </main>
     </div>
   );
 };
-

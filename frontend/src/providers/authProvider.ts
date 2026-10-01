@@ -1,153 +1,61 @@
-import type { AuthProvider } from '@refinedev/core';
-
-const API_URL = '/api';
+import type { AuthProvider } from "@refinedev/core";
 
 export const authProvider: AuthProvider = {
-  login: async ({ email, password }) => {
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        localStorage.setItem('token', result.data.token);
-        localStorage.setItem('user', JSON.stringify(result.data.user));
-
-        // If user has a business, store it
-        if (result.data.business) {
-          localStorage.setItem('businessId', result.data.business.id);
-          localStorage.setItem('business', JSON.stringify(result.data.business));
-        }
-
-        if (result.data.role) {
-          localStorage.setItem('role', result.data.role);
-        }
-
-        return {
-          success: true,
-          redirectTo: '/',
-        };
-      }
-
+  login: async ({ username, password }) => {
+    if (username === "admin" && password === "admin") {
+      localStorage.setItem("distribusi_token", "dummy_token");
+      localStorage.setItem("distribusi_role", "admin");
       return {
-        success: false,
-        error: {
-          name: 'Login Error',
-          message: result.message || 'Email atau password salah.',
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          name: 'Login Error',
-          message: 'Tidak dapat terhubung ke server.',
-        },
+        success: true,
+        redirectTo: "/",
       };
     }
-  },
-
-  register: async ({ name, email, password, phone }) => {
-    try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, phone }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        localStorage.setItem('token', result.data.token);
-        localStorage.setItem('user', JSON.stringify(result.data.user));
-
-        return {
-          success: true,
-          redirectTo: '/onboarding',
-        };
-      }
-
-      return {
-        success: false,
-        error: {
-          name: 'Register Error',
-          message: result.message || 'Registrasi gagal.',
-        },
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          name: 'Register Error',
-          message: 'Tidak dapat terhubung ke server.',
-        },
-      };
-    }
-  },
-
-  logout: async () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('businessId');
-    localStorage.removeItem('business');
-    localStorage.removeItem('role');
-
     return {
-      success: true,
-      redirectTo: '/login',
+      success: false,
+      error: {
+        name: "Login Error",
+        message: "Kredensial tidak valid",
+      },
     };
   },
-
+  logout: async () => {
+    localStorage.removeItem("distribusi_token");
+    localStorage.removeItem("distribusi_role");
+    return {
+      success: true,
+      redirectTo: "/login",
+    };
+  },
   check: async () => {
-    const token = localStorage.getItem('token');
-
+    const token = localStorage.getItem("distribusi_token");
     if (token) {
       return {
         authenticated: true,
       };
     }
-
     return {
       authenticated: false,
-      redirectTo: '/login',
+      redirectTo: "/login",
+      logout: true,
     };
   },
-
   getPermissions: async () => {
-    const rawRole = localStorage.getItem('role');
-    const role = rawRole ? (rawRole.startsWith('role-') ? rawRole : `role-${rawRole}`) : null;
-    return role;
+    const role = localStorage.getItem("distribusi_role");
+    return role ? role : null;
   },
-
   getIdentity: async () => {
-    const userStr = localStorage.getItem('user');
-    const rawRole = localStorage.getItem('role') || null;
-    const role = rawRole ? (rawRole.startsWith('role-') ? rawRole : `role-${rawRole}`) : null;
-    
-    if (userStr) {
-      const user = JSON.parse(userStr);
+    const token = localStorage.getItem("distribusi_token");
+    if (token) {
       return {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar_url,
-        role: role,
+        id: 1,
+        name: "Admin Distribusi",
+        avatar: "https://i.pravatar.cc/150?u=admin",
       };
     }
     return null;
   },
-
   onError: async (error) => {
-    if (error?.statusCode === 401) {
-      return {
-        logout: true,
-        redirectTo: '/login',
-      };
-    }
+    console.error(error);
     return { error };
   },
 };
