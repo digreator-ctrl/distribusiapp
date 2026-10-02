@@ -14,6 +14,7 @@ import { InboundCreate } from "./pages/inbound/create";
 import { SupplierList } from "./pages/suppliers/list";
 import { SupplierCreate } from "./pages/suppliers/create";
 import { SupplierShow } from "./pages/suppliers/show";
+import { SupplierEdit } from "./pages/suppliers/edit";
 import { UserList } from "./pages/users/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { MobileVisit } from "./pages/sales/visit";
@@ -56,6 +57,7 @@ function App() {
             list: "/suppliers",
             create: "/suppliers/create",
             show: "/suppliers/:id",
+            edit: "/suppliers/:id/edit",
           },
           {
             name: "users",
@@ -117,6 +119,7 @@ function App() {
             <Route path="/suppliers" element={<SupplierList />} />
             <Route path="/suppliers/create" element={<SupplierCreate />} />
             <Route path="/suppliers/:id" element={<SupplierShow />} />
+            <Route path="/suppliers/:id/edit" element={<SupplierEdit />} />
             <Route path="/users" element={<UserList />} />
           </Route>
 

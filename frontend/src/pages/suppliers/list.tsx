@@ -83,16 +83,13 @@ export const SupplierList = () => {
 
       {/* Filter Bar */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">🔍</span>
-          <input 
-            type="text" 
-            placeholder="Cari supplier (nama, kontak, alamat)..." 
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-9 pr-4 py-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/50 outline-none text-sm"
-          />
-        </div>
+        <input 
+          type="text" 
+          placeholder="Cari supplier (nama, kontak, alamat)..." 
+          value={searchQuery}
+          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+          className="flex-1 p-2 rounded-lg border bg-background focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+        />
         <select 
           value={sortOption}
           onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}

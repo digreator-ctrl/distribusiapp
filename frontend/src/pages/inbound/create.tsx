@@ -45,7 +45,7 @@ export const InboundCreate = () => {
   };
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm max-w-2xl mx-auto">
+    <div className="bg-card p-8 rounded-2xl border shadow-sm">
       <div className="flex justify-between items-center mb-6 border-b pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Catat Stok Masuk</h1>

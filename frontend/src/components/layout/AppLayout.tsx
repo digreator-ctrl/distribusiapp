@@ -42,7 +42,7 @@ export const AppLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto p-8">
+      <main className="flex-1 overflow-y-scroll p-8">
         <div className="max-w-6xl mx-auto">
           <Outlet />
         </div>

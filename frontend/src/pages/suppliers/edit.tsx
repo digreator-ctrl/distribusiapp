@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const API_URL = "http://localhost:8787/api";
 
@@ -28,7 +28,8 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
   );
 };
 
-export const SupplierCreate = () => {
+export const SupplierEdit = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
@@ -38,7 +39,29 @@ export const SupplierCreate = () => {
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    const fetchSupplier = async () => {
+      try {
+        const res = await fetch(`${API_URL}/suppliers/${id}`);
+        if (!res.ok) throw new Error("Supplier tidak ditemukan");
+        const data = await res.json();
+        setFormData({
+          name: data.name || "",
+          contact_person: data.contact_person || "",
+          phone: data.phone || "",
+          address: data.address || ""
+        });
+      } catch (err: any) {
+        setToast({ message: err.message, type: "error" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSupplier();
+  }, [id]);
 
   // Hanya perbolehkan input angka pada kolom nomor HP
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,16 +90,16 @@ export const SupplierCreate = () => {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/suppliers`, {
-        method: "POST",
+      const res = await fetch(`${API_URL}/suppliers/${id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
       });
       if (!res.ok) throw new Error("Gagal menyimpan data supplier");
 
-      setToast({ message: "Data supplier berhasil disimpan.", type: "success" });
+      setToast({ message: "Data supplier berhasil diperbarui.", type: "success" });
       setTimeout(() => {
-        navigate("/suppliers");
+        navigate(-1);
       }, 1500);
     } catch (err: any) {
       setToast({ message: err.message || "Terjadi kesalahan saat menyimpan data supplier.", type: "error" });
@@ -85,6 +108,10 @@ export const SupplierCreate = () => {
     }
   };
 
+  if (isLoading) {
+    return <div className="py-10 text-center animate-pulse">Memuat data supplier...</div>;
+  }
+
   return (
     <>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -92,11 +119,11 @@ export const SupplierCreate = () => {
       <div className="bg-card p-8 rounded-2xl border shadow-sm">
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Tambah Supplier</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Tambahkan data mitra pembuat produk atau penyuplai.</p>
+            <h1 className="text-2xl font-bold tracking-tight">Edit Supplier</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Ubah data profil supplier atau mitra Anda.</p>
           </div>
-          <button onClick={() => navigate("/suppliers")} className="px-4 py-2 border rounded-md font-medium shadow-sm hover:bg-muted transition">
-            Kembali
+          <button onClick={() => navigate(-1)} className="px-4 py-2 border rounded-md font-medium shadow-sm hover:bg-muted transition">
+            Batal
           </button>
         </div>
 
@@ -173,7 +200,7 @@ export const SupplierCreate = () => {
               disabled={isSubmitting}
               className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm shadow-md hover:bg-primary/90 transition active:scale-[0.98] disabled:opacity-50"
             >
-              {isSubmitting ? "Menyimpan..." : "Simpan Data Supplier"}
+              {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
           </div>
         </form>

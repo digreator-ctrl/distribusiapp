@@ -31,6 +31,7 @@ export const ProductEdit = () => {
 
   const [formData, setFormData] = useState({
     name: "",
+    supplier_id: "",
     category: "",
     brand: "",
     base_production_price: "",
@@ -50,9 +51,10 @@ export const ProductEdit = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  // Autocomplete data
+  // Autocomplete data & Suppliers
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
   const [existingBrands, setExistingBrands] = useState<string[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
 
   // Fetch existing product data
   const fetchProduct = useCallback(async () => {
@@ -63,6 +65,7 @@ export const ProductEdit = () => {
       const data = await res.json();
       setFormData({
         name: data.name || "",
+        supplier_id: data.supplier_id || "",
         category: data.category || "",
         brand: data.brand || "",
         base_production_price: String(data.base_production_price || ""),
@@ -87,13 +90,20 @@ export const ProductEdit = () => {
 
   useEffect(() => { fetchProduct(); }, [fetchProduct]);
 
-  // Fetch autocomplete
+  // Fetch autocomplete & suppliers
   useEffect(() => {
     fetch(`${API_URL}/products`)
       .then(r => r.json())
       .then((data: any[]) => {
         setExistingCategories(Array.from(new Set(data.map(p => p.category).filter(Boolean))));
         setExistingBrands(Array.from(new Set(data.map(p => p.brand).filter(Boolean))));
+      })
+      .catch(() => {});
+
+    fetch(`${API_URL}/suppliers`)
+      .then(r => r.json())
+      .then((data: any[]) => {
+        setSuppliers(Array.isArray(data) ? data : []);
       })
       .catch(() => {});
   }, []);
@@ -135,6 +145,7 @@ export const ProductEdit = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
+          supplier_id: formData.supplier_id || null,
           category: formData.category,
           brand: formData.brand,
           base_production_price: Number(formData.base_production_price),
@@ -146,7 +157,7 @@ export const ProductEdit = () => {
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
       setToast({ message: "Data produk berhasil diperbarui.", type: "success" });
-      setTimeout(() => navigate(`/products/${id}`), 1500);
+      setTimeout(() => navigate(-1), 1500);
     } catch (err: any) {
       setToast({ message: `Gagal menyimpan: ${err.message}`, type: "error" });
     } finally {
@@ -193,18 +204,36 @@ export const ProductEdit = () => {
       <form onSubmit={handleSubmit} noValidate className="space-y-8">
         {/* Informasi Dasar */}
         <div className="space-y-5">
-          <div>
-            <label className={`block text-sm font-semibold mb-1 ${errors.name ? "text-red-600" : ""}`}>
-              Nama Produk Induk <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => { setFormData({ ...formData, name: e.target.value }); if (errors.name) setErrors({ ...errors, name: undefined }); }}
-              className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none ${errors.name ? "border-red-500 bg-red-50" : "bg-background"}`}
-              placeholder="Contoh: Kopi Kapsul Premium"
-            />
-            {errors.name && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.name}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={`block text-sm font-semibold mb-1 ${errors.name ? "text-red-600" : ""}`}>
+                Nama Produk Induk <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); if (errors.name) setErrors({ ...errors, name: undefined }); }}
+                className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none ${errors.name ? "border-red-500 bg-red-50" : "bg-background"}`}
+                placeholder="Contoh: Kopi Kapsul Premium"
+              />
+              {errors.name && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.name}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-1">
+                Supplier (Asal Produk)
+              </label>
+              <select 
+                value={formData.supplier_id}
+                onChange={(e) => setFormData({ ...formData, supplier_id: e.target.value })}
+                className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none bg-background"
+              >
+                <option value="">Produksi Internal Sendiri</option>
+                {suppliers.map(sup => (
+                  <option key={sup.id} value={sup.id}>{sup.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -234,8 +263,8 @@ export const ProductEdit = () => {
           <div className="bg-muted/30 p-5 rounded-xl border space-y-4">
             <h4 className="font-semibold text-sm">Harga Dasar Produk</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(["base_production_price", "base_sales_price", "base_agent_price"] as const).map((field) => {
-                const labels: Record<string, string> = { base_production_price: "Harga Produksi", base_sales_price: "Harga Sales", base_agent_price: "Harga Agen" };
+              {(["base_production_price", "base_agent_price", "base_sales_price"] as const).map((field) => {
+                const labels: Record<string, string> = { base_production_price: "Harga Produksi", base_agent_price: "Harga Agen", base_sales_price: "Harga Sales" };
                 return (
                   <div key={field}>
                     <label className={`block text-xs font-semibold mb-1 ${errors.prices ? "text-red-600" : ""}`}>{labels[field]} <span className="text-red-500">*</span></label>
@@ -289,8 +318,8 @@ export const ProductEdit = () => {
                     <p className="text-[11px] font-semibold text-blue-800 mb-3 uppercase tracking-wider">Harga Khusus Varian (Override)</p>
                     <p className="text-xs text-blue-600/70 -mt-2 mb-3">Kosongkan jika sama dengan Harga Dasar.</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {(["override_production_price", "override_sales_price", "override_agent_price"] as const).map((pf) => {
-                        const pl: Record<string, string> = { override_production_price: "Produksi", override_sales_price: "Sales", override_agent_price: "Agen" };
+                      {(["override_production_price", "override_agent_price", "override_sales_price"] as const).map((pf) => {
+                        const pl: Record<string, string> = { override_production_price: "Produksi", override_agent_price: "Agen", override_sales_price: "Sales" };
                         return (
                           <div key={pf}>
                             <label className="block text-xs font-semibold mb-1">{pl[pf]} (Khusus)</label>

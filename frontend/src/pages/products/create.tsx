@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const API_URL = "http://localhost:8787/api";
 
@@ -32,6 +32,8 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
 
 export const ProductCreate = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { supplierId, returnTo } = location.state || {};
 
   // State produk yang sudah ada (untuk autocomplete Kategori & Merk)
   const [existingCategories, setExistingCategories] = useState<string[]>([]);
@@ -57,7 +59,7 @@ export const ProductCreate = () => {
 
   const [formData, setFormData] = useState({ 
     name: "", 
-    supplier_id: "",
+    supplier_id: supplierId || "",
     category: "",
     brand: "",
     base_production_price: "", 
@@ -142,7 +144,11 @@ export const ProductCreate = () => {
       
       // Tunggu sebentar agar user bisa melihat toast, lalu redirect
       setTimeout(() => {
-        navigate("/products");
+        if (returnTo) {
+          navigate(returnTo);
+        } else {
+          navigate("/products");
+        }
       }, 1500);
     } catch (err: any) {
       setToast({ message: `Gagal menyimpan: ${err.message}`, type: "error" });
@@ -178,7 +184,10 @@ export const ProductCreate = () => {
           <p className="text-muted-foreground mt-1 text-sm">Masukkan informasi dasar produk beserta varian (jika ada).</p>
         </div>
         <button 
-          onClick={() => navigate("/products")}
+          onClick={() => {
+            if (returnTo) navigate(returnTo);
+            else navigate("/products");
+          }}
           className="px-4 py-2 border rounded-md font-medium shadow-sm hover:bg-muted transition"
         >
           Kembali
@@ -278,20 +287,6 @@ export const ProductCreate = () => {
               </div>
               <div>
                 <label className={`block text-xs font-semibold mb-1 ${errors.prices ? 'text-red-600' : ''}`}>
-                  Harga Sales <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-medium text-sm ${errors.prices ? 'text-red-600' : 'text-muted-foreground'}`}>Rp</span>
-                  <input 
-                    type="text" 
-                    value={formatPrice(formData.base_sales_price)}
-                    onChange={(e) => handlePriceChange('base_sales_price', e.target.value)}
-                    className={`w-full pl-9 p-2.5 rounded-lg border text-sm focus:ring-2 focus:ring-primary/50 outline-none ${errors.prices ? 'border-red-500 bg-red-50' : 'bg-background'}`} 
-                  />
-                </div>
-              </div>
-              <div>
-                <label className={`block text-xs font-semibold mb-1 ${errors.prices ? 'text-red-600' : ''}`}>
                   Harga Agen <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -300,6 +295,20 @@ export const ProductCreate = () => {
                     type="text" 
                     value={formatPrice(formData.base_agent_price)}
                     onChange={(e) => handlePriceChange('base_agent_price', e.target.value)}
+                    className={`w-full pl-9 p-2.5 rounded-lg border text-sm focus:ring-2 focus:ring-primary/50 outline-none ${errors.prices ? 'border-red-500 bg-red-50' : 'bg-background'}`} 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={`block text-xs font-semibold mb-1 ${errors.prices ? 'text-red-600' : ''}`}>
+                  Harga Sales <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-medium text-sm ${errors.prices ? 'text-red-600' : 'text-muted-foreground'}`}>Rp</span>
+                  <input 
+                    type="text" 
+                    value={formatPrice(formData.base_sales_price)}
+                    onChange={(e) => handlePriceChange('base_sales_price', e.target.value)}
                     className={`w-full pl-9 p-2.5 rounded-lg border text-sm focus:ring-2 focus:ring-primary/50 outline-none ${errors.prices ? 'border-red-500 bg-red-50' : 'bg-background'}`} 
                   />
                 </div>
@@ -375,17 +384,17 @@ export const ProductCreate = () => {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold mb-1">Harga Sales (Khusus)</label>
-                        <div className="relative">
-                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-xs">Rp</span>
-                          <input type="text" value={formatPrice(v.override_sales_price)} onChange={(e) => updateVariant(idx, 'override_sales_price', e.target.value)} className="w-full pl-8 p-2 rounded border text-sm" placeholder="Sesuai Harga Dasar" />
-                        </div>
-                      </div>
-                      <div>
                         <label className="block text-xs font-semibold mb-1">Harga Agen (Khusus)</label>
                         <div className="relative">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-xs">Rp</span>
                           <input type="text" value={formatPrice(v.override_agent_price)} onChange={(e) => updateVariant(idx, 'override_agent_price', e.target.value)} className="w-full pl-8 p-2 rounded border text-sm" placeholder="Sesuai Harga Dasar" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold mb-1">Harga Sales (Khusus)</label>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-xs">Rp</span>
+                          <input type="text" value={formatPrice(v.override_sales_price)} onChange={(e) => updateVariant(idx, 'override_sales_price', e.target.value)} className="w-full pl-8 p-2 rounded border text-sm" placeholder="Sesuai Harga Dasar" />
                         </div>
                       </div>
                     </div>
@@ -399,7 +408,10 @@ export const ProductCreate = () => {
         <div className="pt-6 border-t flex justify-end gap-4">
           <button 
             type="button" 
-            onClick={() => navigate("/products")}
+            onClick={() => {
+              if (returnTo) navigate(returnTo);
+              else navigate("/products");
+            }}
             className="px-6 py-3 border rounded-xl hover:bg-muted font-bold text-sm"
           >
             Batal
