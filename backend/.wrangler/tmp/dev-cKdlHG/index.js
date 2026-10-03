@@ -29,9 +29,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// .wrangler/tmp/bundle-O8RgzF/checked-fetch.js
+// .wrangler/tmp/bundle-ThfU0d/checked-fetch.js
 var require_checked_fetch = __commonJS({
-  ".wrangler/tmp/bundle-O8RgzF/checked-fetch.js"() {
+  ".wrangler/tmp/bundle-ThfU0d/checked-fetch.js"() {
     "use strict";
     var urls = /* @__PURE__ */ new Set();
     function checkURL(request, init) {
@@ -60,13 +60,13 @@ var require_checked_fetch = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-O8RgzF/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-ThfU0d/middleware-loader.entry.ts
 var import_checked_fetch34 = __toESM(require_checked_fetch());
 
 // wrangler-modules-watch:wrangler:modules-watch
 var import_checked_fetch = __toESM(require_checked_fetch());
 
-// .wrangler/tmp/bundle-O8RgzF/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-ThfU0d/middleware-insertion-facade.js
 var import_checked_fetch32 = __toESM(require_checked_fetch());
 
 // src/index.ts
@@ -2036,10 +2036,24 @@ app.get("/api/products", async (c) => {
 });
 app.get("/api/products/:id", async (c) => {
   const id = c.req.param("id");
-  const product = await c.env.DB.prepare("SELECT * FROM products WHERE id = ?").bind(id).first();
+  const product = await c.env.DB.prepare(`
+    SELECT p.*, s.name as supplier_name, s.contact_person as supplier_contact, s.phone as supplier_phone 
+    FROM products p 
+    LEFT JOIN suppliers s ON p.supplier_id = s.id 
+    WHERE p.id = ?
+  `).bind(id).first();
   if (!product) return c.json({ message: "Not found" }, 404);
   const { results: variants } = await c.env.DB.prepare("SELECT * FROM product_variants WHERE product_id = ?").bind(id).all();
-  return c.json({ ...product, variants });
+  const { results: transactions } = await c.env.DB.prepare(`
+    SELECT c.*, pv.name as variant_name, st.name as store_name, u.username as sales_name
+    FROM consignments c
+    JOIN product_variants pv ON c.variant_id = pv.id
+    LEFT JOIN stores st ON c.store_id = st.id
+    LEFT JOIN users u ON c.sales_id = u.id
+    WHERE pv.product_id = ?
+    ORDER BY c.created_at DESC
+  `).bind(id).all();
+  return c.json({ ...product, variants, transactions });
 });
 app.post("/api/products", async (c) => {
   const body = await c.req.json();
@@ -2092,11 +2106,16 @@ app.post("/api/inbound_batches", async (c) => {
   const body = await c.req.json();
   const id = crypto.randomUUID();
   const tenant_id = "tenant-1";
-  await c.env.DB.prepare(
-    "INSERT INTO inbound_batches (id, tenant_id, product_id, source_type, quantity, production_date, expired_date) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).bind(id, tenant_id, body.product_id, body.source_type, body.quantity, body.production_date, body.expired_date).run();
-  const batch = await c.env.DB.prepare("SELECT * FROM inbound_batches WHERE id = ?").bind(id).first();
-  return c.json(batch, 201);
+  try {
+    await c.env.DB.prepare(
+      "INSERT INTO inbound_batches (id, tenant_id, product_id, source_type, quantity, production_date, expired_date) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).bind(id, tenant_id, body.product_id, body.source_type, body.quantity, body.production_date, body.expired_date).run();
+    const batch = await c.env.DB.prepare("SELECT * FROM inbound_batches WHERE id = ?").bind(id).first();
+    return c.json(batch, 201);
+  } catch (error) {
+    console.error(error);
+    return c.json({ message: "DB Error", error: error.message }, 500);
+  }
 });
 app.get("/api/users", async (c) => {
   const tenant_id = "tenant-1";
@@ -2118,7 +2137,15 @@ app.get("/api/suppliers/:id", async (c) => {
   const id = c.req.param("id");
   const supplier = await c.env.DB.prepare("SELECT * FROM suppliers WHERE id = ?").bind(id).first();
   if (!supplier) return c.json({ message: "Not found" }, 404);
-  return c.json(supplier);
+  const { results: products } = await c.env.DB.prepare(`
+    SELECT p.*, COUNT(pv.id) as variant_count
+    FROM products p
+    LEFT JOIN product_variants pv ON p.id = pv.product_id
+    WHERE p.supplier_id = ?
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
+  `).bind(id).all();
+  return c.json({ ...supplier, products });
 });
 app.post("/api/suppliers", async (c) => {
   const body = await c.req.json();
@@ -2129,6 +2156,24 @@ app.post("/api/suppliers", async (c) => {
   ).bind(id, tenant_id, body.name, body.contact_person || null, body.phone || null, body.address || null).run();
   const supplier = await c.env.DB.prepare("SELECT * FROM suppliers WHERE id = ?").bind(id).first();
   return c.json(supplier, 201);
+});
+app.put("/api/suppliers/:id", async (c) => {
+  const id = c.req.param("id");
+  const body = await c.req.json();
+  await c.env.DB.prepare(
+    "UPDATE suppliers SET name = ?, contact_person = ?, phone = ?, address = ?, is_active = ? WHERE id = ?"
+  ).bind(body.name, body.contact_person || null, body.phone || null, body.address || null, body.is_active ?? 1, id).run();
+  const supplier = await c.env.DB.prepare("SELECT * FROM suppliers WHERE id = ?").bind(id).first();
+  return c.json(supplier);
+});
+app.delete("/api/suppliers/:id", async (c) => {
+  const id = c.req.param("id");
+  try {
+    await c.env.DB.prepare("DELETE FROM suppliers WHERE id = ?").bind(id).run();
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ message: "Gagal menghapus supplier, mungkin ada produk yang terikat dengannya.", error: err.message }, 400);
+  }
 });
 var src_default = app;
 
@@ -2181,7 +2226,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// .wrangler/tmp/bundle-O8RgzF/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-ThfU0d/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -2214,7 +2259,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-O8RgzF/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-ThfU0d/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

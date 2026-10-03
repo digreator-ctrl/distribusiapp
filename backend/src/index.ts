@@ -144,12 +144,17 @@ app.post('/api/inbound_batches', async (c) => {
   const id = crypto.randomUUID()
   const tenant_id = 'tenant-1'
   
-  await c.env.DB.prepare(
-    'INSERT INTO inbound_batches (id, tenant_id, product_id, source_type, quantity, production_date, expired_date) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, tenant_id, body.product_id, body.source_type, body.quantity, body.production_date, body.expired_date).run()
-  
-  const batch = await c.env.DB.prepare('SELECT * FROM inbound_batches WHERE id = ?').bind(id).first()
-  return c.json(batch, 201)
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO inbound_batches (id, tenant_id, product_id, source_type, quantity, production_date, expired_date) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(id, tenant_id, body.product_id, body.source_type, body.quantity, body.production_date, body.expired_date).run()
+    
+    const batch = await c.env.DB.prepare('SELECT * FROM inbound_batches WHERE id = ?').bind(id).first()
+    return c.json(batch, 201)
+  } catch (error: any) {
+    console.error(error);
+    return c.json({ message: "DB Error", error: error.message }, 500)
+  }
 })
 
 // ==========================================

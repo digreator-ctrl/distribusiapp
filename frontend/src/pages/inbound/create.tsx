@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { AlertCircle, X } from "lucide-react";
+import { useInvalidate } from "@refinedev/core";
 
 const API_URL = "http://localhost:8787/api";
 
 export const InboundCreate = () => {
   const navigate = useNavigate();
+  const invalidate = useInvalidate();
   const [products, setProducts] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     product_id: "",
@@ -13,6 +16,8 @@ export const InboundCreate = () => {
     production_date: new Date().toISOString().split('T')[0],
     expired_date: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [globalError, setGlobalError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -24,23 +29,58 @@ export const InboundCreate = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const newErrors: Record<string, string> = {};
+    if (!formData.production_date) newErrors.production_date = "Tanggal Stok Masuk wajib diisi";
+    if (!formData.product_id) newErrors.product_id = "Produk wajib dipilih";
+    if (!formData.quantity) newErrors.quantity = "Jumlah Stok wajib diisi";
+    if (!formData.expired_date) newErrors.expired_date = "Tanggal Kedaluwarsa wajib diisi";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setGlobalError("Mohon periksa kembali form Anda. Ada kolom wajib yang belum diisi.");
+      return;
+    }
+
+    setErrors({});
+    setGlobalError("");
     setIsSubmitting(true);
     try {
+      const selectedProduct = products.find(p => p.id === formData.product_id);
+      const sourceType = selectedProduct?.supplier_id ? "rekanan" : "internal";
+
       const res = await fetch(`${API_URL}/inbound_batches`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          quantity: Number(formData.quantity)
+          source_type: sourceType,
+          quantity: Number(formData.quantity.replace(/\D/g, ""))
         })
       });
       if (!res.ok) throw new Error("Gagal menyimpan data");
-      navigate("/inbound_batches");
+      
+      invalidate({
+        resource: "inbound_batches",
+        invalidates: ["list"],
+      });
+      
+      navigate("/inbound_batches", { state: { successMessage: "Berhasil mencatat stok masuk!" } });
     } catch (err) {
-      alert("Terjadi kesalahan saat menyimpan data stok masuk.");
+      setGlobalError("Terjadi kesalahan saat menyimpan data stok masuk.");
       console.error(err);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDateClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    try {
+      if ('showPicker' in e.currentTarget) {
+        (e.currentTarget as any).showPicker();
+      }
+    } catch (err) {
+      // ignore
     }
   };
 
@@ -56,69 +96,97 @@ export const InboundCreate = () => {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      {globalError && (
+        <div className="fixed top-6 right-6 z-50 p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3 shadow-xl max-w-sm w-full">
+          <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-red-800">Terdapat Kesalahan</h3>
+            <p className="text-sm text-red-700 mt-1">{globalError}</p>
+          </div>
+          <button type="button" onClick={() => setGlobalError("")} className="text-red-500 hover:text-red-700 transition">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col space-y-5">
+        <div>
+          <label className="block text-sm font-semibold mb-1">Tanggal Stok Masuk *</label>
+          <input 
+            type="date" 
+            value={formData.production_date}
+            onClick={handleDateClick}
+            onChange={e => {
+              setFormData({...formData, production_date: e.target.value});
+              if (e.target.value) setErrors(prev => ({...prev, production_date: ""}));
+            }}
+            className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
+              errors.production_date ? 'border-red-500 focus:ring-red-500/50' : 'focus:ring-primary/50'
+            }`}
+          />
+          {errors.production_date && <p className="text-red-500 text-xs mt-1">{errors.production_date}</p>}
+        </div>
+
         <div>
           <label className="block text-sm font-semibold mb-1">Pilih Produk *</label>
           <select 
-            required
             value={formData.product_id}
-            onChange={e => setFormData({...formData, product_id: e.target.value})}
-            className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none bg-background"
+            onChange={e => {
+              setFormData({...formData, product_id: e.target.value});
+              if (e.target.value) setErrors(prev => ({...prev, product_id: ""}));
+            }}
+            className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
+              errors.product_id ? 'border-red-500 focus:ring-red-500/50' : 'focus:ring-primary/50'
+            }`}
           >
             <option value="" disabled>-- Pilih Produk --</option>
             {products.map(p => (
-              <option key={p.id} value={p.id}>{p.name} {p.brand ? `(${p.brand})` : ''}</option>
+              <option key={p.id} value={p.id}>
+                {p.name} {p.category ? `- ${p.category} ` : ''}- {p.supplier_name || 'Internal'}
+              </option>
             ))}
           </select>
+          {errors.product_id && <p className="text-red-500 text-xs mt-1">{errors.product_id}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          <div>
-            <label className="block text-sm font-semibold mb-1">Sumber Stok</label>
-            <select 
-              value={formData.source_type}
-              onChange={e => setFormData({...formData, source_type: e.target.value})}
-              className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none bg-background"
-            >
-              <option value="internal">Produksi Internal</option>
-              <option value="supplier">Supplier Eksternal</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">Jumlah Masuk (Qty) *</label>
-            <input 
-              type="number" 
-              required
-              min="1"
-              value={formData.quantity}
-              onChange={e => setFormData({...formData, quantity: e.target.value})}
-              className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none bg-background"
-              placeholder="Contoh: 100"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1">Jumlah Stok (Qty) *</label>
+          <input 
+            type="text" 
+            value={formData.quantity}
+            onChange={e => {
+              const numericValue = e.target.value.replace(/\D/g, "");
+              if (!numericValue) {
+                setFormData({...formData, quantity: ""});
+                return;
+              }
+              const formattedValue = new Intl.NumberFormat("id-ID").format(Number(numericValue));
+              setFormData({...formData, quantity: formattedValue});
+              setErrors(prev => ({...prev, quantity: ""}));
+            }}
+            className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
+              errors.quantity ? 'border-red-500 focus:ring-red-500/50' : 'focus:ring-primary/50'
+            }`}
+            placeholder="Contoh: 1.000"
+          />
+          {errors.quantity && <p className="text-red-500 text-xs mt-1">{errors.quantity}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          <div>
-            <label className="block text-sm font-semibold mb-1">Tanggal Produksi *</label>
-            <input 
-              type="date" 
-              required
-              value={formData.production_date}
-              onChange={e => setFormData({...formData, production_date: e.target.value})}
-              className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none bg-background"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">Tanggal Kedaluwarsa *</label>
-            <input 
-              type="date" 
-              required
-              value={formData.expired_date}
-              onChange={e => setFormData({...formData, expired_date: e.target.value})}
-              className="w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none bg-background"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1">Tanggal Kedaluwarsa *</label>
+          <input 
+            type="date" 
+            value={formData.expired_date}
+            onClick={handleDateClick}
+            onChange={e => {
+              setFormData({...formData, expired_date: e.target.value});
+              if (e.target.value) setErrors(prev => ({...prev, expired_date: ""}));
+            }}
+            className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
+              errors.expired_date ? 'border-red-500 focus:ring-red-500/50' : 'focus:ring-primary/50'
+            }`}
+          />
+          {errors.expired_date && <p className="text-red-500 text-xs mt-1">{errors.expired_date}</p>}
         </div>
 
         <div className="pt-6 border-t flex justify-end">
@@ -134,3 +202,4 @@ export const InboundCreate = () => {
     </div>
   );
 };
+

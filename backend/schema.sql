@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS product_variants (
 CREATE TABLE IF NOT EXISTS inbound_batches (
     id TEXT PRIMARY KEY,
     tenant_id TEXT NOT NULL,
-    variant_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
     source_type TEXT NOT NULL CHECK(source_type IN ('internal', 'rekanan')),
     quantity INTEGER NOT NULL,
     production_date DATE NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS inbound_batches (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id),
     FOREIGN KEY(supplier_id) REFERENCES suppliers(id),
-    FOREIGN KEY(variant_id) REFERENCES product_variants(id)
+    FOREIGN KEY(product_id) REFERENCES products(id)
 );
 
 -- Tabel Master Toko Mitra

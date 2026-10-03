@@ -1,16 +1,53 @@
+import { useState, useEffect } from "react";
 import { useList } from "@refinedev/core";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { CheckCircle2, X } from "lucide-react";
+
+const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed top-6 right-6 z-50 p-4 rounded-lg bg-green-50 border border-green-200 flex items-start gap-3 shadow-xl max-w-sm w-full">
+      <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+      <div className="flex-1">
+        <h3 className="text-sm font-medium text-green-800">Berhasil</h3>
+        <p className="text-sm text-green-700 mt-1">{message}</p>
+      </div>
+      <button type="button" onClick={onClose} className="text-green-500 hover:text-green-700 transition">
+        <X className="w-5 h-5" />
+      </button>
+    </div>
+  );
+};
 
 export const InboundList = () => {
   const navigate = useNavigate();
-  const { data, isLoading } = useList({
+  const location = useLocation();
+  const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || "");
+
+  // Hapus state dari history agar tidak muncul lagi saat di-refresh
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  const listResult = useList({
     resource: "inbound_batches",
-  });
+  }) as any;
+  
+  const data = listResult.data || listResult.query?.data;
+  const isLoading = listResult.isLoading ?? listResult.query?.isLoading;
 
   const batches = data?.data ?? [];
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm">
+    <>
+      {successMsg && <Toast message={successMsg} onClose={() => setSuccessMsg("")} />}
+      <div className="bg-card p-8 rounded-2xl border shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Stok Masuk (Inbound)</h1>
@@ -67,5 +104,6 @@ export const InboundList = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
