@@ -11,11 +11,21 @@ import { ProductShow } from "./pages/products/show";
 import { ProductEdit } from "./pages/products/edit";
 import { InboundList } from "./pages/inbound/list";
 import { InboundCreate } from "./pages/inbound/create";
+import { InboundShow } from "./pages/inbound/show";
 import { SupplierList } from "./pages/suppliers/list";
 import { SupplierCreate } from "./pages/suppliers/create";
 import { SupplierShow } from "./pages/suppliers/show";
 import { SupplierEdit } from "./pages/suppliers/edit";
 import { UserList } from "./pages/users/list";
+import { UserCreate } from "./pages/users/create";
+import { UserShow } from "./pages/users/show";
+import { UserEdit } from "./pages/users/edit";
+import { RbacList } from "./pages/rbac/list";
+import { RbacCreate } from "./pages/rbac/create";
+import { RbacShow } from "./pages/rbac/show";
+import { StockRequestList } from "./pages/stock-requests/list";
+import { StockRequestCreate } from "./pages/stock-requests/create";
+import { StockRequestShow } from "./pages/stock-requests/show";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { MobileVisit } from "./pages/sales/visit";
 import { MobileOpname } from "./pages/sales/opname";
@@ -63,6 +73,23 @@ function App() {
             name: "users",
             meta: { label: "Karyawan" },
             list: "/users",
+            create: "/users/create",
+            show: "/users/:id",
+            edit: "/users/:id/edit",
+          },
+          {
+            name: "rbac",
+            meta: { label: "RBAC" },
+            list: "/rbac",
+            create: "/rbac/create",
+            show: "/rbac/:id",
+          },
+          {
+            name: "stock-requests",
+            meta: { label: "Distribusi & Approval" },
+            list: "/stock-requests",
+            create: "/stock-requests/create",
+            show: "/stock-requests/:id",
           },
         ]}
       >
@@ -116,11 +143,21 @@ function App() {
             <Route path="/products/:id/edit" element={<ProductEdit />} />
             <Route path="/inbound_batches" element={<InboundList />} />
             <Route path="/inbound_batches/create" element={<InboundCreate />} />
+            <Route path="/inbound_batches/:id" element={<InboundShow />} />
             <Route path="/suppliers" element={<SupplierList />} />
             <Route path="/suppliers/create" element={<SupplierCreate />} />
             <Route path="/suppliers/:id" element={<SupplierShow />} />
             <Route path="/suppliers/:id/edit" element={<SupplierEdit />} />
             <Route path="/users" element={<UserList />} />
+            <Route path="/users/create" element={<UserCreate />} />
+            <Route path="/users/:id" element={<UserShow />} />
+            <Route path="/users/:id/edit" element={<UserEdit />} />
+            <Route path="/rbac" element={<RbacList />} />
+            <Route path="/rbac/create" element={<RbacCreate />} />
+            <Route path="/rbac/:id" element={<RbacShow />} />
+            <Route path="/stock-requests" element={<StockRequestList />} />
+            <Route path="/stock-requests/create" element={<StockRequestCreate />} />
+            <Route path="/stock-requests/:id" element={<StockRequestShow />} />
           </Route>
 
           {/* Rute Aplikasi Sales (Mobile-first PWA) */}
@@ -135,6 +172,9 @@ function App() {
             <Route index element={<MobileVisit />} />
             <Route path="opname" element={<MobileOpname />} />
             <Route path="asset" element={<MobileAsset />} />
+            <Route path="stock-requests" element={<StockRequestList />} />
+            <Route path="stock-requests/create" element={<StockRequestCreate />} />
+            <Route path="stock-requests/:id" element={<StockRequestShow />} />
             <Route path="profile" element={
               <div className="bg-card p-6 rounded-xl border text-center shadow-sm">
                 <div className="w-20 h-20 bg-primary/10 text-primary mx-auto rounded-full flex items-center justify-center text-2xl font-bold mb-4">S</div>

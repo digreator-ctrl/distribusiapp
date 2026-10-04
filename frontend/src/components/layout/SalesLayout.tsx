@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useLogout } from "@refinedev/core";
-import { LogOut, MapPin, Package, Camera, UserCircle } from "lucide-react";
+import { LogOut, MapPin, Package, Camera, UserCircle, ClipboardList } from "lucide-react";
 
 export const SalesLayout = () => {
   const { pathname } = useLocation();
@@ -36,6 +36,10 @@ export const SalesLayout = () => {
           <Link to="/sales/opname" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === '/sales/opname' ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'}`}>
             <Package size={22} className={pathname === '/sales/opname' ? 'fill-primary/20' : ''} />
             <span className="text-[10px] font-medium">Opname</span>
+          </Link>
+          <Link to="/sales/stock-requests" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === '/sales/stock-requests' ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'}`}>
+            <ClipboardList size={22} className={pathname === '/sales/stock-requests' ? 'fill-primary/20' : ''} />
+            <span className="text-[10px] font-medium">Req Stok</span>
           </Link>
           <Link to="/sales/asset" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${pathname === '/sales/asset' ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'}`}>
             <Camera size={22} className={pathname === '/sales/asset' ? 'fill-primary/20' : ''} />

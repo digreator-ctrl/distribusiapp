@@ -12,6 +12,13 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL CHECK(role IN ('owner', 'admin', 'sales')),
+    nik TEXT,
+    full_name TEXT,
+    place_of_birth TEXT,
+    date_of_birth DATE,
+    gender TEXT CHECK(gender IN ('L', 'P')),
+    address TEXT,
+    phone TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id)
 );
@@ -135,5 +142,36 @@ CREATE TABLE IF NOT EXISTS returns (
     status TEXT NOT NULL CHECK(status IN ('pending', 'resolved')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id),
+    FOREIGN KEY(variant_id) REFERENCES product_variants(id)
+);
+
+-- Permintaan (Sales -> Admin) & Rekomendasi (Admin -> Sales) Stok
+CREATE TABLE IF NOT EXISTS stock_requests (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    code TEXT NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('request', 'recommendation')),
+    target_type TEXT CHECK(target_type IN ('sales', 'agen')) DEFAULT 'sales',
+    sales_id TEXT, -- NULL pada rekomendasi berarti ditujukan ke semua Sales
+    agen_id TEXT,
+    distribution_date DATE,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+    priority TEXT NOT NULL DEFAULT 'normal' CHECK(priority IN ('normal', 'urgent')),
+    note TEXT,
+    response_note TEXT,
+    created_by_role TEXT,
+    responded_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id)
+);
+
+CREATE TABLE IF NOT EXISTS stock_request_items (
+    id TEXT PRIMARY KEY,
+    request_id TEXT NOT NULL,
+    variant_id TEXT NOT NULL,
+    batch_id TEXT,
+    quantity INTEGER NOT NULL,
+    approved_quantity INTEGER,
+    FOREIGN KEY(request_id) REFERENCES stock_requests(id) ON DELETE CASCADE,
     FOREIGN KEY(variant_id) REFERENCES product_variants(id)
 );

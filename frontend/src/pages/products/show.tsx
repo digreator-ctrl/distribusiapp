@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ConfirmModal } from "../../components/ConfirmModal";
 
 const API_URL = "http://localhost:8787/api";
 
@@ -100,20 +101,13 @@ export const ProductShow = () => {
     <>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card w-full max-w-sm rounded-2xl shadow-xl border p-6 space-y-4 text-center">
-            <div className="text-4xl">🗑️</div>
-            <h3 className="font-bold text-lg">Hapus Produk Ini?</h3>
-            <p className="text-sm text-muted-foreground">Aksi ini akan menghapus produk <strong>{product.name}</strong> beserta seluruh variannya secara permanen dan tidak bisa dikembalikan.</p>
-            <div className="flex gap-3 justify-center pt-2">
-              <button onClick={() => setShowDeleteConfirm(false)} className="px-5 py-2.5 border rounded-xl font-bold text-sm hover:bg-muted">Batal</button>
-              <button onClick={handleDelete} className="px-5 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700">Ya, Hapus Permanen</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal 
+        isOpen={showDeleteConfirm}
+        title="Hapus Produk Ini?"
+        message={`Aksi ini akan menghapus produk ${product.name} beserta seluruh variannya secara permanen dan tidak bisa dikembalikan.`}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       <div className="space-y-6">
         {/* Header */}
