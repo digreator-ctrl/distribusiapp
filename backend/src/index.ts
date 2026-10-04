@@ -182,6 +182,37 @@ app.get('/api/stores', async (c) => {
 })
 
 // ==========================================
+// AGENTS API
+// ==========================================
+app.get('/api/agents', async (c) => {
+  const tenant_id = 'tenant-1'
+  const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM agents WHERE tenant_id = ?').bind(tenant_id).first()
+  const totalCount = countResult ? (countResult.count as number) : 0
+  
+  const { results } = await c.env.DB.prepare('SELECT * FROM agents WHERE tenant_id = ? ORDER BY created_at DESC').bind(tenant_id).all()
+  
+  c.header('x-total-count', totalCount.toString())
+  return c.json(results)
+})
+
+app.post('/api/agents', async (c) => {
+  const body = await c.req.json()
+  const id = crypto.randomUUID()
+  const tenant_id = 'tenant-1'
+  
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO agents (id, tenant_id, name, contact, status, notes) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(id, tenant_id, body.name, body.contact, body.status || 'Aktif', body.notes || null).run()
+    
+    const agent = await c.env.DB.prepare('SELECT * FROM agents WHERE id = ?').bind(id).first()
+    return c.json(agent, 201)
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// ==========================================
 // USERS API
 // ==========================================
 app.get('/api/users', async (c) => {

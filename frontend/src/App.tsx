@@ -26,6 +26,8 @@ import { RbacShow } from "./pages/rbac/show";
 import { StockRequestList } from "./pages/stock-requests/list";
 import { StockRequestCreate } from "./pages/stock-requests/create";
 import { StockRequestShow } from "./pages/stock-requests/show";
+import { AgentList } from "./pages/agents/list";
+import { AgentCreate } from "./pages/agents/create";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { MobileVisit } from "./pages/sales/visit";
 import { MobileOpname } from "./pages/sales/opname";
@@ -90,6 +92,12 @@ function App() {
             list: "/stock-requests",
             create: "/stock-requests/create",
             show: "/stock-requests/:id",
+          },
+          {
+            name: "agents",
+            meta: { label: "Agen" },
+            list: "/agents",
+            create: "/agents/create",
           },
         ]}
       >
@@ -158,6 +166,8 @@ function App() {
             <Route path="/stock-requests" element={<StockRequestList />} />
             <Route path="/stock-requests/create" element={<StockRequestCreate />} />
             <Route path="/stock-requests/:id" element={<StockRequestShow />} />
+            <Route path="/agents" element={<AgentList />} />
+            <Route path="/agents/create" element={<AgentCreate />} />
           </Route>
 
           {/* Rute Aplikasi Sales (Mobile-first PWA) */}
