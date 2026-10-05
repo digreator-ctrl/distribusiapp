@@ -28,6 +28,7 @@ import { StockRequestCreate } from "./pages/stock-requests/create";
 import { StockRequestShow } from "./pages/stock-requests/show";
 import { AgentList } from "./pages/agents/list";
 import { AgentCreate } from "./pages/agents/create";
+import { InventoryList } from "./pages/inventory/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { MobileVisit } from "./pages/sales/visit";
 import { MobileOpname } from "./pages/sales/opname";
@@ -46,12 +47,12 @@ function App() {
         resources={[
           {
             name: "dashboard",
-            meta: { label: "Dashboard" },
+            meta: { label: "Dashboard", group: "Utama" },
             list: "/",
           },
           {
             name: "products",
-            meta: { label: "Katalog Produk" },
+            meta: { label: "Katalog Produk", group: "Manajemen Stok" },
             list: "/products",
             create: "/products/create",
             show: "/products/:id",
@@ -59,21 +60,39 @@ function App() {
           },
           {
             name: "inbound_batches",
-            meta: { label: "Inbound (Stok Masuk)" },
+            meta: { label: "Inbound (Stok Masuk)", group: "Manajemen Stok" },
             list: "/inbound_batches",
             create: "/inbound_batches/create",
           },
           {
+            name: "inventory",
+            meta: { label: "Stok Gudang", group: "Manajemen Stok" },
+            list: "/inventory",
+          },
+          {
+            name: "stock-requests",
+            meta: { label: "Distribusi & Approval", group: "Operasional Distribusi" },
+            list: "/stock-requests",
+            create: "/stock-requests/create",
+            show: "/stock-requests/:id",
+          },
+          {
             name: "suppliers",
-            meta: { label: "Supplier" },
+            meta: { label: "Supplier", group: "Mitra Bisnis" },
             list: "/suppliers",
             create: "/suppliers/create",
             show: "/suppliers/:id",
             edit: "/suppliers/:id/edit",
           },
           {
+            name: "agents",
+            meta: { label: "Agen", group: "Mitra Bisnis" },
+            list: "/agents",
+            create: "/agents/create",
+          },
+          {
             name: "users",
-            meta: { label: "Karyawan" },
+            meta: { label: "Karyawan", group: "Pengaturan" },
             list: "/users",
             create: "/users/create",
             show: "/users/:id",
@@ -81,23 +100,10 @@ function App() {
           },
           {
             name: "rbac",
-            meta: { label: "RBAC" },
+            meta: { label: "RBAC", group: "Pengaturan" },
             list: "/rbac",
             create: "/rbac/create",
             show: "/rbac/:id",
-          },
-          {
-            name: "stock-requests",
-            meta: { label: "Distribusi & Approval" },
-            list: "/stock-requests",
-            create: "/stock-requests/create",
-            show: "/stock-requests/:id",
-          },
-          {
-            name: "agents",
-            meta: { label: "Agen" },
-            list: "/agents",
-            create: "/agents/create",
           },
         ]}
       >
@@ -168,6 +174,7 @@ function App() {
             <Route path="/stock-requests/:id" element={<StockRequestShow />} />
             <Route path="/agents" element={<AgentList />} />
             <Route path="/agents/create" element={<AgentCreate />} />
+            <Route path="/inventory" element={<InventoryList />} />
           </Route>
 
           {/* Rute Aplikasi Sales (Mobile-first PWA) */}

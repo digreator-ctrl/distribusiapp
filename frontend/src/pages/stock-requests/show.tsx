@@ -108,7 +108,7 @@ export const StockRequestShow = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button 
@@ -170,167 +170,189 @@ export const StockRequestShow = () => {
         onCancel={() => setConfirmAction({ isOpen: false, action: null })}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
-          <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
-            <div className="p-4 bg-muted/30 border-b border-border font-bold flex items-center gap-2">
-              <Package size={18} /> Detail Item (SKU)
-            </div>
-            
-            <div className="divide-y divide-border">
-              {request.items.map((item: any, idx: number) => (
-                <div key={item.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/10 transition-colors">
-                  <div className="flex items-start gap-3 flex-1">
-                    <div className="bg-primary/10 text-primary p-2.5 rounded-lg shrink-0">
-                      <span className="font-bold">{idx + 1}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-foreground">{item.product_name}</h4>
-                      <p className="text-sm text-muted-foreground">{item.variant_name} {item.sku ? `(${item.sku})` : ''}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-6 bg-muted/30 p-3 rounded-xl border border-border/50 self-start md:self-auto">
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Diajukan</p>
-                      <p className="font-black text-lg">{item.quantity} <span className="text-xs font-normal">pcs</span></p>
-                    </div>
-
-                    {request.status === 'pending' && canRespond ? (
-                      <div className="border-l pl-6 border-border">
-                        <p className="text-[10px] uppercase font-bold text-primary mb-1">Disetujui</p>
-                        <input
-                          type="number"
-                          min="0"
-                          max={item.quantity} // Opsional, bisa lebih
-                          value={item.approved_quantity !== undefined ? item.approved_quantity : item.quantity}
-                          onChange={(e) => handleItemApproveQtyChange(item.id, parseInt(e.target.value) || 0)}
-                          className="w-20 p-1.5 rounded-md border-2 border-primary/30 text-center font-bold focus:border-primary outline-none"
-                        />
-                      </div>
-                    ) : request.status === 'approved' ? (
-                      <div className="border-l pl-6 border-border">
-                        <p className="text-[10px] uppercase font-bold text-emerald-600 mb-1">Disetujui</p>
-                        <p className="font-black text-lg text-emerald-700">
-                          {item.approved_quantity !== null ? item.approved_quantity : item.quantity} <span className="text-xs font-normal">pcs</span>
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="p-4 bg-muted/20 border-t border-border flex justify-between font-bold">
-              <span>Total Qty Diajukan</span>
-              <span className="text-lg">{request.items.reduce((acc: number, val: any) => acc + val.quantity, 0)} pcs</span>
-            </div>
+      <div className="flex flex-col gap-8">
+        
+        {/* Bagian 1: Info Dokumen & Tujuan */}
+        <div className="bg-card rounded-2xl border shadow-sm p-6 md:p-8 relative overflow-hidden">
+          {/* Ornamen Latar Belakang */}
+          <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
+            <User size={200} />
           </div>
 
-          {canRespond && (
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
-                <Edit3 size={18} /> Aksi Respons
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-semibold text-blue-800 mb-2 block">Catatan Respons (Opsional)</label>
-                  <textarea
-                    value={responseNote}
-                    onChange={(e) => setResponseNote(e.target.value)}
-                    placeholder="Alasan disetujui sebagian, ditolak, dsb..."
-                    rows={3}
-                    className="w-full p-3 rounded-xl border border-blue-200 focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white"
-                  />
+          <h3 className="font-bold border-b pb-4 mb-6 flex items-center gap-3 text-lg">
+            <div className="bg-primary/10 p-2 rounded-lg text-primary">
+              <User size={20} />
+            </div>
+            Informasi Distribusi & Tujuan
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Pembuat Dokumen</p>
+              <p className="font-medium capitalize text-base">{request.created_by_role || 'Sistem'}</p>
+            </div>
+            
+            <div className="space-y-1 lg:col-span-2">
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">
+                {request.agen_name ? 'Agen' : (request.type === 'request' ? 'Sales Pengaju' : 'Sales Tujuan')}
+              </p>
+                <div className="flex items-center gap-4 bg-muted/30 p-3 rounded-xl border border-border/50">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                  {(request.agen_name || request.sales_full_name || request.sales_username || "S")?.charAt(0).toUpperCase()}
                 </div>
-                
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => setConfirmAction({ isOpen: true, action: 'approved' })}
-                    disabled={isProcessing}
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle2 size={20} /> Setujui Permintaan
-                  </button>
-                  <button
-                    onClick={() => setConfirmAction({ isOpen: true, action: 'rejected' })}
-                    disabled={isProcessing}
-                    className="flex-1 bg-white border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold py-3 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                  >
-                    <XCircle size={20} /> Tolak Semuanya
-                  </button>
+                <div>
+                  <p className="font-bold text-base">{request.agen_name || request.sales_full_name || request.sales_username || "Semua Sales (Broadcast)"}</p>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-card rounded-2xl border p-5 shadow-sm">
-            <h3 className="font-bold border-b pb-3 mb-4 flex items-center gap-2">
-              <User size={18} className="text-muted-foreground" />
-              Info Pengaju / Tujuan
+        {/* Bagian 2: Detail Item (SKU) */}
+        <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
+          <div className="p-5 md:p-6 bg-muted/20 border-b border-border flex items-center justify-between">
+            <h3 className="font-bold flex items-center gap-3 text-lg">
+              <div className="bg-primary/10 p-2 rounded-lg text-primary">
+                <Package size={20} />
+              </div>
+              Daftar Barang (SKU)
+            </h3>
+            <div className="text-sm font-bold bg-background px-4 py-2 rounded-lg border shadow-sm">
+              Total: {request.items.reduce((acc: number, val: any) => acc + val.quantity, 0)} pcs
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+                <tr>
+                  <th className="px-6 py-4 font-semibold w-12 text-center">No</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Nama Produk & Kategori</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Varian (SKU)</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap text-center">Kedaluarsa</th>
+                  <th className="px-6 py-4 font-semibold text-center whitespace-nowrap w-40">Kuantitas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {request.items.map((item: any, idx: number) => (
+                  <tr key={item.id} className="hover:bg-muted/5 transition-colors">
+                    <td className="px-6 py-4 text-center text-muted-foreground font-medium">{idx + 1}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-foreground text-base">{item.product_name}</span>
+                        {item.product_category && (
+                          <span className="text-xs font-semibold px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md border border-blue-200">
+                            {item.product_category}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium">{item.variant_name}</span>
+                        {item.sku && <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded inline-block w-max">SKU: {item.sku}</span>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center text-muted-foreground">
+                      {item.expired_date ? new Date(item.expired_date).toLocaleDateString('id-ID') : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {request.status === 'pending' && canRespond ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            max={item.quantity}
+                            value={item.approved_quantity !== undefined ? item.approved_quantity : item.quantity}
+                            onChange={(e) => handleItemApproveQtyChange(item.id, parseInt(e.target.value) || 0)}
+                            className="w-20 p-2 rounded-lg border-2 border-primary/30 text-center font-bold focus:border-primary outline-none transition-colors mx-auto block"
+                          />
+                          <span className="text-xs text-muted-foreground">pcs</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="font-bold text-lg text-foreground">
+                            {request.status === 'approved' 
+                              ? (item.approved_quantity !== null ? item.approved_quantity : item.quantity)
+                              : item.quantity}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-1">pcs</span>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Bagian 3: Catatan (Jika Ada) */}
+        {(request.note || request.response_note) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {request.note && (
+              <div className="bg-card rounded-2xl border shadow-sm p-6">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Catatan Pengaju</h3>
+                <div className="p-4 bg-muted/30 rounded-xl text-base border-l-4 border-l-slate-400">
+                  {request.note}
+                </div>
+              </div>
+            )}
+            
+            {request.response_note && (
+              <div className="bg-card rounded-2xl border shadow-sm p-6">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">Catatan Respons</h3>
+                <div className={`p-4 rounded-xl text-base border-l-4 ${
+                  request.status === 'approved' ? 'bg-emerald-50 border-l-emerald-500' : 'bg-red-50 border-l-red-500'
+                }`}>
+                  {request.response_note}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Bagian 4: Aksi Respons (Admin/Pihak Terkait) */}
+        {canRespond && (
+          <div className="bg-blue-50/50 border border-blue-100 rounded-3xl p-6 md:p-8 shadow-sm">
+            <h3 className="font-bold text-blue-900 mb-6 flex items-center gap-3 text-xl border-b border-blue-100 pb-4">
+              <div className="bg-blue-100 p-2 rounded-xl text-blue-700">
+                <Edit3 size={24} />
+              </div>
+              Berikan Tindakan (Respons)
             </h3>
             
-            <div className="space-y-4">
+            <div className="space-y-6 max-w-3xl">
               <div>
-                <p className="text-xs text-muted-foreground font-semibold mb-1">Dokumen dibuat oleh</p>
-                <p className="font-medium capitalize">{request.created_by_role || 'Sistem'}</p>
+                <label className="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 block">Catatan Tambahan (Opsional)</label>
+                <textarea
+                  value={responseNote}
+                  onChange={(e) => setResponseNote(e.target.value)}
+                  placeholder="Ketik alasan jika disetujui sebagian, ditolak, atau pesan lainnya..."
+                  rows={3}
+                  className="w-full p-4 rounded-2xl border-2 border-blue-100 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none resize-none bg-white text-base transition-all"
+                />
               </div>
               
-              <div>
-                <p className="text-xs text-muted-foreground font-semibold mb-1">
-                  {request.agen_name ? 'Agen Tujuan' : (request.type === 'request' ? 'Sales Pengaju' : 'Sales Tujuan')}
-                </p>
-                <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-lg border">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                    {(request.agen_name || request.sales_full_name || request.sales_username || "S")?.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="font-bold">{request.agen_name || request.sales_full_name || request.sales_username || "Semua Sales (Broadcast)"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {request.agen_name ? 'Toko Mitra (Agen)' : 'Posisi: Sales Lapangan'}
-                    </p>
-                  </div>
-                </div>
+              <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                <button
+                  onClick={() => setConfirmAction({ isOpen: true, action: 'approved' })}
+                  disabled={isProcessing}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-lg"
+                >
+                  <CheckCircle2 size={24} /> Setujui Permintaan
+                </button>
+                <button
+                  onClick={() => setConfirmAction({ isOpen: true, action: 'rejected' })}
+                  disabled={isProcessing}
+                  className="flex-1 bg-white border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold py-4 px-6 rounded-2xl shadow-sm transition-all active:scale-[0.98] flex items-center justify-center gap-3 text-lg"
+                >
+                  <XCircle size={24} /> Tolak Semuanya
+                </button>
               </div>
-              
-              {request.priority === 'urgent' && (
-                <div>
-                  <p className="text-xs text-muted-foreground font-semibold mb-1">Prioritas Dokumen</p>
-                  <span className="inline-flex px-2 py-1 bg-red-100 text-red-800 text-xs font-bold rounded">
-                    Mendesak (Urgent)
-                  </span>
-                </div>
-              )}
             </div>
           </div>
-
-          {(request.note || request.response_note) && (
-            <div className="bg-card rounded-2xl border p-5 shadow-sm space-y-4">
-              {request.note && (
-                <div>
-                  <h3 className="text-sm font-bold text-muted-foreground mb-2">Catatan Pengaju</h3>
-                  <div className="p-3 bg-muted/50 rounded-lg text-sm border">
-                    {request.note}
-                  </div>
-                </div>
-              )}
-              
-              {request.response_note && (
-                <div>
-                  <h3 className="text-sm font-bold text-muted-foreground mb-2">Catatan Respons</h3>
-                  <div className={`p-3 rounded-lg text-sm border ${
-                    request.status === 'approved' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
-                  }`}>
-                    {request.response_note}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

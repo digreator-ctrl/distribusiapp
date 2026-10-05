@@ -62,7 +62,7 @@ export const StockRequestList = () => {
   const getDetailPath = (id: string) => isSales ? `/sales/stock-requests/${id}` : `/stock-requests/${id}`;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {successMsg && (
         <div className="p-4 rounded-xl bg-green-50 border border-green-200 flex items-start gap-3 shadow-sm mb-6">
           <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
@@ -122,11 +122,11 @@ export const StockRequestList = () => {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                 <tr>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Tanggal Distribusi</th>
                   <th className="px-6 py-4 font-semibold whitespace-nowrap">Kode</th>
-                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Tanggal</th>
-                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Tipe</th>
-                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Ditujukan / Dari</th>
-                  <th className="px-6 py-4 font-semibold text-center whitespace-nowrap">Item (Qty)</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Tipe Tujuan</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Nama Tujuan</th>
+                  <th className="px-6 py-4 font-semibold text-center whitespace-nowrap">Item SKU</th>
                   <th className="px-6 py-4 font-semibold text-center whitespace-nowrap">Status</th>
                 </tr>
               </thead>
@@ -137,6 +137,9 @@ export const StockRequestList = () => {
                     onClick={() => navigate(getDetailPath(req.id))}
                     className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors cursor-pointer group"
                   >
+                    <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
+                      {new Date(req.created_at).toLocaleDateString('id-ID')}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="font-bold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
                         {req.code}
@@ -145,15 +148,17 @@ export const StockRequestList = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
-                      {new Date(req.created_at).toLocaleDateString('id-ID')}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getTypeBadge(req.type)}
+                      {req.agen_name 
+                        ? <span className="bg-orange-100 text-orange-800 border border-orange-200 px-2.5 py-1 rounded-full text-xs font-semibold">Agen</span>
+                        : <span className="bg-blue-100 text-blue-800 border border-blue-200 px-2.5 py-1 rounded-full text-xs font-semibold">Sales</span>
+                      }
                     </td>
                     <td className="px-6 py-4">
                       <p className="font-semibold text-foreground">
-                        {req.agen_name ? `Agen: ${req.agen_name}` : (req.sales_full_name || req.sales_username || "Semua Sales (Broadcast)")}
+                        {req.agen_name 
+                          ? req.agen_name 
+                          : (req.sales_full_name || req.sales_username || "Semua Sales (Broadcast)")}
                       </p>
                     </td>
                     <td className="px-6 py-4 text-center whitespace-nowrap">

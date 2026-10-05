@@ -423,10 +423,11 @@ app.get('/api/stock-requests/:id', async (c) => {
   if (!request) return c.json({ message: 'Not found' }, 404)
 
   const { results: items } = await c.env.DB.prepare(`
-    SELECT i.*, pv.name as variant_name, pv.sku, p.name as product_name
+    SELECT i.*, pv.name as variant_name, pv.sku, p.name as product_name, p.category as product_category, ib.expired_date
     FROM stock_request_items i
     LEFT JOIN product_variants pv ON i.variant_id = pv.id
     LEFT JOIN products p ON pv.product_id = p.id
+    LEFT JOIN inbound_batches ib ON i.batch_id = ib.id
     WHERE i.request_id = ?
   `).bind(id).all()
 
@@ -444,12 +445,28 @@ app.post('/api/stock-requests', async (c) => {
   const items = Array.isArray(body.items) ? body.items.filter((i: any) => i.variant_id && Number(i.quantity) > 0) : []
   if (items.length === 0) return c.json({ message: 'Minimal 1 item dengan jumlah > 0' }, 400)
 
-  const countRow = await c.env.DB.prepare('SELECT MAX(CAST(SUBSTR(code, 5) AS INTEGER)) as maxseq FROM stock_requests WHERE tenant_id = ? AND type = ?').bind(tenant_id, body.type).first()
-  const seq = ((countRow?.maxseq as number) || 0) + 1
-  const code = `${body.type === 'request' ? 'REQ' : 'REC'}-${String(seq).padStart(4, '0')}`
+  const now = new Date()
+  const year = now.getFullYear().toString()
+  const month = (now.getMonth() + 1).toString().padStart(2, '0')
+  const ym = `${year}-${month}`
+
+  const counts = await c.env.DB.prepare(`
+    SELECT
+      COUNT(CASE WHEN strftime('%Y-%m', created_at) = ? THEN 1 END) as month_count,
+      COUNT(CASE WHEN strftime('%Y', created_at) = ? THEN 1 END) as year_count
+    FROM stock_requests
+    WHERE tenant_id = ? AND type = ?
+  `).bind(ym, year, tenant_id, body.type).first()
+
+  const monthSeq = ((counts?.month_count as number) || 0) + 1
+  const yearSeq = ((counts?.year_count as number) || 0) + 1
+
+  const prefix = body.type === 'request' ? 'REQ' : 'REC'
+  const code = `${prefix}-${year}${month}-${String(monthSeq).padStart(3, '0')}-${String(yearSeq).padStart(4, '0')}`
 
   try {
     const targetType = body.target_type || 'sales';
+    const status = targetType === 'agen' ? 'approved' : 'pending';
     const stmts = [
       c.env.DB.prepare(
         'INSERT INTO stock_requests (id, tenant_id, code, type, target_type, sales_id, agen_id, distribution_date, status, priority, note, created_by_role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -458,16 +475,36 @@ app.post('/api/stock-requests', async (c) => {
         targetType === 'sales' ? (body.sales_id || null) : null,
         targetType === 'agen' ? (body.agen_id || null) : null,
         body.distribution_date || null,
-        targetType === 'agen' ? 'approved' : 'pending',
+        status,
         body.priority === 'urgent' ? 'urgent' : 'normal', 
         body.note || null, 
         body.created_by_role || null
-      ),
-      ...items.map((i: any) =>
-        c.env.DB.prepare('INSERT INTO stock_request_items (id, request_id, variant_id, batch_id, quantity, approved_quantity) VALUES (?, ?, ?, ?, ?, ?)')
-          .bind(crypto.randomUUID(), id, i.variant_id, i.batch_id || null, Number(i.quantity), targetType === 'agen' ? Number(i.quantity) : null)
-      ),
+      )
     ]
+
+    for (const i of items) {
+      const qty = Number(i.quantity)
+      const appQty = status === 'approved' ? qty : null
+      stmts.push(
+        c.env.DB.prepare('INSERT INTO stock_request_items (id, request_id, variant_id, batch_id, quantity, approved_quantity) VALUES (?, ?, ?, ?, ?, ?)')
+          .bind(crypto.randomUUID(), id, i.variant_id, i.batch_id || null, qty, appQty)
+      )
+
+      if (status === 'approved') {
+        let remaining = qty
+        const batches = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE variant_id = ? AND current_quantity > 0 ORDER BY expired_date ASC, created_at ASC').bind(i.variant_id).all()
+        for (const batch of (batches.results || [])) {
+          if (remaining <= 0) break;
+          const bQty = batch.current_quantity as number;
+          const deduct = Math.min(remaining, bQty)
+          stmts.push(
+            c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, batch.id)
+          )
+          remaining -= deduct
+        }
+      }
+    }
+
     await c.env.DB.batch(stmts)
     return c.json({ id, code }, 201)
   } catch (error: any) {
@@ -490,18 +527,45 @@ app.put('/api/stock-requests/:id/respond', async (c) => {
     c.env.DB.prepare('UPDATE stock_requests SET status = ?, response_note = ?, responded_at = CURRENT_TIMESTAMP WHERE id = ?')
       .bind(body.status, body.response_note || null, id),
   ]
+  
   if (body.status === 'approved') {
+    let itemsToProcess = []
     if (Array.isArray(body.items) && body.items.length > 0) {
-      for (const i of body.items) {
-        stmts.push(
-          c.env.DB.prepare('UPDATE stock_request_items SET approved_quantity = ? WHERE id = ? AND request_id = ?')
-            .bind(Math.max(0, Number(i.approved_quantity) || 0), i.id, id)
-        )
-      }
+      itemsToProcess = body.items
     } else {
-      stmts.push(c.env.DB.prepare('UPDATE stock_request_items SET approved_quantity = quantity WHERE request_id = ?').bind(id))
+      const origItems = await c.env.DB.prepare('SELECT id, variant_id, quantity FROM stock_request_items WHERE request_id = ?').bind(id).all()
+      itemsToProcess = origItems.results.map((o: any) => ({ id: o.id, variant_id: o.variant_id, approved_quantity: o.quantity }))
+    }
+
+    for (const i of itemsToProcess) {
+      const appQty = Math.max(0, Number(i.approved_quantity) || 0)
+      stmts.push(
+        c.env.DB.prepare('UPDATE stock_request_items SET approved_quantity = ? WHERE id = ? AND request_id = ?')
+          .bind(appQty, i.id, id)
+      )
+
+      if (appQty > 0) {
+        let vId = i.variant_id
+        if (!vId) {
+           const vRow = await c.env.DB.prepare('SELECT variant_id FROM stock_request_items WHERE id = ?').bind(i.id).first()
+           vId = vRow?.variant_id
+        }
+        
+        let remaining = appQty
+        const batches = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE variant_id = ? AND current_quantity > 0 ORDER BY expired_date ASC, created_at ASC').bind(vId).all()
+        for (const batch of (batches.results || [])) {
+          if (remaining <= 0) break;
+          const bQty = batch.current_quantity as number;
+          const deduct = Math.min(remaining, bQty)
+          stmts.push(
+            c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, batch.id)
+          )
+          remaining -= deduct
+        }
+      }
     }
   }
+  
   await c.env.DB.batch(stmts)
   return c.json({ success: true })
 })
@@ -516,6 +580,32 @@ app.delete('/api/stock-requests/:id', async (c) => {
     c.env.DB.prepare('DELETE FROM stock_requests WHERE id = ?').bind(id),
   ])
   return c.json({ success: true })
+})
+
+app.get('/api/inventory', async (c) => {
+  const tenant_id = 'tenant-1'
+  try {
+    const { results } = await c.env.DB.prepare(`
+      SELECT 
+        pv.id as id,
+        p.name as product_name,
+        p.category,
+        pv.name as variant_name,
+        pv.sku,
+        COALESCE(SUM(ib.current_quantity), 0) as total_stock
+      FROM product_variants pv
+      JOIN products p ON pv.product_id = p.id
+      LEFT JOIN inbound_batches ib ON ib.variant_id = pv.id
+      WHERE p.tenant_id = ?
+      GROUP BY pv.id, p.name, p.category, pv.name, pv.sku
+      ORDER BY p.name ASC, pv.name ASC
+    `).bind(tenant_id).all()
+    
+    // We map id to the variant_id for Refine data provider (requires id)
+    return c.json(results)
+  } catch (error: any) {
+    return c.json({ message: 'DB Error', error: error.message }, 500)
+  }
 })
 
 export default app
