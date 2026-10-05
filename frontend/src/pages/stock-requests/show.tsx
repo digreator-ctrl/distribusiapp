@@ -281,15 +281,17 @@ export const StockRequestShow = () => {
               
               <div>
                 <p className="text-xs text-muted-foreground font-semibold mb-1">
-                  {request.type === 'request' ? 'Sales Pengaju' : 'Sales Tujuan'}
+                  {request.agen_name ? 'Agen Tujuan' : (request.type === 'request' ? 'Sales Pengaju' : 'Sales Tujuan')}
                 </p>
                 <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-lg border">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                    {(request.sales_full_name || request.sales_username || "S")?.charAt(0).toUpperCase()}
+                    {(request.agen_name || request.sales_full_name || request.sales_username || "S")?.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-bold">{request.sales_full_name || request.sales_username || "Semua Sales (Broadcast)"}</p>
-                    <p className="text-xs text-muted-foreground">Posisi: Sales Lapangan</p>
+                    <p className="font-bold">{request.agen_name || request.sales_full_name || request.sales_username || "Semua Sales (Broadcast)"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {request.agen_name ? 'Toko Mitra (Agen)' : 'Posisi: Sales Lapangan'}
+                    </p>
                   </div>
                 </div>
               </div>

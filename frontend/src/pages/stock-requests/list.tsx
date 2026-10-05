@@ -118,53 +118,57 @@ export const StockRequestList = () => {
             <p className="text-sm mt-1">Klik tombol tambah untuk membuat baru.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {requests.map((req: any) => (
-              <div 
-                key={req.id} 
-                onClick={() => navigate(getDetailPath(req.id))}
-                className="bg-background border rounded-xl p-5 hover:shadow-md transition-all cursor-pointer hover:border-primary/30 flex flex-col group"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="space-y-1.5">
-                    <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{req.code}</h3>
-                    {getTypeBadge(req.type)}
-                  </div>
-                  {getStatusBadge(req.status)}
-                </div>
-
-                <div className="space-y-3 mb-4 flex-1">
-                  <div className="text-sm bg-muted/50 p-3 rounded-lg border border-border/50">
-                    <p className="text-muted-foreground text-xs mb-1">Ditujukan / Dari:</p>
-                    <p className="font-semibold text-foreground">
-                      {req.sales_full_name || req.sales_username || "Semua Sales (Broadcast)"}
-                    </p>
-                  </div>
-                  
-                  <div className="flex gap-4 text-sm px-1">
-                    <div>
-                      <p className="text-muted-foreground text-xs">Total Item</p>
-                      <p className="font-bold">{req.item_count} SKU</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs">Total Qty</p>
-                      <p className="font-bold">{req.total_qty} pcs</p>
-                    </div>
-                  </div>
-                </div>
-
-                {req.priority === "urgent" && (
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 p-2 rounded-lg border border-red-100 mt-auto">
-                    <AlertCircle size={14} /> Mendesak
-                  </div>
-                )}
-                
-                <div className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border/50 flex justify-between">
-                  <span>{new Date(req.created_at).toLocaleDateString('id-ID')}</span>
-                  <span className="text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">Lihat Detail →</span>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-xl border border-border/50 bg-background">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+                <tr>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Kode</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Tanggal</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Tipe</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Ditujukan / Dari</th>
+                  <th className="px-6 py-4 font-semibold text-center whitespace-nowrap">Item (Qty)</th>
+                  <th className="px-6 py-4 font-semibold text-center whitespace-nowrap">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((req: any) => (
+                  <tr 
+                    key={req.id} 
+                    onClick={() => navigate(getDetailPath(req.id))}
+                    className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors cursor-pointer group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                        {req.code}
+                        {req.priority === "urgent" && (
+                          <AlertCircle size={14} className="text-red-500" title="Mendesak" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground whitespace-nowrap">
+                      {new Date(req.created_at).toLocaleDateString('id-ID')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getTypeBadge(req.type)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="font-semibold text-foreground">
+                        {req.agen_name ? `Agen: ${req.agen_name}` : (req.sales_full_name || req.sales_username || "Semua Sales (Broadcast)")}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="font-bold">{req.item_count} SKU</span>
+                        <span className="text-xs text-muted-foreground">{req.total_qty} pcs</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                      {getStatusBadge(req.status)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

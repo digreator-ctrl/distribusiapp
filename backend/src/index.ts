@@ -401,7 +401,7 @@ app.get('/api/stock-requests', async (c) => {
       (SELECT COALESCE(SUM(i.quantity), 0) FROM stock_request_items i WHERE i.request_id = sr.id) as total_qty
     FROM stock_requests sr
     LEFT JOIN users u ON sr.sales_id = u.id
-    LEFT JOIN stores a ON sr.agen_id = a.id
+    LEFT JOIN agents a ON sr.agen_id = a.id
     WHERE ${where.join(' AND ')}
     ORDER BY sr.created_at DESC
   `).bind(...params).all()
@@ -417,7 +417,7 @@ app.get('/api/stock-requests/:id', async (c) => {
       a.name as agen_name
     FROM stock_requests sr
     LEFT JOIN users u ON sr.sales_id = u.id
-    LEFT JOIN stores a ON sr.agen_id = a.id
+    LEFT JOIN agents a ON sr.agen_id = a.id
     WHERE sr.id = ?
   `).bind(id).first()
   if (!request) return c.json({ message: 'Not found' }, 404)
