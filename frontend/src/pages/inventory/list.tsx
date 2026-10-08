@@ -27,7 +27,7 @@ export const InventoryList = () => {
               <div className="bg-primary/10 p-2 rounded-xl text-primary">
                 <BarChart3 size={24} />
               </div>
-              Katalog & Stok Gudang
+              Stok Gudang
             </h1>
             <p className="text-muted-foreground mt-2 text-sm md:text-base">
               Pantau total stok riil dari setiap varian produk yang tersedia di gudang saat ini.

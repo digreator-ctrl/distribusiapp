@@ -11,6 +11,7 @@ export const InboundCreate = () => {
   const [products, setProducts] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     product_id: "",
+    variant_id: "",
     source_type: "internal",
     quantity: "",
     production_date: new Date().toISOString().split('T')[0],
@@ -33,6 +34,7 @@ export const InboundCreate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.production_date) newErrors.production_date = "Tanggal Stok Masuk wajib diisi";
     if (!formData.product_id) newErrors.product_id = "Produk wajib dipilih";
+    if (!formData.variant_id) newErrors.variant_id = "Varian wajib dipilih";
     if (!formData.quantity) newErrors.quantity = "Jumlah Stok wajib diisi";
     if (!formData.expired_date) newErrors.expired_date = "Tanggal Kedaluwarsa wajib diisi";
 
@@ -132,7 +134,7 @@ export const InboundCreate = () => {
           <select 
             value={formData.product_id}
             onChange={e => {
-              setFormData({...formData, product_id: e.target.value});
+              setFormData({...formData, product_id: e.target.value, variant_id: ""});
               if (e.target.value) setErrors(prev => ({...prev, product_id: ""}));
             }}
             className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
@@ -148,6 +150,30 @@ export const InboundCreate = () => {
           </select>
           {errors.product_id && <p className="text-red-500 text-xs mt-1">{errors.product_id}</p>}
         </div>
+
+        {formData.product_id && (
+          <div>
+            <label className="block text-sm font-semibold mb-1">Pilih Varian *</label>
+            <select 
+              value={formData.variant_id}
+              onChange={e => {
+                setFormData({...formData, variant_id: e.target.value});
+                if (e.target.value) setErrors(prev => ({...prev, variant_id: ""}));
+              }}
+              className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
+                errors.variant_id ? 'border-red-500 focus:ring-red-500/50' : 'focus:ring-primary/50'
+              }`}
+            >
+              <option value="" disabled>-- Pilih Varian --</option>
+              {products.find(p => p.id === formData.product_id)?.variants?.map((v: any) => (
+                <option key={v.id} value={v.id}>
+                  {v.name} {v.sku ? `(SKU: ${v.sku})` : ''}
+                </option>
+              ))}
+            </select>
+            {errors.variant_id && <p className="text-red-500 text-xs mt-1">{errors.variant_id}</p>}
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-semibold mb-1">Jumlah Stok (Qty) *</label>

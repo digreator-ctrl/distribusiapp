@@ -15,6 +15,33 @@ app.use('*', cors({
 
 app.get('/', (c) => c.text('Distribusi App API is running!'))
 
+// Endpoint untuk migrasi sementara
+app.get('/api/_migrate', async (c) => {
+  try {
+    await c.env.DB.prepare('ALTER TABLE inbound_batches ADD COLUMN variant_id TEXT').run()
+  } catch (e) { console.log('variant_id may already exist') }
+  try {
+    await c.env.DB.prepare('ALTER TABLE inbound_batches ADD COLUMN current_quantity INTEGER DEFAULT 0').run()
+  } catch (e) { console.log('current_quantity may already exist') }
+  try {
+    // Set default current_quantity = quantity if existing
+    await c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = quantity WHERE current_quantity IS NULL OR current_quantity = 0').run()
+  } catch (e) { console.log('update failed') }
+  
+  // Fix old data: assign the first variant_id of the product to the batch if variant_id is null
+  try {
+    const { results: batches } = await c.env.DB.prepare('SELECT id, product_id FROM inbound_batches WHERE variant_id IS NULL').all()
+    for (const batch of batches) {
+      const { results: variants } = await c.env.DB.prepare('SELECT id FROM product_variants WHERE product_id = ?').bind(batch.product_id).all()
+      if (variants && variants.length > 0) {
+        await c.env.DB.prepare('UPDATE inbound_batches SET variant_id = ? WHERE id = ?').bind(variants[0].id, batch.id).run()
+      }
+    }
+  } catch (e) { console.log('Fix old data failed', e) }
+  
+  return c.json({ message: 'Migration and data fix applied' })
+})
+
 // ==========================================
 // PRODUCTS API (Refine Simple REST Provider)
 // ==========================================
@@ -128,9 +155,10 @@ app.get('/api/inbound_batches', async (c) => {
   const totalCount = countResult ? (countResult.count as number) : 0
   
   const { results } = await c.env.DB.prepare(`
-    SELECT ib.*, p.name as product_name, s.name as supplier_name 
+    SELECT ib.*, p.name as product_name, pv.name as variant_name, s.name as supplier_name 
     FROM inbound_batches ib 
     LEFT JOIN products p ON ib.product_id = p.id 
+    LEFT JOIN product_variants pv ON ib.variant_id = pv.id
     LEFT JOIN suppliers s ON p.supplier_id = s.id
     WHERE ib.tenant_id = ? 
     ORDER BY ib.created_at DESC
@@ -147,8 +175,8 @@ app.post('/api/inbound_batches', async (c) => {
   
   try {
     await c.env.DB.prepare(
-      'INSERT INTO inbound_batches (id, tenant_id, product_id, source_type, quantity, production_date, expired_date) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, tenant_id, body.product_id, body.source_type, body.quantity, body.production_date, body.expired_date).run()
+      'INSERT INTO inbound_batches (id, tenant_id, product_id, variant_id, source_type, quantity, current_quantity, production_date, expired_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(id, tenant_id, body.product_id, body.variant_id || null, body.source_type, body.quantity, body.quantity, body.production_date, body.expired_date).run()
     
     const batch = await c.env.DB.prepare('SELECT * FROM inbound_batches WHERE id = ?').bind(id).first()
     return c.json(batch, 201)
@@ -161,9 +189,10 @@ app.post('/api/inbound_batches', async (c) => {
 app.get('/api/inbound_batches/:id', async (c) => {
   const id = c.req.param('id')
   const batch = await c.env.DB.prepare(`
-    SELECT ib.*, p.name as product_name, s.name as supplier_name 
+    SELECT ib.*, p.name as product_name, pv.name as variant_name, s.name as supplier_name 
     FROM inbound_batches ib 
     LEFT JOIN products p ON ib.product_id = p.id 
+    LEFT JOIN product_variants pv ON ib.variant_id = pv.id
     LEFT JOIN suppliers s ON p.supplier_id = s.id
     WHERE ib.id = ?
   `).bind(id).first()
@@ -602,6 +631,7 @@ app.get('/api/inventory', async (c) => {
     `).bind(tenant_id).all()
     
     // We map id to the variant_id for Refine data provider (requires id)
+    c.header('x-total-count', String(results.length))
     return c.json(results)
   } catch (error: any) {
     return c.json({ message: 'DB Error', error: error.message }, 500)

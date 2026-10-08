@@ -184,7 +184,10 @@ export const InboundList = () => {
                     className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4 font-medium">{new Date(batch.production_date).toLocaleDateString('id-ID')}</td>
-                    <td className="px-6 py-4 font-semibold">{batch.product_name || batch.product_id}</td>
+                    <td className="px-6 py-4 font-semibold">
+                      {batch.product_name || batch.product_id}
+                      {batch.variant_name && <span className="text-muted-foreground ml-1 text-xs">({batch.variant_name})</span>}
+                    </td>
                     <td className="px-6 py-4">
                       {batch.supplier_name ? (
                         <span className="text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-100">{batch.supplier_name}</span>
