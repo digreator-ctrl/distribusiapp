@@ -98,8 +98,42 @@ app.get('/api/products/:id', async (c) => {
     WHERE pv.product_id = ?
     ORDER BY c.created_at DESC
   `).bind(id).all()
+
+  // Ambil riwayat stok masuk (inbound batches)
+  const { results: inbound_batches } = await c.env.DB.prepare(`
+    SELECT ib.*, pv.name as variant_name, COALESCE(s.name, 'Internal') as supplier_name
+    FROM inbound_batches ib
+    LEFT JOIN product_variants pv ON ib.variant_id = pv.id
+    LEFT JOIN products p ON ib.product_id = p.id
+    LEFT JOIN suppliers s ON p.supplier_id = s.id
+    WHERE ib.product_id = ?
+    ORDER BY ib.production_date DESC, ib.created_at DESC
+  `).bind(id).all()
+
+  // Ambil riwayat stok keluar (distribusi stock requests yang approved)
+  const { results: outbound_history } = await c.env.DB.prepare(`
+    SELECT 
+      sri.id,
+      sr.code as request_code,
+      sr.type,
+      sr.target_type,
+      sr.distribution_date,
+      sr.created_at,
+      sr.status,
+      COALESCE(sri.approved_quantity, sri.quantity) as quantity,
+      pv.name as variant_name,
+      COALESCE(u.full_name, u.username, a.name, 'Gudang') as recipient_name,
+      sr.note
+    FROM stock_request_items sri
+    JOIN stock_requests sr ON sri.request_id = sr.id
+    JOIN product_variants pv ON sri.variant_id = pv.id
+    LEFT JOIN users u ON sr.sales_id = u.id
+    LEFT JOIN agents a ON sr.agen_id = a.id
+    WHERE pv.product_id = ? AND sr.status = 'approved'
+    ORDER BY sr.distribution_date DESC, sr.created_at DESC
+  `).bind(id).all()
   
-  return c.json({ ...product, variants, transactions })
+  return c.json({ ...product, variants, transactions, inbound_batches, outbound_history })
 })
 
 app.post('/api/products', async (c) => {
@@ -616,17 +650,21 @@ app.get('/api/inventory', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(`
       SELECT 
-        pv.id as id,
+        COALESCE(pv.id, p.id) as id,
+        p.id as product_id,
         p.name as product_name,
         p.category,
+        p.brand,
+        COALESCE(s.name, 'Internal') as supplier_name,
         pv.name as variant_name,
         pv.sku,
         COALESCE(SUM(ib.current_quantity), 0) as total_stock
-      FROM product_variants pv
-      JOIN products p ON pv.product_id = p.id
+      FROM products p
+      LEFT JOIN product_variants pv ON pv.product_id = p.id
+      LEFT JOIN suppliers s ON p.supplier_id = s.id
       LEFT JOIN inbound_batches ib ON ib.variant_id = pv.id
       WHERE p.tenant_id = ?
-      GROUP BY pv.id, p.name, p.category, pv.name, pv.sku
+      GROUP BY pv.id, p.id, p.name, p.category, p.brand, s.name, pv.name, pv.sku
       ORDER BY p.name ASC, pv.name ASC
     `).bind(tenant_id).all()
     

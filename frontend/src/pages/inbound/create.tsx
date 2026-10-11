@@ -66,6 +66,10 @@ export const InboundCreate = () => {
         resource: "inbound_batches",
         invalidates: ["list"],
       });
+      invalidate({
+        resource: "inventory",
+        invalidates: ["list"],
+      });
       
       navigate("/inbound_batches", { state: { successMessage: "Berhasil mencatat stok masuk!" } });
     } catch (err) {

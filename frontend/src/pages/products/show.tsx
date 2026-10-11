@@ -35,11 +35,20 @@ export const ProductShow = () => {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") === "transactions" ? "transactions" : "detail");
+  const currentTabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    currentTabFromUrl === "stock-history" ? "stock-history" :
+    currentTabFromUrl === "transactions" ? "transactions" : "detail"
+  );
+  const [stockSubTab, setStockSubTab] = useState<"inbound" | "outbound">("inbound");
   
   // Update state if URL changes
   useEffect(() => {
-    setActiveTab(searchParams.get("tab") === "transactions" ? "transactions" : "detail");
+    const tab = searchParams.get("tab");
+    setActiveTab(
+      tab === "stock-history" ? "stock-history" :
+      tab === "transactions" ? "transactions" : "detail"
+    );
   }, [searchParams]);
 
   const userRole = localStorage.getItem("distribusi_role") || "admin";
@@ -96,6 +105,10 @@ export const ProductShow = () => {
   if (isLoading) return <div className="py-20 text-center text-muted-foreground animate-pulse">Memuat detail produk...</div>;
   if (error) return <div className="py-20 text-center text-red-500 font-semibold">{error}</div>;
   if (!product) return null;
+
+  const currentTotalStock = (product.inbound_batches || []).reduce((acc: number, curr: any) => acc + (Number(curr.current_quantity) || 0), 0);
+  const totalInboundQty = (product.inbound_batches || []).reduce((acc: number, curr: any) => acc + (Number(curr.quantity) || 0), 0);
+  const totalOutboundQty = (product.outbound_history || []).reduce((acc: number, curr: any) => acc + (Number(curr.quantity) || 0), 0);
 
   return (
     <>
@@ -157,16 +170,22 @@ export const ProductShow = () => {
       </div>
       
       {/* Tabs Navigation */}
-      <div className="flex items-center gap-6 border-b px-2">
+      <div className="flex items-center gap-6 border-b px-2 overflow-x-auto">
         <button 
           onClick={() => setActiveTab('detail')} 
-          className={`pb-3 text-sm font-bold border-b-2 transition-all ${activeTab === 'detail' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+          className={`pb-3 text-sm font-bold border-b-2 whitespace-nowrap transition-all ${activeTab === 'detail' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
-          Informasi Detail
+          Informasi Detail Produk
+        </button>
+        <button 
+          onClick={() => setActiveTab('stock-history')} 
+          className={`pb-3 text-sm font-bold border-b-2 whitespace-nowrap transition-all ${activeTab === 'stock-history' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+        >
+          Riwayat Stok (Masuk & Keluar)
         </button>
         <button 
           onClick={() => setActiveTab('transactions')} 
-          className={`pb-3 text-sm font-bold border-b-2 transition-all ${activeTab === 'transactions' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+          className={`pb-3 text-sm font-bold border-b-2 whitespace-nowrap transition-all ${activeTab === 'transactions' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
         >
           Riwayat Transaksi Penjualan
         </button>
@@ -299,6 +318,171 @@ export const ProductShow = () => {
           </div>
         </div>
       </div>
+        </div>
+      )}
+
+      {activeTab === 'stock-history' && (
+        <div className="space-y-4">
+          {/* Header & Sub-Tab Switcher */}
+          <div className="bg-card p-5 rounded-2xl border shadow-sm">
+            <div className="pb-4 border-b">
+              {/* Ringkasan Ringkas */}
+              <div className="flex flex-wrap items-center gap-6 text-sm">
+                <div>
+                  <span className="text-xs text-muted-foreground block">Stok Gudang Saat Ini</span>
+                  <span className="text-xl font-black text-foreground">{currentTotalStock.toLocaleString("id-ID")} pcs</span>
+                </div>
+                <div className="border-l pl-4">
+                  <span className="text-xs text-muted-foreground block">Total Masuk</span>
+                  <span className="text-base font-bold text-blue-600">{totalInboundQty.toLocaleString("id-ID")} pcs</span>
+                </div>
+                <div className="border-l pl-4">
+                  <span className="text-xs text-muted-foreground block">Total Keluar</span>
+                  <span className="text-base font-bold text-amber-600">{totalOutboundQty.toLocaleString("id-ID")} pcs</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-Tab Navigation (Pill Style yang Ringkas & Hemat Tempat) */}
+            <div className="flex items-center gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => setStockSubTab("inbound")}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                  stockSubTab === "inbound"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Stok Masuk ({product.inbound_batches?.length || 0})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStockSubTab("outbound")}
+                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                  stockSubTab === "outbound"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Stok Keluar ({product.outbound_history?.length || 0})
+              </button>
+            </div>
+          </div>
+
+          {/* Sub-Tab 1: Stok Masuk */}
+          {stockSubTab === "inbound" && (
+            <div className="bg-card p-5 rounded-2xl border shadow-sm">
+              <div className="mb-3">
+                <h3 className="font-bold text-base text-foreground">Riwayat Stok Masuk (Inbound)</h3>
+                <p className="text-xs text-muted-foreground">Daftar penerimaan stok fisik ke gudang utama beserta sisa kuantitas per batch.</p>
+              </div>
+
+              {(!product.inbound_batches || product.inbound_batches.length === 0) ? (
+                <div className="text-center py-10 bg-muted/10 border border-dashed rounded-xl">
+                  <p className="text-sm text-muted-foreground">Belum ada riwayat stok masuk untuk produk ini.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-border/60">
+                  <table className="w-full text-sm text-left border-collapse">
+                    <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border/60">
+                      <tr>
+                        <th className="px-4 py-2.5 font-semibold">Tgl Masuk</th>
+                        <th className="px-4 py-2.5 font-semibold">Varian</th>
+                        <th className="px-4 py-2.5 font-semibold">Sumber / Supplier</th>
+                        <th className="px-4 py-2.5 font-semibold text-right">Qty Masuk</th>
+                        <th className="px-4 py-2.5 font-semibold text-right">Sisa Stok</th>
+                        <th className="px-4 py-2.5 font-semibold">Kedaluwarsa</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50">
+                      {product.inbound_batches.map((batch: any) => (
+                        <tr key={batch.id} className="hover:bg-muted/40 transition-colors">
+                          <td className="px-4 py-2 font-medium">
+                            {batch.production_date ? new Date(batch.production_date).toLocaleDateString("id-ID") : "-"}
+                          </td>
+                          <td className="px-4 py-2 font-medium text-foreground">
+                            {batch.variant_name || "-"}
+                          </td>
+                          <td className="px-4 py-2 text-muted-foreground">
+                            {batch.supplier_name || (batch.source_type === "rekanan" ? "Rekanan" : "Internal")}
+                          </td>
+                          <td className="px-4 py-2 text-right font-medium">
+                            {Number(batch.quantity).toLocaleString("id-ID")} pcs
+                          </td>
+                          <td className="px-4 py-2 text-right font-bold text-foreground">
+                            {Number(batch.current_quantity ?? batch.quantity).toLocaleString("id-ID")} pcs
+                          </td>
+                          <td className="px-4 py-2 text-muted-foreground text-xs font-mono">
+                            {batch.expired_date ? new Date(batch.expired_date).toLocaleDateString("id-ID") : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Sub-Tab 2: Stok Keluar */}
+          {stockSubTab === "outbound" && (
+            <div className="bg-card p-5 rounded-2xl border shadow-sm">
+              <div className="mb-3">
+                <h3 className="font-bold text-base text-foreground">Riwayat Stok Keluar (Distribusi)</h3>
+                <p className="text-xs text-muted-foreground">Daftar pengeluaran stok yang telah disetujui untuk distribusi agen atau sales.</p>
+              </div>
+
+              {(!product.outbound_history || product.outbound_history.length === 0) ? (
+                <div className="text-center py-10 bg-muted/10 border border-dashed rounded-xl">
+                  <p className="text-sm text-muted-foreground">Belum ada riwayat stok keluar / distribusi untuk produk ini.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-border/60">
+                  <table className="w-full text-sm text-left border-collapse">
+                    <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b border-border/60">
+                      <tr>
+                        <th className="px-4 py-2.5 font-semibold">Tgl Keluar</th>
+                        <th className="px-4 py-2.5 font-semibold">No. Ref</th>
+                        <th className="px-4 py-2.5 font-semibold">Varian</th>
+                        <th className="px-4 py-2.5 font-semibold">Penerima</th>
+                        <th className="px-4 py-2.5 font-semibold">Tipe</th>
+                        <th className="px-4 py-2.5 font-semibold text-right">Qty Keluar</th>
+                        <th className="px-4 py-2.5 font-semibold">Catatan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50">
+                      {product.outbound_history.map((item: any) => (
+                        <tr key={item.id} className="hover:bg-muted/40 transition-colors">
+                          <td className="px-4 py-2 font-medium">
+                            {item.distribution_date ? new Date(item.distribution_date).toLocaleDateString("id-ID") : new Date(item.created_at).toLocaleDateString("id-ID")}
+                          </td>
+                          <td className="px-4 py-2 font-mono text-xs text-primary font-semibold">
+                            {item.request_code || "-"}
+                          </td>
+                          <td className="px-4 py-2 font-medium text-foreground">
+                            {item.variant_name || "-"}
+                          </td>
+                          <td className="px-4 py-2 font-medium text-foreground">
+                            {item.recipient_name || "-"}
+                          </td>
+                          <td className="px-4 py-2 text-xs text-muted-foreground">
+                            {item.target_type === "agen" ? "Mitra Agen" : item.target_type === "sales" ? "Tim Sales" : "Distribusi"}
+                          </td>
+                          <td className="px-4 py-2 text-right font-bold text-amber-700">
+                            -{Number(item.quantity).toLocaleString("id-ID")} pcs
+                          </td>
+                          <td className="px-4 py-2 text-xs text-muted-foreground max-w-xs truncate" title={item.note || ""}>
+                            {item.note || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
