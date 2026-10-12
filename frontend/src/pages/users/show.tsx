@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { User as UserIcon, ArrowLeft, Shield, MapPin, Phone, Calendar, Hash, Edit3, Trash2 } from "lucide-react";
+import { User as UserIcon, ArrowLeft, Shield, MapPin, Phone, Calendar, Edit3, Trash2 } from "lucide-react";
 import { ConfirmModal } from "../../components/ConfirmModal";
 
 const API_URL = "http://localhost:8787/api";

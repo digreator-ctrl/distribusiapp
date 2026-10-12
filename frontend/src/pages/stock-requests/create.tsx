@@ -37,7 +37,7 @@ export const StockRequestCreate = () => {
   const isSales = role === "sales";
   
   // Tipe default jika Admin = recommendation, jika Sales = request
-  const [type, setType] = useState(isSales ? "request" : "recommendation");
+  const type = isSales ? "request" : "recommendation";
   const [targetType, setTargetType] = useState("sales"); // sales atau agen
   const [note, setNote] = useState("");
   const [salesId, setSalesId] = useState("");

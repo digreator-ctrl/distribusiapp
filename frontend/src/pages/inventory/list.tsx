@@ -160,6 +160,7 @@ export const InventoryList = () => {
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                 <tr>
                   <th className="px-6 py-4 font-semibold">Nama Produk</th>
+                  <th className="px-6 py-4 font-semibold">Varian</th>
                   <th className="px-6 py-4 font-semibold">Kategori</th>
                   <th className="px-6 py-4 font-semibold">Supplier</th>
                   <th className="px-6 py-4 font-semibold">Merk</th>
@@ -169,7 +170,7 @@ export const InventoryList = () => {
               <tbody>
                 {paginatedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
                       {items.length === 0 ? "Belum ada data stok gudang." : "Tidak ada data yang cocok dengan pencarian/filter."}
                     </td>
                   </tr>
@@ -182,10 +183,19 @@ export const InventoryList = () => {
                     >
                       <td className="px-6 py-4 font-semibold">
                         {item.product_name}
-                        {item.variant_name && (
-                          <span className="text-muted-foreground ml-1 text-xs font-normal">
-                            ({item.variant_name})
+                      </td>
+                      <td className="px-6 py-4 font-medium text-foreground">
+                        {item.variant_name ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span>{item.variant_name}</span>
+                            {item.sku && (
+                              <span className="text-[11px] text-muted-foreground font-mono">
+                                ({item.sku})
+                              </span>
+                            )}
                           </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs italic">-</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">

@@ -28,6 +28,24 @@ export const InboundCreate = () => {
       .catch(console.error);
   }, []);
 
+  const handleProductChange = (productId: string) => {
+    const selectedProd = products.find(p => p.id === productId);
+    let autoVariantId = "";
+    if (selectedProd?.variants?.length === 1) {
+      autoVariantId = selectedProd.variants[0].id;
+    }
+    setFormData(prev => ({
+      ...prev,
+      product_id: productId,
+      variant_id: autoVariantId,
+    }));
+    setErrors(prev => ({
+      ...prev,
+      product_id: "",
+      variant_id: autoVariantId ? "" : prev.variant_id,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -90,12 +108,15 @@ export const InboundCreate = () => {
     }
   };
 
+  const selectedProduct = products.find(p => p.id === formData.product_id);
+  const availableVariants = selectedProduct?.variants || [];
+
   return (
     <div className="bg-card p-8 rounded-2xl border shadow-sm">
       <div className="flex justify-between items-center mb-6 border-b pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Catat Stok Masuk</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Tambahkan stok baru ke dalam gudang utama.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Tambahkan stok baru ke dalam gudang utama per varian produk.</p>
         </div>
         <button onClick={() => navigate("/inbound_batches")} className="px-4 py-2 border rounded-md font-medium shadow-sm hover:bg-muted transition">
           Kembali
@@ -137,10 +158,7 @@ export const InboundCreate = () => {
           <label className="block text-sm font-semibold mb-1">Pilih Produk *</label>
           <select 
             value={formData.product_id}
-            onChange={e => {
-              setFormData({...formData, product_id: e.target.value, variant_id: ""});
-              if (e.target.value) setErrors(prev => ({...prev, product_id: ""}));
-            }}
+            onChange={e => handleProductChange(e.target.value)}
             className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
               errors.product_id ? 'border-red-500 focus:ring-red-500/50' : 'focus:ring-primary/50'
             }`}
@@ -148,36 +166,39 @@ export const InboundCreate = () => {
             <option value="" disabled>-- Pilih Produk --</option>
             {products.map(p => (
               <option key={p.id} value={p.id}>
-                {p.name} {p.category ? `- ${p.category} ` : ''}- {p.supplier_name || 'Internal'}
+                {p.name} - {p.category || '-'} - {p.supplier_name || 'Internal'}
               </option>
             ))}
           </select>
           {errors.product_id && <p className="text-red-500 text-xs mt-1">{errors.product_id}</p>}
         </div>
 
-        {formData.product_id && (
-          <div>
-            <label className="block text-sm font-semibold mb-1">Pilih Varian *</label>
-            <select 
-              value={formData.variant_id}
-              onChange={e => {
-                setFormData({...formData, variant_id: e.target.value});
-                if (e.target.value) setErrors(prev => ({...prev, variant_id: ""}));
-              }}
-              className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
-                errors.variant_id ? 'border-red-500 focus:ring-red-500/50' : 'focus:ring-primary/50'
-              }`}
-            >
-              <option value="" disabled>-- Pilih Varian --</option>
-              {products.find(p => p.id === formData.product_id)?.variants?.map((v: any) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} {v.sku ? `(SKU: ${v.sku})` : ''}
-                </option>
-              ))}
-            </select>
-            {errors.variant_id && <p className="text-red-500 text-xs mt-1">{errors.variant_id}</p>}
-          </div>
-        )}
+        <div>
+          <label className="block text-sm font-semibold mb-1">Pilih Varian *</label>
+          <select 
+            value={formData.variant_id}
+            disabled={!formData.product_id}
+            onChange={e => {
+              setFormData({...formData, variant_id: e.target.value});
+              if (e.target.value) setErrors(prev => ({...prev, variant_id: ""}));
+            }}
+            className={`w-full p-3 rounded-lg border focus:ring-2 outline-none bg-background transition ${
+              !formData.product_id ? 'opacity-60 cursor-not-allowed bg-muted/30' : ''
+            } ${
+              errors.variant_id ? 'border-red-500 focus:ring-red-500/50' : 'focus:ring-primary/50'
+            }`}
+          >
+            <option value="" disabled>
+              {formData.product_id ? "-- Pilih Varian --" : "-- Pilih Produk Terlebih Dahulu --"}
+            </option>
+            {availableVariants.map((v: any) => (
+              <option key={v.id} value={v.id}>
+                {v.name} {v.sku ? `(SKU: ${v.sku})` : ''}
+              </option>
+            ))}
+          </select>
+          {errors.variant_id && <p className="text-red-500 text-xs mt-1">{errors.variant_id}</p>}
+        </div>
 
         <div>
           <label className="block text-sm font-semibold mb-1">Jumlah Stok (Qty) *</label>

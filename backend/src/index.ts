@@ -7,6 +7,11 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+app.onError((err, c) => {
+  console.error('API Error:', err)
+  return c.json({ error: err.message, stack: err.stack }, 500)
+})
+
 // Refine membutuhkan CORS untuk mengakses API
 app.use('*', cors({
   origin: '*', // Pada produksi sebaiknya disesuaikan dengan URL frontend
@@ -61,14 +66,31 @@ app.get('/api/products', async (c) => {
     ORDER BY p.created_at DESC
   `).bind(tenant_id).all()
   
-  // Ambil semua varian untuk produk-produk ini
-  const { results: variants } = await c.env.DB.prepare('SELECT * FROM product_variants WHERE product_id IN (SELECT id FROM products WHERE tenant_id = ?)').bind(tenant_id).all()
+  // Ambil semua varian untuk produk-produk ini beserta stok terkini di gudang
+  const { results: variants } = await c.env.DB.prepare(`
+    SELECT pv.*, 
+      COALESCE((SELECT SUM(ib.current_quantity) FROM inbound_batches ib WHERE ib.variant_id = pv.id), 0) as current_stock
+    FROM product_variants pv 
+    WHERE pv.product_id IN (SELECT id FROM products WHERE tenant_id = ?)
+  `).bind(tenant_id).all()
   
-  // Gabungkan varian ke dalam produk
-  const formattedProducts = products.map((p: any) => ({
-    ...p,
-    variants: variants.filter((v: any) => v.product_id === p.id)
-  }))
+  // Gabungkan varian ke dalam produk (pastikan selalu ada minimal 1 varian)
+  const formattedProducts = products.map((p: any) => {
+    let pVariants = variants.filter((v: any) => v.product_id === p.id)
+    if (pVariants.length === 0) {
+      pVariants = [{
+        id: p.id,
+        product_id: p.id,
+        name: 'Standar',
+        sku: null,
+        current_stock: 0
+      }]
+    }
+    return {
+      ...p,
+      variants: pVariants
+    }
+  })
   
   c.header('x-total-count', totalCount.toString())
   return c.json(formattedProducts)
@@ -85,8 +107,13 @@ app.get('/api/products/:id', async (c) => {
   
   if (!product) return c.json({ message: 'Not found' }, 404)
   
-  // Ambil varian produk ini
-  const { results: variants } = await c.env.DB.prepare('SELECT * FROM product_variants WHERE product_id = ?').bind(id).all()
+  // Ambil varian produk ini beserta stok terkini
+  const { results: variants } = await c.env.DB.prepare(`
+    SELECT pv.*, 
+      COALESCE((SELECT SUM(ib.current_quantity) FROM inbound_batches ib WHERE ib.variant_id = pv.id), 0) as current_stock
+    FROM product_variants pv 
+    WHERE pv.product_id = ?
+  `).bind(id).all()
   
   // Ambil transaksi (konsinyasi) terkait produk ini
   const { results: transactions } = await c.env.DB.prepare(`
@@ -146,14 +173,19 @@ app.post('/api/products', async (c) => {
     'INSERT INTO products (id, tenant_id, name, category, brand, base_production_price, base_sales_price, base_agent_price, supplier_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
   ).bind(id, tenant_id, body.name, body.category || null, body.brand || null, body.base_production_price, body.base_sales_price, body.base_agent_price, body.supplier_id || null).run()
   
-  // Insert Varian (jika ada)
-  if (body.variants && Array.isArray(body.variants)) {
+  // Insert Varian (jika ada, atau buat varian default Standar jika kosong)
+  if (body.variants && Array.isArray(body.variants) && body.variants.length > 0) {
     for (const v of body.variants) {
       const v_id = crypto.randomUUID()
       await c.env.DB.prepare(
         'INSERT INTO product_variants (id, product_id, sku, name, override_production_price, override_sales_price, override_agent_price) VALUES (?, ?, ?, ?, ?, ?, ?)'
       ).bind(v_id, id, v.sku || null, v.name, v.override_production_price || null, v.override_sales_price || null, v.override_agent_price || null).run()
     }
+  } else {
+    const v_id = crypto.randomUUID()
+    await c.env.DB.prepare(
+      'INSERT INTO product_variants (id, product_id, sku, name) VALUES (?, ?, ?, ?)'
+    ).bind(v_id, id, null, 'Standar').run()
   }
   
   const product = await c.env.DB.prepare('SELECT * FROM products WHERE id = ?').bind(id).first()
@@ -270,6 +302,51 @@ app.post('/api/agents', async (c) => {
     
     const agent = await c.env.DB.prepare('SELECT * FROM agents WHERE id = ?').bind(id).first()
     return c.json(agent, 201)
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+app.get('/api/agents/:id', async (c) => {
+  const id = c.req.param('id')
+  const agent = await c.env.DB.prepare('SELECT * FROM agents WHERE id = ?').bind(id).first()
+  
+  if (!agent) return c.json({ message: 'Not found' }, 404)
+  
+  // Ambil riwayat distribusi stok ke agen ini
+  const { results: distributions } = await c.env.DB.prepare(`
+    SELECT sr.*,
+      (SELECT COUNT(*) FROM stock_request_items i WHERE i.request_id = sr.id) as item_count,
+      (SELECT COALESCE(SUM(i.quantity), 0) FROM stock_request_items i WHERE i.request_id = sr.id) as total_qty
+    FROM stock_requests sr
+    WHERE sr.agen_id = ?
+    ORDER BY sr.distribution_date DESC, sr.created_at DESC
+  `).bind(id).all()
+  
+  return c.json({ ...agent, distributions })
+})
+
+app.put('/api/agents/:id', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json()
+  
+  try {
+    await c.env.DB.prepare(
+      'UPDATE agents SET name = ?, contact = ?, status = ?, notes = ? WHERE id = ?'
+    ).bind(body.name, body.contact, body.status || 'Aktif', body.notes || null, id).run()
+    
+    const agent = await c.env.DB.prepare('SELECT * FROM agents WHERE id = ?').bind(id).first()
+    return c.json(agent)
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+app.delete('/api/agents/:id', async (c) => {
+  const id = c.req.param('id')
+  try {
+    await c.env.DB.prepare('DELETE FROM agents WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
   } catch (error: any) {
     return c.json({ error: error.message }, 500)
   }

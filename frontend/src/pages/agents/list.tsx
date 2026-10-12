@@ -92,8 +92,12 @@ export const AgentList = () => {
                   </tr>
                 ) : (
                   agents.map((agent: any) => (
-                    <tr key={agent.id} className="border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer">
-                      <td className="px-6 py-4 font-semibold">{agent.name}</td>
+                    <tr 
+                      key={agent.id} 
+                      onClick={() => navigate(`/agents/${agent.id}`)}
+                      className="border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-4 font-semibold text-primary hover:underline">{agent.name}</td>
                       <td className="px-6 py-4">{agent.contact}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${

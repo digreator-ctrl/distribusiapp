@@ -57,8 +57,11 @@ export const InboundShow = () => {
             <p className="font-medium text-lg">{new Date(batch.production_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Produk</h3>
-            <p className="font-medium text-lg">{batch.product_name || batch.product_id}</p>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Produk & Varian</h3>
+            <p className="font-medium text-lg">
+              {batch.product_name || batch.product_id}
+              {batch.variant_name && <span className="text-muted-foreground text-base ml-2">({batch.variant_name})</span>}
+            </p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Supplier</h3>

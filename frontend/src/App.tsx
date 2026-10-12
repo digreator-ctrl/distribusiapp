@@ -1,6 +1,6 @@
 import { Refine, Authenticated } from "@refinedev/core";
 import dataProvider from "@refinedev/simple-rest";
-import { BrowserRouter, Route, Routes, Outlet, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import routerProvider, { CatchAllNavigate, NavigateToResource } from "@refinedev/react-router-v6";
 
 import { authProvider } from "./providers/authProvider";
@@ -28,6 +28,8 @@ import { StockRequestCreate } from "./pages/stock-requests/create";
 import { StockRequestShow } from "./pages/stock-requests/show";
 import { AgentList } from "./pages/agents/list";
 import { AgentCreate } from "./pages/agents/create";
+import { AgentShow } from "./pages/agents/show";
+import { AgentEdit } from "./pages/agents/edit";
 import { InventoryList } from "./pages/inventory/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { MobileFieldActivity } from "./pages/sales/field-activity";
@@ -41,7 +43,7 @@ function App() {
   return (
     <BrowserRouter>
       <Refine
-        routerProvider={routerProvider}
+        routerProvider={routerProvider as any}
         dataProvider={dataProvider(API_URL)}
         authProvider={authProvider}
         resources={[
@@ -89,6 +91,8 @@ function App() {
             meta: { label: "Agen", group: "Mitra Bisnis" },
             list: "/agents",
             create: "/agents/create",
+            show: "/agents/:id",
+            edit: "/agents/:id/edit",
           },
           {
             name: "users",
@@ -174,6 +178,8 @@ function App() {
             <Route path="/stock-requests/:id" element={<StockRequestShow />} />
             <Route path="/agents" element={<AgentList />} />
             <Route path="/agents/create" element={<AgentCreate />} />
+            <Route path="/agents/:id" element={<AgentShow />} />
+            <Route path="/agents/:id/edit" element={<AgentEdit />} />
             <Route path="/inventory" element={<InventoryList />} />
           </Route>
 

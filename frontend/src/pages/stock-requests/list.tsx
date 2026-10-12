@@ -247,7 +247,7 @@ export const StockRequestList = () => {
                       <div className="font-bold text-xs text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
                         {req.code}
                         {req.priority === "urgent" && (
-                          <AlertCircle size={13} className="text-red-500 shrink-0" title="Mendesak" />
+                          <span title="Mendesak"><AlertCircle size={13} className="text-red-500 shrink-0" /></span>
                         )}
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -343,7 +343,7 @@ export const StockRequestList = () => {
                         <div className="font-bold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
                           {req.code}
                           {req.priority === "urgent" && (
-                            <AlertCircle size={14} className="text-red-500" title="Mendesak" />
+                            <span title="Mendesak"><AlertCircle size={14} className="text-red-500" /></span>
                           )}
                         </div>
                       </td>

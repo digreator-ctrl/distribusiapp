@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     contact_person TEXT,
     phone TEXT,
     address TEXT,
+    is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id)
 );
@@ -40,10 +41,13 @@ CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
     tenant_id TEXT NOT NULL,
     name TEXT NOT NULL,
+    category TEXT,
+    brand TEXT,
     base_production_price REAL NOT NULL,
     base_sales_price REAL NOT NULL,
     base_agent_price REAL NOT NULL,
     supplier_id TEXT, -- NULL berarti produk internal (produksi sendiri), jika ada ID berarti titipan supplier
+    is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id),
     FOREIGN KEY(supplier_id) REFERENCES suppliers(id)
@@ -67,8 +71,10 @@ CREATE TABLE IF NOT EXISTS inbound_batches (
     id TEXT PRIMARY KEY,
     tenant_id TEXT NOT NULL,
     product_id TEXT NOT NULL,
+    variant_id TEXT,
     source_type TEXT NOT NULL CHECK(source_type IN ('internal', 'rekanan')),
     quantity INTEGER NOT NULL,
+    current_quantity INTEGER DEFAULT 0,
     production_date DATE NOT NULL,
     expired_date DATE NOT NULL,
     supplier_id TEXT, -- Asal pengiriman jika dari supplier
@@ -76,6 +82,18 @@ CREATE TABLE IF NOT EXISTS inbound_batches (
     FOREIGN KEY(tenant_id) REFERENCES tenants(id),
     FOREIGN KEY(supplier_id) REFERENCES suppliers(id),
     FOREIGN KEY(product_id) REFERENCES products(id)
+);
+
+-- Tabel Master Agen
+CREATE TABLE IF NOT EXISTS agents (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    contact TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('Aktif', 'Non-Aktif')),
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id)
 );
 
 -- Tabel Master Toko Mitra
