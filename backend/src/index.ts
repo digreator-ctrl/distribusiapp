@@ -447,14 +447,18 @@ app.get('/api/stock-requests', async (c) => {
   const type = c.req.query('type')
   const status = c.req.query('status')
   const sales_id = c.req.query('sales_id')
+  const target_type = c.req.query('target_type')
 
   const where: string[] = ['sr.tenant_id = ?']
   const params: any[] = [tenant_id]
   if (type) { where.push('sr.type = ?'); params.push(type) }
   if (status) { where.push('sr.status = ?'); params.push(status) }
-  // Untuk sisi Sales: tampilkan milik sendiri + rekomendasi broadcast (sales_id NULL)
-  if (sales_id !== undefined) {
-    if (sales_id) { where.push('(sr.sales_id = ? OR sr.sales_id IS NULL)'); params.push(sales_id) }
+  if (target_type) { where.push('sr.target_type = ?'); params.push(target_type) }
+  
+  // Untuk sisi Sales: tampilkan hanya target_type = 'sales' milik sendiri atau rekomendasi broadcast sales
+  if (sales_id !== undefined && sales_id !== '') {
+    where.push('(sr.target_type = "sales" AND (sr.sales_id = ? OR (sr.type = "recommendation" AND sr.sales_id IS NULL)))')
+    params.push(sales_id)
   }
 
   const { results } = await c.env.DB.prepare(`

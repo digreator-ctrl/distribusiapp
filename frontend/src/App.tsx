@@ -30,8 +30,8 @@ import { AgentList } from "./pages/agents/list";
 import { AgentCreate } from "./pages/agents/create";
 import { InventoryList } from "./pages/inventory/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
-import { MobileVisit } from "./pages/sales/visit";
-import { MobileOpname } from "./pages/sales/opname";
+import { MobileFieldActivity } from "./pages/sales/field-activity";
+import { MobileReceivedStock } from "./pages/sales/received-stock";
 import { MobileAsset } from "./pages/sales/asset";
 
 // Endpoint Hono lokal (Port default wrangler dev biasanya 8787)
@@ -186,8 +186,8 @@ function App() {
               </Authenticated>
             }
           >
-            <Route index element={<MobileVisit />} />
-            <Route path="opname" element={<MobileOpname />} />
+            <Route index element={<MobileFieldActivity />} />
+            <Route path="received-stock" element={<MobileReceivedStock />} />
             <Route path="asset" element={<MobileAsset />} />
             <Route path="stock-requests" element={<StockRequestList />} />
             <Route path="stock-requests/create" element={<StockRequestCreate />} />
@@ -249,10 +249,21 @@ function App() {
                     </button>
 
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         // Bypass login untuk keperluan demonstrasi
                         localStorage.setItem("distribusi_token", "dummy");
                         localStorage.setItem("distribusi_role", "sales");
+                        try {
+                          const res = await fetch("http://localhost:8787/api/users");
+                          if (res.ok) {
+                            const uList = await res.json();
+                            const salesOnly = uList.filter((u: any) => u.role === "sales");
+                            if (salesOnly.length > 0) {
+                              localStorage.setItem("distribusi_user_id", salesOnly[0].id);
+                              localStorage.setItem("distribusi_user_name", salesOnly[0].full_name || salesOnly[0].username);
+                            }
+                          }
+                        } catch (e) {}
                         window.location.href = "/sales";
                       }}
                       className="w-full px-4 py-3 bg-muted text-foreground font-semibold rounded-xl border hover:bg-muted/80 transition-all active:scale-[0.98]"

@@ -192,8 +192,8 @@ export const StockRequestCreate = () => {
         body: JSON.stringify({
           type,
           target_type: isSales ? 'sales' : targetType,
-          sales_id: isSales ? undefined : salesId,
-          agen_id: agenId,
+          sales_id: isSales ? (localStorage.getItem("distribusi_user_id") || undefined) : (targetType === 'sales' ? salesId : undefined),
+          agen_id: !isSales && targetType === 'agen' ? agenId : undefined,
           distribution_date: distributionDate,
           priority: "normal",
           note,
