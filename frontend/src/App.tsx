@@ -35,6 +35,7 @@ import { SalesLayout } from "./components/layout/SalesLayout";
 import { MobileFieldActivity } from "./pages/sales/field-activity";
 import { MobileReceivedStock } from "./pages/sales/received-stock";
 import { MobileAsset } from "./pages/sales/asset";
+import { LoginPage } from "./pages/login";
 
 // Endpoint Hono lokal (Port default wrangler dev biasanya 8787)
 const API_URL = "http://localhost:8787/api";
@@ -225,62 +226,7 @@ function App() {
               </Authenticated>
             }
           >
-            <Route path="/login" element={
-              <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center p-8">
-                <div className="bg-card p-8 rounded-2xl shadow-xl border w-full max-w-sm text-center">
-                  <h1 className="text-3xl font-black text-primary tracking-tight mb-2">Distribusi<span className="text-muted-foreground font-medium">App</span></h1>
-                  <p className="text-muted-foreground text-sm mb-8">Masuk untuk mengelola sistem operasional Anda.</p>
-
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => {
-                        localStorage.setItem("distribusi_token", "dummy");
-                        localStorage.setItem("distribusi_role", "owner");
-                        window.location.href = "/";
-                      }}
-                      className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow-md hover:bg-blue-700 transition-all active:scale-[0.98]"
-                    >
-                      Masuk (Demo Owner)
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        localStorage.setItem("distribusi_token", "dummy");
-                        localStorage.setItem("distribusi_role", "admin");
-                        window.location.href = "/";
-                      }}
-                      className="w-full px-4 py-3 bg-primary text-primary-foreground font-semibold rounded-xl shadow-md hover:bg-primary/90 transition-all active:scale-[0.98]"
-                    >
-                      Masuk (Demo Admin Gudang)
-                    </button>
-
-                    <button
-                      onClick={async () => {
-                        // Bypass login untuk keperluan demonstrasi
-                        localStorage.setItem("distribusi_token", "dummy");
-                        localStorage.setItem("distribusi_role", "sales");
-                        try {
-                          const res = await fetch("http://localhost:8787/api/users");
-                          if (res.ok) {
-                            const uList = await res.json();
-                            const salesOnly = uList.filter((u: any) => u.role === "sales");
-                            if (salesOnly.length > 0) {
-                              localStorage.setItem("distribusi_user_id", salesOnly[0].id);
-                              localStorage.setItem("distribusi_user_name", salesOnly[0].full_name || salesOnly[0].username);
-                            }
-                          }
-                        } catch (e) {}
-                        window.location.href = "/sales";
-                      }}
-                      className="w-full px-4 py-3 bg-muted text-foreground font-semibold rounded-xl border hover:bg-muted/80 transition-all active:scale-[0.98]"
-                    >
-                      Masuk (Demo Sales Mobile)
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-6">Versi SaaS Multi-tenant (v2.0)</p>
-                </div>
-              </div>
-            } />
+            <Route path="/login" element={<LoginPage />} />
           </Route>
 
           <Route path="*" element={<CatchAllNavigate to="/login" />} />

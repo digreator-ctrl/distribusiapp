@@ -10,7 +10,8 @@ export const StockRequestList = () => {
   const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || "");
   const [requests, setRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filterType, setFilterType] = useState(isSales ? "request" : "recommendation");
+  const [filterType, setFilterType] = useState<"recommendation" | "request">("recommendation");
+  const [pendingRecCount, setPendingRecCount] = useState<number>(0);
 
   // Multi-sales data scoping
   const [salesUsers, setSalesUsers] = useState<any[]>([]);
@@ -48,6 +49,14 @@ export const StockRequestList = () => {
       }
     };
     fetchSalesUsers();
+
+    const handleSalesChanged = () => {
+      const stored = localStorage.getItem("distribusi_user_id") || "";
+      setActiveSalesId(stored);
+    };
+
+    window.addEventListener("salesChanged", handleSalesChanged);
+    return () => window.removeEventListener("salesChanged", handleSalesChanged);
   }, [isSales]);
 
   const handleSalesChange = (id: string) => {
@@ -57,7 +66,32 @@ export const StockRequestList = () => {
     if (found) {
       localStorage.setItem("distribusi_user_name", found.full_name || found.username);
     }
+    window.dispatchEvent(new Event("salesChanged"));
   };
+
+  // Cek rekomendasi pending
+  useEffect(() => {
+    if (!isSales) return;
+    const checkPending = async () => {
+      try {
+        let url = "http://localhost:8787/api/stock-requests?type=recommendation&status=pending&target_type=sales";
+        if (activeSalesId) url += `&sales_id=${activeSalesId}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          const count = Array.isArray(data) ? data.length : 0;
+          setPendingRecCount(count);
+          // Jika ada rekomendasi pending, otomatis fokuskan ke tab rekomendasi
+          if (count > 0) {
+            setFilterType("recommendation");
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    checkPending();
+  }, [isSales, activeSalesId]);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -165,6 +199,20 @@ export const StockRequestList = () => {
             </button>
           </div>
 
+          {/* Banner Pemberitahuan jika ada rekomendasi pending */}
+          {pendingRecCount > 0 && (
+            <div 
+              onClick={() => setFilterType("recommendation")}
+              className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-xs text-amber-900 cursor-pointer hover:bg-amber-100/80 transition shadow-2xs"
+            >
+              <div className="flex items-center gap-2">
+                <Inbox className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Ada <strong>{pendingRecCount} rekomendasi stok</strong> dari Admin menunggu konfirmasi!</span>
+              </div>
+              <span className="font-bold underline text-amber-700 text-[11px] shrink-0">Lihat &rarr;</span>
+            </div>
+          )}
+
           {/* Akun Sales Aktif (Switcher jika ada multiple sales) */}
           <div className="flex items-center justify-between bg-muted/40 border border-border/50 rounded-xl px-3 py-2 text-xs mb-3">
             <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -200,8 +248,13 @@ export const StockRequestList = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Inbox size={13} />
+              <Inbox size={13} className={pendingRecCount > 0 ? "text-amber-500" : ""} />
               <span>Rekomendasi</span>
+              {pendingRecCount > 0 && (
+                <span className="px-1.5 py-0.2 bg-amber-500 text-white font-black text-[10px] rounded-full">
+                  {pendingRecCount}
+                </span>
+              )}
             </button>
             <button 
               onClick={() => setFilterType("request")} 

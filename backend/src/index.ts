@@ -530,11 +530,18 @@ app.get('/api/stock-requests', async (c) => {
   const params: any[] = [tenant_id]
   if (type) { where.push('sr.type = ?'); params.push(type) }
   if (status) { where.push('sr.status = ?'); params.push(status) }
-  if (target_type) { where.push('sr.target_type = ?'); params.push(target_type) }
+  if (target_type) {
+    if (target_type === 'sales') {
+      where.push('(sr.target_type = "sales" OR sr.target_type IS NULL)')
+    } else {
+      where.push('sr.target_type = ?')
+      params.push(target_type)
+    }
+  }
   
   // Untuk sisi Sales: tampilkan hanya target_type = 'sales' milik sendiri atau rekomendasi broadcast sales
   if (sales_id !== undefined && sales_id !== '') {
-    where.push('(sr.target_type = "sales" AND (sr.sales_id = ? OR (sr.type = "recommendation" AND sr.sales_id IS NULL)))')
+    where.push('((sr.target_type = "sales" OR sr.target_type IS NULL) AND (sr.sales_id = ? OR (sr.type = "recommendation" AND sr.sales_id IS NULL)))')
     params.push(sales_id)
   }
 
