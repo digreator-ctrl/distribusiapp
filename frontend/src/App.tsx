@@ -1,6 +1,6 @@
 import { Refine, Authenticated } from "@refinedev/core";
 import dataProvider from "@refinedev/simple-rest";
-import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Outlet, Navigate } from "react-router-dom";
 import routerProvider, { CatchAllNavigate, NavigateToResource } from "@refinedev/react-router-v6";
 
 import { authProvider } from "./providers/authProvider";
@@ -32,6 +32,11 @@ import { AgentShow } from "./pages/agents/show";
 import { AgentEdit } from "./pages/agents/edit";
 import { InventoryList } from "./pages/inventory/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
+import { SalesDashboard } from "./pages/sales/dashboard";
+import { SalesStores } from "./pages/sales/stores";
+import { SalesVisitWizard } from "./pages/sales/visit-wizard";
+import { SalesHistory } from "./pages/sales/history";
+import { SalesProductDetail } from "./pages/sales/product-detail";
 import { MobileFieldActivity } from "./pages/sales/field-activity";
 import { MobileReceivedStock } from "./pages/sales/received-stock";
 import { MobileAsset } from "./pages/sales/asset";
@@ -184,7 +189,7 @@ function App() {
             <Route path="/inventory" element={<InventoryList />} />
           </Route>
 
-          {/* Rute Aplikasi Sales (Mobile-first PWA) */}
+          {/* Rute Aplikasi Sales (Mobile-first PWA Sesuai pwasales.md) */}
           <Route
             path="/sales"
             element={
@@ -193,12 +198,31 @@ function App() {
               </Authenticated>
             }
           >
-            <Route index element={<MobileFieldActivity />} />
+            {/* 1. 🏠 Beranda (Dashboard Ringkasan) */}
+            <Route index element={<SalesDashboard />} />
+            <Route path="dashboard" element={<SalesDashboard />} />
+
+            {/* 2. 🏪 Toko (Mitra Konsinyasi & Wizard Kunjungan) */}
+            <Route path="toko" element={<SalesStores />} />
+            <Route path="toko/kunjungan/:storeId" element={<SalesVisitWizard />} />
+            <Route path="visit-wizard/:storeId" element={<SalesVisitWizard />} />
+            <Route path="visit-wizard" element={<SalesVisitWizard />} />
+
+            {/* 3. 📦 Stok */}
+            <Route path="stock" element={<MobileReceivedStock />} />
             <Route path="received-stock" element={<MobileReceivedStock />} />
-            <Route path="asset" element={<MobileAsset />} />
-            <Route path="stock-requests" element={<StockRequestList />} />
+            <Route path="stock/product/:variantId" element={<SalesProductDetail />} />
+            <Route path="product/:variantId" element={<SalesProductDetail />} />
+            <Route path="stock-requests" element={<Navigate to="/sales/stock?tab=masuk" replace />} />
             <Route path="stock-requests/create" element={<StockRequestCreate />} />
             <Route path="stock-requests/:id" element={<StockRequestShow />} />
+
+            {/* 4. 🕒 Riwayat Aktivitas Harian */}
+            <Route path="history" element={<SalesHistory />} />
+
+            {/* Rute Pendukung / Kompatibilitas */}
+            <Route path="lapangan" element={<MobileFieldActivity />} />
+            <Route path="asset" element={<MobileAsset />} />
             <Route path="profile" element={
               <div className="bg-card p-6 rounded-xl border text-center shadow-sm">
                 <div className="w-20 h-20 bg-primary/10 text-primary mx-auto rounded-full flex items-center justify-center text-2xl font-bold mb-4">S</div>

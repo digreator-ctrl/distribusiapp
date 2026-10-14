@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { 
   ArrowLeft, CheckCircle2, XCircle, Trash2, Edit3, Package, 
   FileText, User, AlertCircle 
@@ -47,8 +47,21 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
 export const StockRequestShow = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const role = localStorage.getItem("distribusi_role") || "admin";
-  const isSales = role === "sales";
+  const isSales = role === "sales" || location.pathname.startsWith("/sales/");
+
+  const handleBack = () => {
+    if (isSales) {
+      const targetSubTab = searchParams.get("subTab") || (location.state as any)?.subTab || (request?.type === 'request' ? 'request' : 'recommendation');
+      navigate(`/sales/stock?tab=masuk&subTab=${targetSubTab}`, {
+        state: { tab: 'masuk', subTab: targetSubTab }
+      });
+    } else {
+      navigate("/stock-requests");
+    }
+  };
   
   const [request, setRequest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +92,7 @@ export const StockRequestShow = () => {
       } else {
         setToast({ message: "Data dokumen tidak ditemukan", type: "error" });
         setTimeout(() => {
-          navigate(isSales ? "/sales/stock-requests" : "/stock-requests");
+          navigate(isSales ? `/sales/stock?tab=masuk&subTab=${searchParams.get("subTab") || "recommendation"}` : "/stock-requests");
         }, 1500);
       }
     } catch (err) {
@@ -179,10 +192,14 @@ export const StockRequestShow = () => {
       const itemsPayload = status === 'approved'
         ? request.items.map((i: any) => ({
             id: i.id,
+            variant_id: i.variant_id,
+            batch_id: i.batch_id,
             approved_quantity: Number(i.approved_quantity)
           }))
         : request.items.map((i: any) => ({
             id: i.id,
+            variant_id: i.variant_id,
+            batch_id: i.batch_id,
             approved_quantity: 0
           }));
 
@@ -221,9 +238,16 @@ export const StockRequestShow = () => {
     try {
       const res = await fetch(`http://localhost:8787/api/stock-requests/${id}`, { method: "DELETE" });
       if (res.ok) {
-        navigate(isSales ? "/sales/stock-requests" : "/stock-requests", {
-          state: { successMessage: "Berhasil membatalkan pengajuan" }
-        });
+        if (isSales) {
+          const targetSubTab = searchParams.get("subTab") || "request";
+          navigate(`/sales/stock?tab=masuk&subTab=${targetSubTab}`, {
+            state: { successMessage: "Berhasil membatalkan pengajuan", tab: "masuk", subTab: targetSubTab }
+          });
+        } else {
+          navigate("/stock-requests", {
+            state: { successMessage: "Berhasil membatalkan pengajuan" }
+          });
+        }
       } else {
         const err = await res.json();
         setToast({ message: err.message || "Gagal menghapus dokumen", type: "error" });
@@ -279,7 +303,7 @@ export const StockRequestShow = () => {
           <div className="flex items-center justify-between gap-3 mb-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <button 
-                onClick={() => navigate("/sales/stock-requests")}
+                onClick={handleBack}
                 className="p-2 bg-background border border-border rounded-xl hover:bg-muted transition-colors shrink-0"
                 title="Kembali"
               >

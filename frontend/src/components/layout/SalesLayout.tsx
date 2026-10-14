@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useLogout } from "@refinedev/core";
-import { LogOut, MapPin, Camera, UserCircle, ClipboardList, PackageCheck, UserCheck } from "lucide-react";
+import { LogOut, Home, Store, Package, Clock, UserCheck } from "lucide-react";
 
 export const SalesLayout = () => {
   const { pathname } = useLocation();
@@ -81,11 +81,10 @@ export const SalesLayout = () => {
     }
   };
 
-  const isFieldActivity = pathname === '/sales' || pathname === '/sales/';
-  const isStockRequests = pathname.startsWith('/sales/stock-requests');
-  const isReceivedStock = pathname === '/sales/received-stock';
-  const isAsset = pathname === '/sales/asset';
-  const isProfile = pathname === '/sales/profile';
+  const isHome = pathname === '/sales' || pathname === '/sales/';
+  const isToko = pathname.startsWith('/sales/toko') || pathname.startsWith('/sales/visit');
+  const isStock = pathname === '/sales/stock' || pathname === '/sales/received-stock' || pathname.startsWith('/sales/stock-requests');
+  const isHistory = pathname.startsWith('/sales/history');
 
   return (
     <div className="flex flex-col min-h-screen bg-muted/20 pb-20 max-w-md mx-auto relative shadow-2xl overflow-hidden bg-white">
@@ -95,7 +94,7 @@ export const SalesLayout = () => {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="text-primary-foreground/80 text-[10px] font-bold uppercase tracking-wider">
-                Mode Lapangan
+                Mode Sales PWA
               </span>
               {pendingCount > 0 && (
                 <span className="px-1.5 py-0.2 bg-amber-400 text-amber-950 font-black text-[9px] rounded-full animate-bounce">
@@ -142,44 +141,58 @@ export const SalesLayout = () => {
         <Outlet />
       </div>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation (4 Menu Utama: Beranda, Toko, Stok Saya, Riwayat) */}
       <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-border shadow-[0_-5px_15px_-10px_rgba(0,0,0,0.1)] z-20">
         <div className="flex justify-around items-center h-16">
-          <Link to="/sales" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isFieldActivity ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'}`}>
-            <MapPin size={22} className={isFieldActivity ? 'fill-primary/20' : ''} />
-            <span className="text-[10px] font-medium">Lapangan</span>
+          {/* 1. Beranda */}
+          <Link
+            to="/sales"
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
+              isHome ? 'text-primary font-bold' : 'text-muted-foreground hover:text-primary/70'
+            }`}
+          >
+            <Home size={22} className={isHome ? 'stroke-[2.5]' : ''} />
+            <span className="text-[10px]">Beranda</span>
           </Link>
 
-          <Link to="/sales/stock-requests" className={`flex flex-col items-center justify-center w-full h-full space-y-1 relative ${isStockRequests ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'}`}>
-            <div className="relative">
-              <ClipboardList size={22} className={isStockRequests ? 'fill-primary/20' : ''} />
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white" />
-              )}
-            </div>
-            <span className="text-[10px] font-medium">Req Stok</span>
+          {/* 2. Toko */}
+          <Link
+            to="/sales/toko"
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
+              isToko ? 'text-primary font-bold' : 'text-muted-foreground hover:text-primary/70'
+            }`}
+          >
+            <Store size={22} className={isToko ? 'stroke-[2.5]' : ''} />
+            <span className="text-[10px]">Toko</span>
           </Link>
 
-          <Link to="/sales/received-stock" className={`flex flex-col items-center justify-center w-full h-full space-y-1 relative ${isReceivedStock ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'}`}>
+          {/* 3. Stok Saya */}
+          <Link
+            to="/sales/stock"
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 relative ${
+              isStock ? 'text-primary font-bold' : 'text-muted-foreground hover:text-primary/70'
+            }`}
+          >
             <div className="relative">
-              <PackageCheck size={22} className={isReceivedStock ? 'fill-primary/20' : ''} />
+              <Package size={22} className={isStock ? 'stroke-[2.5]' : ''} />
               {pendingCount > 0 && (
                 <span className="absolute -top-1 -right-1.5 px-1 py-0.2 bg-amber-500 text-white font-bold text-[9px] rounded-full ring-1 ring-white">
                   {pendingCount}
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-medium">Stok Masuk</span>
+            <span className="text-[10px]">Stok</span>
           </Link>
 
-          <Link to="/sales/asset" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isAsset ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'}`}>
-            <Camera size={22} className={isAsset ? 'fill-primary/20' : ''} />
-            <span className="text-[10px] font-medium">Aset</span>
-          </Link>
-
-          <Link to="/sales/profile" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isProfile ? 'text-primary' : 'text-muted-foreground hover:text-primary/70'}`}>
-            <UserCircle size={22} className={isProfile ? 'fill-primary/20' : ''} />
-            <span className="text-[10px] font-medium">Profil</span>
+          {/* 4. Riwayat */}
+          <Link
+            to="/sales/history"
+            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
+              isHistory ? 'text-primary font-bold' : 'text-muted-foreground hover:text-primary/70'
+            }`}
+          >
+            <Clock size={22} className={isHistory ? 'stroke-[2.5]' : ''} />
+            <span className="text-[10px]">Riwayat</span>
           </Link>
         </div>
       </div>

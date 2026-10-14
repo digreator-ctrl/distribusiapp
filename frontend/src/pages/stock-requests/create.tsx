@@ -170,8 +170,9 @@ export const StockRequestCreate = () => {
       // Validasi Stok
       if (item.batch_id && qty > 0) {
         const selectedBatch = batches.find(b => b.id === item.batch_id);
-        if (selectedBatch && qty > selectedBatch.quantity) {
-          newErrors[`item_${index}_stock`] = `Kuantitas (${qty}) melebihi stok yang tersedia (${selectedBatch.quantity})`;
+        const availStock = selectedBatch ? (selectedBatch.current_quantity !== undefined ? selectedBatch.current_quantity : selectedBatch.quantity) : 0;
+        if (selectedBatch && qty > availStock) {
+          newErrors[`item_${index}_stock`] = `Kuantitas (${qty}) melebihi sisa stok yang tersedia (${availStock} pcs)`;
         }
       }
 
@@ -215,7 +216,9 @@ export const StockRequestCreate = () => {
         const data = await res.json();
         setToast({ message: `Berhasil membuat ${isSales ? "pengajuan" : "distribusi"} stok (${data.code})`, type: "success" });
         setTimeout(() => {
-          navigate(isSales ? "/sales/stock-requests" : "/stock-requests");
+          navigate(isSales ? "/sales/stock?tab=masuk&subTab=request" : "/stock-requests", {
+            state: { tab: "masuk", subTab: "request" }
+          });
         }, 1500);
       } else {
         const err = await res.json();
@@ -243,7 +246,7 @@ export const StockRequestCreate = () => {
             <div className="flex items-center gap-2.5 min-w-0">
               <button 
                 type="button"
-                onClick={() => navigate("/sales/stock-requests")}
+                onClick={() => navigate("/sales/stock?tab=masuk&subTab=request", { state: { tab: "masuk", subTab: "request" } })}
                 className="p-2 bg-background border border-border rounded-xl hover:bg-muted transition-colors shrink-0"
                 title="Kembali"
               >
@@ -316,7 +319,11 @@ export const StockRequestCreate = () => {
                 {items.map((item, index) => {
                   const selectedVariant = variants.find(v => v.id === item.variant_id);
                   const availableBatches = selectedVariant 
-                    ? batches.filter(b => b.product_id === selectedVariant.product_id) 
+                    ? batches.filter(b => {
+                        const matchVariant = b.variant_id ? b.variant_id === selectedVariant.id : b.product_id === selectedVariant.product_id;
+                        const stock = b.current_quantity !== undefined ? b.current_quantity : b.quantity;
+                        return matchVariant && stock > 0;
+                      }) 
                     : [];
                   
                   const hasVariantError = !!errors[`item_${index}_variant_id`];
@@ -368,8 +375,8 @@ export const StockRequestCreate = () => {
                         >
                           <option value="" disabled>-- Pilih Produk & Varian --</option>
                           {variants.map(v => {
-                            const variantBatches = batches.filter(b => b.product_id === v.product_id);
-                            const totalStock = variantBatches.reduce((sum, b) => sum + Number(b.quantity), 0);
+                            const variantBatches = batches.filter(b => b.variant_id ? b.variant_id === v.id : b.product_id === v.product_id);
+                            const totalStock = variantBatches.reduce((sum, b) => sum + Number(b.current_quantity !== undefined ? b.current_quantity : b.quantity), 0);
                             const outOfStock = totalStock <= 0;
                             
                             return (
@@ -404,7 +411,7 @@ export const StockRequestCreate = () => {
                             </option>
                             {availableBatches.map(b => (
                               <option key={b.id} value={b.id}>
-                                {new Date(b.expired_date).toLocaleDateString('id-ID')} (Sisa: {b.quantity})
+                                {new Date(b.expired_date).toLocaleDateString('id-ID')} (Sisa: {b.current_quantity !== undefined ? b.current_quantity : b.quantity} pcs)
                               </option>
                             ))}
                           </select>
@@ -598,7 +605,11 @@ export const StockRequestCreate = () => {
                 {items.map((item, index) => {
                   const selectedVariant = variants.find(v => v.id === item.variant_id);
                   const availableBatches = selectedVariant 
-                    ? batches.filter(b => b.product_id === selectedVariant.product_id) 
+                    ? batches.filter(b => {
+                        const matchVariant = b.variant_id ? b.variant_id === selectedVariant.id : b.product_id === selectedVariant.product_id;
+                        const stock = b.current_quantity !== undefined ? b.current_quantity : b.quantity;
+                        return matchVariant && stock > 0;
+                      }) 
                     : [];
                   
                   const hasVariantError = !!errors[`item_${index}_variant_id`];
@@ -623,13 +634,13 @@ export const StockRequestCreate = () => {
                           >
                             <option value="" disabled>-- Pilih Produk --</option>
                             {variants.map(v => {
-                              const variantBatches = batches.filter(b => b.product_id === v.product_id);
-                              const totalStock = variantBatches.reduce((sum, b) => sum + Number(b.quantity), 0);
+                              const variantBatches = batches.filter(b => b.variant_id ? b.variant_id === v.id : b.product_id === v.product_id);
+                              const totalStock = variantBatches.reduce((sum, b) => sum + Number(b.current_quantity !== undefined ? b.current_quantity : b.quantity), 0);
                               const outOfStock = totalStock <= 0;
                               
                               return (
                                 <option key={v.id} value={v.id} disabled={outOfStock}>
-                                  {v.product_name} - {v.name} {v.sku ? `(${v.sku})` : ''} {outOfStock ? '(Stok Habis)' : ''}
+                                  {v.product_name} - {v.name} {v.sku ? `(${v.sku})` : ''} {outOfStock ? '(Stok Habis)' : `(Stok: ${totalStock})`}
                                 </option>
                               );
                             })}
@@ -650,7 +661,7 @@ export const StockRequestCreate = () => {
                             <option value="" disabled>-- Pilih Kedaluwarsa Stok --</option>
                             {availableBatches.map(b => (
                               <option key={b.id} value={b.id}>
-                                Stok: {b.quantity} | Exp: {new Date(b.expired_date).toLocaleDateString('id-ID')}
+                                Sisa: {b.current_quantity !== undefined ? b.current_quantity : b.quantity} pcs | Exp: {new Date(b.expired_date).toLocaleDateString('id-ID')}
                               </option>
                             ))}
                           </select>

@@ -643,15 +643,52 @@ app.post('/api/stock-requests', async (c) => {
 
       if (status === 'approved') {
         let remaining = qty
-        const batches = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE variant_id = ? AND current_quantity > 0 ORDER BY expired_date ASC, created_at ASC').bind(i.variant_id).all()
-        for (const batch of (batches.results || [])) {
-          if (remaining <= 0) break;
-          const bQty = batch.current_quantity as number;
-          const deduct = Math.min(remaining, bQty)
-          stmts.push(
-            c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, batch.id)
-          )
-          remaining -= deduct
+
+        // 1. Potong batch spesifik jika dipilih
+        if (i.batch_id) {
+          const specificBatch = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE id = ? AND current_quantity > 0').bind(i.batch_id).first()
+          if (specificBatch) {
+            const bQty = specificBatch.current_quantity as number
+            const deduct = Math.min(remaining, bQty)
+            stmts.push(
+              c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, i.batch_id)
+            )
+            remaining -= deduct
+          }
+        }
+
+        // 2. Jika masih bersisa, potong batch sesuai variant_id (FEFO)
+        if (remaining > 0 && i.variant_id) {
+          const batches = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE variant_id = ? AND current_quantity > 0 ORDER BY expired_date ASC, created_at ASC').bind(i.variant_id).all()
+          for (const batch of (batches.results || [])) {
+            if (remaining <= 0) break
+            if (i.batch_id && batch.id === i.batch_id) continue
+            const bQty = batch.current_quantity as number
+            const deduct = Math.min(remaining, bQty)
+            stmts.push(
+              c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, batch.id)
+            )
+            remaining -= deduct
+          }
+        }
+
+        // 3. Fallback: Jika masih bersisa, potong batch dari produk yang sama (FEFO)
+        if (remaining > 0 && i.variant_id) {
+          const variantRow = await c.env.DB.prepare('SELECT product_id FROM product_variants WHERE id = ?').bind(i.variant_id).first()
+          const pId = variantRow?.product_id
+          if (pId) {
+            const pBatches = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE product_id = ? AND current_quantity > 0 ORDER BY expired_date ASC, created_at ASC').bind(pId).all()
+            for (const batch of (pBatches.results || [])) {
+              if (remaining <= 0) break
+              if (i.batch_id && batch.id === i.batch_id) continue
+              const bQty = batch.current_quantity as number
+              const deduct = Math.min(remaining, bQty)
+              stmts.push(
+                c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, batch.id)
+              )
+              remaining -= deduct
+            }
+          }
         }
       }
     }
@@ -680,15 +717,18 @@ app.put('/api/stock-requests/:id/respond', async (c) => {
   ]
   
   if (body.status === 'approved') {
+    const origItems = await c.env.DB.prepare('SELECT id, variant_id, batch_id, quantity FROM stock_request_items WHERE request_id = ?').bind(id).all()
+    const origMap = new Map((origItems.results || []).map((o: any) => [o.id, o]))
+
     let itemsToProcess = []
     if (Array.isArray(body.items) && body.items.length > 0) {
       itemsToProcess = body.items
     } else {
-      const origItems = await c.env.DB.prepare('SELECT id, variant_id, quantity FROM stock_request_items WHERE request_id = ?').bind(id).all()
-      itemsToProcess = origItems.results.map((o: any) => ({ id: o.id, variant_id: o.variant_id, approved_quantity: o.quantity }))
+      itemsToProcess = (origItems.results || []).map((o: any) => ({ id: o.id, variant_id: o.variant_id, batch_id: o.batch_id, approved_quantity: o.quantity }))
     }
 
     for (const i of itemsToProcess) {
+      const orig = origMap.get(i.id) as any
       const appQty = Math.max(0, Number(i.approved_quantity) || 0)
       stmts.push(
         c.env.DB.prepare('UPDATE stock_request_items SET approved_quantity = ? WHERE id = ? AND request_id = ?')
@@ -696,22 +736,55 @@ app.put('/api/stock-requests/:id/respond', async (c) => {
       )
 
       if (appQty > 0) {
-        let vId = i.variant_id
-        if (!vId) {
-           const vRow = await c.env.DB.prepare('SELECT variant_id FROM stock_request_items WHERE id = ?').bind(i.id).first()
-           vId = vRow?.variant_id
-        }
-        
+        const vId = i.variant_id || orig?.variant_id
+        const bId = i.batch_id || orig?.batch_id
         let remaining = appQty
-        const batches = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE variant_id = ? AND current_quantity > 0 ORDER BY expired_date ASC, created_at ASC').bind(vId).all()
-        for (const batch of (batches.results || [])) {
-          if (remaining <= 0) break;
-          const bQty = batch.current_quantity as number;
-          const deduct = Math.min(remaining, bQty)
-          stmts.push(
-            c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, batch.id)
-          )
-          remaining -= deduct
+
+        // 1. Potong batch spesifik jika dipilih
+        if (bId) {
+          const specificBatch = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE id = ? AND current_quantity > 0').bind(bId).first()
+          if (specificBatch) {
+            const bQty = specificBatch.current_quantity as number
+            const deduct = Math.min(remaining, bQty)
+            stmts.push(
+              c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, bId)
+            )
+            remaining -= deduct
+          }
+        }
+
+        // 2. Jika masih bersisa, potong batch sesuai variant_id (FEFO)
+        if (remaining > 0 && vId) {
+          const vBatches = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE variant_id = ? AND current_quantity > 0 ORDER BY expired_date ASC, created_at ASC').bind(vId).all()
+          for (const batch of (vBatches.results || [])) {
+            if (remaining <= 0) break
+            if (bId && batch.id === bId) continue
+            const bQty = batch.current_quantity as number
+            const deduct = Math.min(remaining, bQty)
+            stmts.push(
+              c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, batch.id)
+            )
+            remaining -= deduct
+          }
+        }
+
+        // 3. Fallback: Jika masih bersisa, potong batch dari produk yang sama (FEFO)
+        if (remaining > 0 && vId) {
+          const variantRow = await c.env.DB.prepare('SELECT product_id FROM product_variants WHERE id = ?').bind(vId).first()
+          const pId = variantRow?.product_id
+          if (pId) {
+            const pBatches = await c.env.DB.prepare('SELECT id, current_quantity FROM inbound_batches WHERE product_id = ? AND current_quantity > 0 ORDER BY expired_date ASC, created_at ASC').bind(pId).all()
+            for (const batch of (pBatches.results || [])) {
+              if (remaining <= 0) break
+              if (bId && batch.id === bId) continue
+              const bQty = batch.current_quantity as number
+              const deduct = Math.min(remaining, bQty)
+              stmts.push(
+                c.env.DB.prepare('UPDATE inbound_batches SET current_quantity = current_quantity - ? WHERE id = ?').bind(deduct, batch.id)
+              )
+              remaining -= deduct
+            }
+          }
         }
       }
     }
@@ -764,4 +837,568 @@ app.get('/api/inventory', async (c) => {
   }
 })
 
+// ==========================================
+// CONSIGNMENTS API (Stok Keluar Sales ke Toko)
+// ==========================================
+app.get('/api/consignments', async (c) => {
+  const tenant_id = 'tenant-1'
+  const sales_id = c.req.query('sales_id')
+  const where = ['c.tenant_id = ?']
+  const params: any[] = [tenant_id]
+
+  if (sales_id) {
+    where.push('c.sales_id = ?')
+    params.push(sales_id)
+  }
+
+  const variant_id = c.req.query('variant_id')
+  if (variant_id) {
+    where.push('c.variant_id = ?')
+    params.push(variant_id)
+  }
+
+  const { results } = await c.env.DB.prepare(`
+    SELECT c.*, 
+      pv.name as variant_name, pv.sku, p.name as product_name, p.category as product_category,
+      COALESCE(a.name, st.name, 'Toko Mitra') as store_name,
+      COALESCE(a.contact, st.owner_name, '') as store_contact
+    FROM consignments c
+    JOIN product_variants pv ON c.variant_id = pv.id
+    JOIN products p ON pv.product_id = p.id
+    LEFT JOIN agents a ON c.store_id = a.id
+    LEFT JOIN stores st ON c.store_id = st.id
+    WHERE ${where.join(' AND ')}
+    ORDER BY c.created_at DESC
+  `).bind(...params).all()
+
+  return c.json(results)
+})
+
+app.post('/api/consignments', async (c) => {
+  const tenant_id = 'tenant-1'
+  const body = await c.req.json()
+  const sales_id = body.sales_id
+  const store_id = body.store_id
+
+  if (!sales_id || !store_id) {
+    return c.json({ message: 'Sales dan Toko/Agen tujuan wajib diisi' }, 400)
+  }
+
+  // Pastikan store_id ada di tabel stores (jika store_id berasal dari agents)
+  const existingStore = await c.env.DB.prepare('SELECT id FROM stores WHERE id = ?').bind(store_id).first()
+  if (!existingStore) {
+    const agent = await c.env.DB.prepare('SELECT id, name, contact FROM agents WHERE id = ?').bind(store_id).first()
+    if (agent) {
+      await c.env.DB.prepare('INSERT OR IGNORE INTO stores (id, tenant_id, name, owner_name) VALUES (?, ?, ?, ?)').bind(agent.id, tenant_id, agent.name, agent.contact || 'Mitra').run()
+    }
+  }
+
+  const items = Array.isArray(body.items) ? body.items : [{ variant_id: body.variant_id, quantity: body.initial_stock || body.quantity }]
+  const validItems = items.filter((i: any) => i.variant_id && Number(i.quantity) > 0)
+
+  if (validItems.length === 0) {
+    return c.json({ message: 'Minimal 1 item dengan kuantitas > 0' }, 400)
+  }
+
+  const stmts = validItems.map((i: any) => {
+    const cid = crypto.randomUUID()
+    const qty = Number(i.quantity)
+    return c.env.DB.prepare(`
+      INSERT INTO consignments (id, tenant_id, sales_id, store_id, variant_id, initial_stock, remaining_qty, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+    `).bind(cid, tenant_id, sales_id, store_id, i.variant_id, qty, qty)
+  })
+
+  await c.env.DB.batch(stmts)
+  return c.json({ success: true, count: validItems.length }, 201)
+})
+
+app.delete('/api/consignments/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM consignments WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// ==========================================
+// SALES INVENTORY (Stok yang Dibawa Sales)
+// ==========================================
+app.get('/api/sales-inventory/:sales_id', async (c) => {
+  const sales_id = c.req.param('sales_id')
+  const tenant_id = 'tenant-1'
+
+  // 1. Ambil semua item stok masuk yang disetujui untuk sales ini
+  const { results: inboundItems } = await c.env.DB.prepare(`
+    SELECT 
+      sri.variant_id,
+      pv.name as variant_name,
+      pv.sku,
+      p.id as product_id,
+      p.name as product_name,
+      p.category as product_category,
+      SUM(COALESCE(sri.approved_quantity, sri.quantity)) as total_inbound
+    FROM stock_request_items sri
+    JOIN stock_requests sr ON sri.request_id = sr.id
+    JOIN product_variants pv ON sri.variant_id = pv.id
+    JOIN products p ON pv.product_id = p.id
+    WHERE sr.tenant_id = ? 
+      AND sr.status = 'approved'
+      AND (sr.target_type = 'sales' OR sr.target_type IS NULL)
+      AND (sr.sales_id = ? OR (sr.type = 'recommendation' AND sr.sales_id IS NULL))
+    GROUP BY sri.variant_id, pv.name, pv.sku, p.id, p.name, p.category
+  `).bind(tenant_id, sales_id).all()
+
+  // 1b. Ambil detail per batch untuk setiap inbound item yang disetujui
+  const { results: rawBatchItems } = await c.env.DB.prepare(`
+    SELECT 
+      sri.variant_id,
+      sri.batch_id,
+      COALESCE(sri.approved_quantity, sri.quantity) as qty
+    FROM stock_request_items sri
+    JOIN stock_requests sr ON sri.request_id = sr.id
+    WHERE sr.tenant_id = ? 
+      AND sr.status = 'approved'
+      AND (sr.target_type = 'sales' OR sr.target_type IS NULL)
+      AND (sr.sales_id = ? OR (sr.type = 'recommendation' AND sr.sales_id IS NULL))
+  `).bind(tenant_id, sales_id).all()
+
+  // 1c. Ambil referensi master inbound_batches
+  const { results: batchMaster } = await c.env.DB.prepare(`
+    SELECT id, variant_id, product_id, production_date, expired_date
+    FROM inbound_batches
+    WHERE tenant_id = ?
+    ORDER BY expired_date ASC
+  `).bind(tenant_id).all()
+
+  const batchMap = new Map((batchMaster || []).map((b: any) => [b.id, b]))
+  const defaultBatchPerVariant = new Map<string, any>()
+  for (const b of (batchMaster || [])) {
+    if (b.variant_id && !defaultBatchPerVariant.has(b.variant_id)) {
+      defaultBatchPerVariant.set(b.variant_id, b)
+    }
+  }
+
+  // Akumulasikan kuantitas inbound per (variant_id, batch_id / expired_date)
+  const variantBatchesMap = new Map<string, Map<string, { batch_id: string; expired_date: string; production_date: string; inbound_qty: number }>>()
+
+  for (const row of ((rawBatchItems || []) as any[])) {
+    const vId = row.variant_id
+    if (!vId) continue
+
+    let bInfo = row.batch_id ? batchMap.get(row.batch_id) : null
+    if (!bInfo) {
+      bInfo = defaultBatchPerVariant.get(vId)
+    }
+
+    const bId = bInfo ? bInfo.id : (row.batch_id || 'batch-default')
+    const expDate = bInfo ? bInfo.expired_date : '2027-12-31'
+    const prodDate = bInfo ? bInfo.production_date : ''
+    const qty = Number(row.qty) || 0
+
+    if (!variantBatchesMap.has(vId)) {
+      variantBatchesMap.set(vId, new Map())
+    }
+    const bSubMap = variantBatchesMap.get(vId)!
+    const key = `${bId}_${expDate}`
+    if (!bSubMap.has(key)) {
+      bSubMap.set(key, {
+        batch_id: bId,
+        expired_date: expDate,
+        production_date: prodDate,
+        inbound_qty: 0
+      })
+    }
+    bSubMap.get(key)!.inbound_qty += qty
+  }
+
+  // 2. Ambil semua item stok keluar (konsinyasi / titipan toko) oleh sales ini
+  const { results: outboundItems } = await c.env.DB.prepare(`
+    SELECT 
+      c.variant_id,
+      SUM(c.initial_stock) as total_outbound
+    FROM consignments c
+    WHERE c.tenant_id = ? AND c.sales_id = ?
+    GROUP BY c.variant_id
+  `).bind(tenant_id, sales_id).all()
+
+  const outboundMap = new Map((outboundItems || []).map((o: any) => [o.variant_id, Number(o.total_outbound) || 0]))
+
+  // 3. Gabungkan menjadi data saldo stok yang dibawa sales
+  const inventory = (inboundItems || []).map((item: any) => {
+    const totalIn = Number(item.total_inbound) || 0
+    const totalOut = Number(outboundMap.get(item.variant_id)) || 0
+    const currentHolding = Math.max(0, totalIn - totalOut)
+
+    // Hitung sisa stok per batch (FEFO)
+    const bSubMap = variantBatchesMap.get(item.variant_id)
+    let batchList: any[] = []
+    if (bSubMap) {
+      batchList = Array.from(bSubMap.values()).sort((a, b) => (a.expired_date > b.expired_date ? 1 : -1))
+      let remOut = totalOut
+      batchList = batchList.map((b) => {
+        const deduct = Math.min(b.inbound_qty, remOut)
+        const holdingInBatch = Math.max(0, b.inbound_qty - deduct)
+        remOut = Math.max(0, remOut - deduct)
+        return {
+          batch_id: b.batch_id,
+          expired_date: b.expired_date,
+          production_date: b.production_date,
+          inbound_qty: b.inbound_qty,
+          current_holding: holdingInBatch
+        }
+      }).filter((b) => b.current_holding > 0)
+    }
+
+    if (batchList.length === 0 && currentHolding > 0) {
+      const def = defaultBatchPerVariant.get(item.variant_id)
+      batchList = [{
+        batch_id: def?.id || 'batch-standard',
+        expired_date: def?.expired_date || '2027-12-31',
+        production_date: def?.production_date || '',
+        inbound_qty: totalIn,
+        current_holding: currentHolding
+      }]
+    }
+
+    return {
+      variant_id: item.variant_id,
+      variant_name: item.variant_name,
+      sku: item.sku,
+      product_id: item.product_id,
+      product_name: item.product_name,
+      product_category: item.product_category,
+      total_inbound: totalIn,
+      total_outbound: totalOut,
+      current_holding: currentHolding,
+      batches: batchList
+    }
+  })
+
+  return c.json(inventory)
+})
+
+// ==========================================
+// STORES API (Extended for Sales PWA)
+// ==========================================
+app.get('/api/stores', async (c) => {
+  const tenant_id = 'tenant-1'
+  
+  try {
+    const { results: stores } = await c.env.DB.prepare(`
+      SELECT s.*,
+        (SELECT COUNT(DISTINCT c.variant_id) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as active_variants_count,
+        (SELECT COALESCE(SUM(c.remaining_qty), 0) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as total_remaining_stock,
+        (SELECT COALESCE(SUM(v.outstanding_amount), 0) FROM visits v WHERE v.store_id = s.id) as total_debt,
+        (SELECT MAX(v.visit_date) FROM visits v WHERE v.store_id = s.id) as last_visit_date
+      FROM stores s
+      WHERE s.tenant_id = ?
+      ORDER BY s.name ASC
+    `).bind(tenant_id).all()
+    
+    return c.json(stores || [])
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+app.post('/api/stores', async (c) => {
+  const body = await c.req.json()
+  const id = crypto.randomUUID()
+  const tenant_id = 'tenant-1'
+  
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO stores (id, tenant_id, name, owner_name, address, wa_number, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(id, tenant_id, body.name, body.owner_name || '', body.address || null, body.wa_number || null, body.latitude || null, body.longitude || null).run()
+    
+    const store = await c.env.DB.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first()
+    return c.json(store, 201)
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+app.get('/api/stores/:id', async (c) => {
+  const id = c.req.param('id')
+  const store = await c.env.DB.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first()
+  if (!store) return c.json({ message: 'Toko tidak ditemukan' }, 404)
+
+  // Ambil ringkasan konsinyasi aktif dengan harga produk
+  const { results: consignments } = await c.env.DB.prepare(`
+    SELECT c.*, pv.name as variant_name, p.name as product_name, pv.sku,
+      COALESCE(pv.override_sales_price, p.base_sales_price, 0) as price
+    FROM consignments c
+    LEFT JOIN product_variants pv ON c.variant_id = pv.id
+    LEFT JOIN products p ON pv.product_id = p.id
+    WHERE c.store_id = ? AND c.status = 'active'
+    ORDER BY c.created_at DESC
+  `).bind(id).all()
+
+  // Ambil riwayat kunjungan terakhir
+  const { results: recentVisits } = await c.env.DB.prepare(`
+    SELECT v.*, u.full_name as sales_name
+    FROM visits v
+    LEFT JOIN users u ON v.sales_id = u.id
+    WHERE v.store_id = ?
+    ORDER BY v.visit_date DESC
+    LIMIT 10
+  `).bind(id).all()
+
+  return c.json({ ...store, consignments: consignments || [], recent_visits: recentVisits || [] })
+})
+
+app.put('/api/stores/:id', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json()
+  
+  try {
+    await c.env.DB.prepare(
+      'UPDATE stores SET name = ?, owner_name = ?, address = ?, wa_number = ?, latitude = ?, longitude = ? WHERE id = ?'
+    ).bind(body.name, body.owner_name || '', body.address || null, body.wa_number || null, body.latitude || null, body.longitude || null, id).run()
+    
+    const store = await c.env.DB.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first()
+    return c.json(store)
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+app.delete('/api/stores/:id', async (c) => {
+  const id = c.req.param('id')
+  try {
+    await c.env.DB.prepare('DELETE FROM stores WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// ==========================================
+// VISITS API (Kunjungan Toko - Core Flow)
+// ==========================================
+app.get('/api/visits', async (c) => {
+  const tenant_id = 'tenant-1'
+  const sales_id = c.req.query('sales_id')
+  const store_id = c.req.query('store_id')
+  const date = c.req.query('date') // format: YYYY-MM-DD
+  
+  let query = `
+    SELECT v.*, s.name as store_name, s.address as store_address, u.full_name as sales_name,
+      (SELECT COALESCE(SUM(vi.sold_qty * vi.unit_price), 0) FROM visit_items vi WHERE vi.visit_id = v.id) as computed_sold_amount
+    FROM visits v
+    LEFT JOIN stores s ON v.store_id = s.id
+    LEFT JOIN users u ON v.sales_id = u.id
+    WHERE v.tenant_id = ?
+  `
+  const params: any[] = [tenant_id]
+  
+  if (sales_id) { query += ' AND v.sales_id = ?'; params.push(sales_id) }
+  if (store_id) { query += ' AND v.store_id = ?'; params.push(store_id) }
+  if (date) { query += ' AND DATE(v.visit_date) = ?'; params.push(date) }
+  
+  query += ' ORDER BY v.visit_date DESC, v.created_at DESC'
+  
+  const stmt = c.env.DB.prepare(query)
+  const { results } = await stmt.bind(...params).all()
+  return c.json(results || [])
+})
+
+app.get('/api/visits/:id', async (c) => {
+  const id = c.req.param('id')
+  const visit = await c.env.DB.prepare(`
+    SELECT v.*, s.name as store_name, s.address as store_address, s.owner_name as store_owner,
+           u.full_name as sales_name
+    FROM visits v
+    LEFT JOIN stores s ON v.store_id = s.id
+    LEFT JOIN users u ON v.sales_id = u.id
+    WHERE v.id = ?
+  `).bind(id).first()
+  
+  if (!visit) return c.json({ message: 'Kunjungan tidak ditemukan' }, 404)
+  
+  const { results: items } = await c.env.DB.prepare(`
+    SELECT vi.*, pv.name as variant_name, p.name as product_name, pv.sku
+    FROM visit_items vi
+    LEFT JOIN product_variants pv ON vi.variant_id = pv.id
+    LEFT JOIN products p ON pv.product_id = p.id
+    WHERE vi.visit_id = ?
+  `).bind(id).all()
+  
+  return c.json({ ...visit, items: items || [] })
+})
+
+app.post('/api/visits', async (c) => {
+  const body = await c.req.json()
+  const id = crypto.randomUUID()
+  const tenant_id = 'tenant-1'
+  
+  try {
+    // 1. Simpan data kunjungan utama
+    await c.env.DB.prepare(`
+      INSERT INTO visits (id, tenant_id, sales_id, store_id, visit_date, status, total_sold_amount, payment_received, outstanding_amount, notes, latitude, longitude)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      id, tenant_id, body.sales_id, body.store_id,
+      body.visit_date || new Date().toISOString(),
+      'completed',
+      Number(body.total_sold_amount) || 0,
+      Number(body.payment_received) || 0,
+      Number(body.outstanding_amount) || 0,
+      body.notes || null,
+      body.latitude || null,
+      body.longitude || null
+    ).run()
+    
+    // 2. Simpan item-item kunjungan
+    const items = body.items || []
+    for (const item of items) {
+      const itemId = crypto.randomUUID()
+      await c.env.DB.prepare(`
+        INSERT INTO visit_items (id, visit_id, variant_id, previous_stock, remaining_stock, sold_qty, new_consignment_qty, unit_price)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        itemId, id, item.variant_id,
+        Number(item.previous_stock) || 0,
+        Number(item.remaining_stock) || 0,
+        Number(item.sold_qty) || 0,
+        Number(item.new_consignment_qty) || 0,
+        Number(item.unit_price) || 0
+      ).run()
+      
+      // 3. Update konsinyasi lama: kurangi remaining_qty sesuai sold
+      if (Number(item.sold_qty) > 0) {
+        // Update consignment remaining_qty
+        const existingConsignment = await c.env.DB.prepare(`
+          SELECT id, remaining_qty FROM consignments 
+          WHERE store_id = ? AND variant_id = ? AND status = 'active'
+          ORDER BY created_at ASC LIMIT 1
+        `).bind(body.store_id, item.variant_id).first()
+        
+        if (existingConsignment) {
+          const newRemaining = Math.max(0, Number(existingConsignment.remaining_qty) - Number(item.sold_qty))
+          await c.env.DB.prepare(`
+            UPDATE consignments SET sold_qty = sold_qty + ?, remaining_qty = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).bind(Number(item.sold_qty), newRemaining, existingConsignment.id).run()
+        }
+      }
+      
+      // 4. Buat konsinyasi baru jika ada titip stok baru
+      if (Number(item.new_consignment_qty) > 0) {
+        const consId = crypto.randomUUID()
+        await c.env.DB.prepare(`
+          INSERT INTO consignments (id, tenant_id, sales_id, store_id, variant_id, initial_stock, remaining_qty, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+        `).bind(consId, tenant_id, body.sales_id, body.store_id, item.variant_id, Number(item.new_consignment_qty), Number(item.new_consignment_qty)).run()
+      }
+    }
+    
+    const visit = await c.env.DB.prepare('SELECT * FROM visits WHERE id = ?').bind(id).first()
+    return c.json(visit, 201)
+  } catch (error: any) {
+    console.error('Error creating visit:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// ==========================================
+// SALES DASHBOARD API
+// ==========================================
+app.get('/api/sales-dashboard/:sales_id', async (c) => {
+  const sales_id = c.req.param('sales_id')
+  const tenant_id = 'tenant-1'
+  const today = new Date().toISOString().split('T')[0]
+  
+  try {
+    // 1. Kunjungan hari ini
+    const todayVisits = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count, COALESCE(SUM(payment_received), 0) as total_payment
+      FROM visits
+      WHERE tenant_id = ? AND sales_id = ? AND DATE(visit_date) = ?
+    `).bind(tenant_id, sales_id, today).first()
+
+    // 2. Total item terjual hari ini
+    const todaySold = await c.env.DB.prepare(`
+      SELECT COALESCE(SUM(vi.sold_qty), 0) as total_sold
+      FROM visit_items vi
+      INNER JOIN visits v ON vi.visit_id = v.id
+      WHERE v.tenant_id = ? AND v.sales_id = ? AND DATE(v.visit_date) = ?
+    `).bind(tenant_id, sales_id, today).first()
+
+    // 3. Total toko mitra (semua)
+    const totalStores = await c.env.DB.prepare(`
+      SELECT COUNT(DISTINCT store_id) as count FROM consignments WHERE tenant_id = ? AND sales_id = ?
+    `).bind(tenant_id, sales_id).first()
+
+    // 4. Stok di tangan sales (real-time)
+    const holdingStock = await c.env.DB.prepare(`
+      SELECT COALESCE(SUM(total_inbound - total_outbound), 0) as total_holding FROM (
+        SELECT
+          (SELECT COALESCE(SUM(sri.approved_quantity), 0) FROM stock_request_items sri
+           INNER JOIN stock_requests sr ON sri.request_id = sr.id
+           WHERE sr.sales_id = ? AND sr.status = 'approved' AND sr.tenant_id = ?
+           AND sri.variant_id = pv.id) as total_inbound,
+          (SELECT COALESCE(SUM(c.initial_stock), 0) FROM consignments c
+           WHERE c.sales_id = ? AND c.tenant_id = ?
+           AND c.variant_id = pv.id) as total_outbound
+        FROM product_variants pv
+        INNER JOIN products p ON pv.product_id = p.id
+        WHERE p.tenant_id = ?
+      )
+    `).bind(sales_id, tenant_id, sales_id, tenant_id, tenant_id).first()
+
+    // 5. Rekomendasi pending
+    const pendingRecs = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM stock_requests
+      WHERE tenant_id = ? AND sales_id = ? AND type = 'recommendation' AND status = 'pending'
+    `).bind(tenant_id, sales_id).first()
+
+    // 6. Toko yang belum dikunjungi hari ini (punya konsinyasi aktif tapi belum kunjung hari ini)
+    const { results: pendingStores } = await c.env.DB.prepare(`
+      SELECT DISTINCT s.id, s.name, s.address, s.owner_name
+      FROM consignments c
+      INNER JOIN stores s ON c.store_id = s.id
+      WHERE c.tenant_id = ? AND c.sales_id = ? AND c.status = 'active'
+      AND s.id NOT IN (
+        SELECT store_id FROM visits WHERE sales_id = ? AND DATE(visit_date) = ?
+      )
+      LIMIT 20
+    `).bind(tenant_id, sales_id, sales_id, today).all()
+    
+    return c.json({
+      today_visits: Number(todayVisits?.count) || 0,
+      today_payment: Number(todayVisits?.total_payment) || 0,
+      today_sold_items: Number(todaySold?.total_sold) || 0,
+      total_partner_stores: Number(totalStores?.count) || 0,
+      holding_stock: Number(holdingStock?.total_holding) || 0,
+      pending_recommendations: Number(pendingRecs?.count) || 0,
+      pending_stores: pendingStores || []
+    })
+  } catch (error: any) {
+    console.error('Dashboard error:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
+// ==========================================
+// STORE VISITS HISTORY (Per Store)
+// ==========================================
+app.get('/api/store-visits/:store_id', async (c) => {
+  const store_id = c.req.param('store_id')
+  const tenant_id = 'tenant-1'
+  
+  const { results } = await c.env.DB.prepare(`
+    SELECT v.*, u.full_name as sales_name,
+      (SELECT COALESCE(SUM(vi.sold_qty), 0) FROM visit_items vi WHERE vi.visit_id = v.id) as total_items_sold,
+      (SELECT COALESCE(SUM(vi.sold_qty * vi.unit_price), 0) FROM visit_items vi WHERE vi.visit_id = v.id) as total_amount
+    FROM visits v
+    LEFT JOIN users u ON v.sales_id = u.id
+    WHERE v.store_id = ? AND v.tenant_id = ?
+    ORDER BY v.visit_date DESC
+    LIMIT 50
+  `).bind(store_id, tenant_id).all()
+  
+  return c.json(results || [])
+})
+
 export default app
+

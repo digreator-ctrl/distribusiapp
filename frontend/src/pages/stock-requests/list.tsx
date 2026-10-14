@@ -38,8 +38,9 @@ export const StockRequestList = () => {
             const currentStored = localStorage.getItem("distribusi_user_id");
             const matched = salesOnly.find((s: any) => s.id === currentStored);
             if (!matched) {
-              setActiveSalesId(salesOnly[0].id);
-              localStorage.setItem("distribusi_user_id", salesOnly[0].id);
+              const fallbackId = salesOnly[0].id;
+              setActiveSalesId(prev => prev !== fallbackId ? fallbackId : prev);
+              localStorage.setItem("distribusi_user_id", fallbackId);
               localStorage.setItem("distribusi_user_name", salesOnly[0].full_name || salesOnly[0].username);
             }
           }
@@ -52,7 +53,7 @@ export const StockRequestList = () => {
 
     const handleSalesChanged = () => {
       const stored = localStorage.getItem("distribusi_user_id") || "";
-      setActiveSalesId(stored);
+      setActiveSalesId(prev => prev !== stored ? stored : prev);
     };
 
     window.addEventListener("salesChanged", handleSalesChanged);
@@ -60,7 +61,7 @@ export const StockRequestList = () => {
   }, [isSales]);
 
   const handleSalesChange = (id: string) => {
-    setActiveSalesId(id);
+    setActiveSalesId(prev => prev !== id ? id : prev);
     localStorage.setItem("distribusi_user_id", id);
     const found = salesUsers.find((u) => u.id === id);
     if (found) {
@@ -81,9 +82,9 @@ export const StockRequestList = () => {
           const data = await res.json();
           const count = Array.isArray(data) ? data.length : 0;
           setPendingRecCount(count);
-          // Jika ada rekomendasi pending, otomatis fokuskan ke tab rekomendasi
+          // Jika ada rekomendasi pending dan belum di tab rekomendasi, otomatis fokuskan ke tab rekomendasi
           if (count > 0) {
-            setFilterType("recommendation");
+            setFilterType(prev => prev !== "recommendation" ? "recommendation" : prev);
           }
         }
       } catch (e) {
@@ -94,8 +95,13 @@ export const StockRequestList = () => {
   }, [isSales, activeSalesId]);
 
   useEffect(() => {
+    let isCurrent = true;
     const fetchRequests = async () => {
-      setIsLoading(true);
+      // Hanya tampilkan animasi placeholder penuh jika data awal belum ada
+      // sehingga tidak menyebabkan layar berkedip/hilang sekilas (flicker) saat sinkronisasi sales
+      if (requests.length === 0) {
+        setIsLoading(true);
+      }
       try {
         let url = "http://localhost:8787/api/stock-requests";
         const params = new URLSearchParams();
@@ -113,7 +119,7 @@ export const StockRequestList = () => {
         if (params.toString()) url += `?${params.toString()}`;
 
         const res = await fetch(url);
-        if (res.ok) {
+        if (res.ok && isCurrent) {
           const json = await res.json();
           let data = Array.isArray(json) ? json : [];
 
@@ -141,11 +147,16 @@ export const StockRequestList = () => {
       } catch (err) {
         console.error(err);
       } finally {
-        setIsLoading(false);
+        if (isCurrent) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchRequests();
+    return () => {
+      isCurrent = false;
+    };
   }, [filterType, isSales, activeSalesId]);
 
   const getStatusBadge = (status: string) => {
@@ -338,7 +349,7 @@ export const StockRequestList = () => {
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium shadow hover:opacity-90 transition shrink-0 flex items-center gap-2"
             >
               <Plus size={18} />
-              <span>+ Distribusi</span>
+              <span>Distribusi</span>
             </button>
           </div>
 
