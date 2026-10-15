@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { 
   Package, Calendar, 
-  Clock, AlertCircle, ArrowDownLeft, ArrowUpRight,
-  Briefcase, Store, Plus, Trash2, X, ChevronRight, Inbox, Send
+  Clock, AlertCircle, Briefcase, Store, Plus, Trash2, X, ChevronRight, Send
 } from "lucide-react";
 
 // In-memory cache to prevent layout shift & data flash when navigating back from detail pages
@@ -254,8 +253,12 @@ export const MobileReceivedStock = () => {
   // Kalkulasi Ringkasan
   const pendingRecs = recommendations.filter(r => r.status === "pending");
   const approvedRecs = recommendations.filter(r => r.status === "approved");
+  const pendingReqs = requests.filter(r => r.status === "pending");
   const approvedReqs = requests.filter(r => r.status === "approved");
   
+  const pendingRecsQty = pendingRecs.reduce((sum, r) => sum + (Number(r.total_qty) || 0), 0);
+  const pendingReqsQty = pendingReqs.reduce((sum, r) => sum + (Number(r.total_qty) || 0), 0);
+
   const totalApprovedInboundQty = [...approvedRecs, ...approvedReqs].reduce((sum, r) => sum + (Number(r.total_qty) || 0), 0);
   const totalOutboundQty = consignments.reduce((acc, curr) => acc + (Number(curr.initial_stock) || 0), 0);
   const totalHoldingQty = holdingInventory.reduce((acc, curr) => acc + (Number(curr.current_holding) || 0), 0);
@@ -301,15 +304,14 @@ export const MobileReceivedStock = () => {
         {/* Tab 1: Ambil Stok (Stok Masuk) */}
         <button
           onClick={() => setActiveTab("masuk")}
-          className={`h-9 text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1 ${
+          className={`h-9 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
             activeTab === "masuk"
               ? "bg-background text-foreground shadow-xs font-bold"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <ArrowDownLeft size={13} className="text-emerald-500 shrink-0" />
-          <span className="truncate">Ambil Stok</span>
-          {pendingRecs.length > 0 && (
+          <span>Ambil Stok</span>
+          {(pendingRecs.length > 0 || pendingReqs.length > 0) && (
             <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
           )}
         </button>
@@ -317,27 +319,25 @@ export const MobileReceivedStock = () => {
         {/* Tab 2: Stok di Tangan (Aktif) */}
         <button
           onClick={() => setActiveTab("dibawa")}
-          className={`h-9 text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1 ${
+          className={`h-9 text-xs font-semibold rounded-lg transition-all flex items-center justify-center ${
             activeTab === "dibawa"
               ? "bg-background text-foreground shadow-xs font-bold"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Briefcase size={13} className="text-amber-500 shrink-0" />
-          <span className="truncate">Stok di Tangan</span>
+          <span>Stok di Tangan</span>
         </button>
 
         {/* Tab 3: Rekap Keluar */}
         <button
           onClick={() => setActiveTab("keluar")}
-          className={`h-9 text-[11px] font-semibold rounded-lg transition-all flex items-center justify-center gap-1 ${
+          className={`h-9 text-xs font-semibold rounded-lg transition-all flex items-center justify-center ${
             activeTab === "keluar"
               ? "bg-background text-foreground shadow-xs font-bold"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <ArrowUpRight size={13} className="text-blue-500 shrink-0" />
-          <span className="truncate">Rekap Keluar</span>
+          <span>Rekap Keluar</span>
         </button>
       </div>
 
@@ -346,6 +346,78 @@ export const MobileReceivedStock = () => {
       {/* ========================================================= */}
       {activeTab === "masuk" && (
         <div className="space-y-3">
+          {/* Card Status Persetujuan Stok Masuk (Sesuai Ukuran Card di Tab Stok di Tangan) */}
+          <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-sm relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="flex items-center justify-between">
+                <p className="text-emerald-100 text-[11px] font-bold uppercase tracking-wider">
+                  Status Persetujuan Stok Masuk
+                </p>
+                <span className="text-[10px] font-semibold text-emerald-200">
+                  {pendingRecs.length + pendingReqs.length > 0 ? "Perlu Tindakan" : "Semua Disetujui"}
+                </span>
+              </div>
+
+              {/* Posisi Atas Bawah: Rekomendasi (Atas) & Pengajuan (Bawah) */}
+              <div className="mt-2.5 pt-2.5 border-t border-white/20 space-y-2 text-xs">
+                {/* Atas: Rekomendasi Admin */}
+                <button
+                  type="button"
+                  onClick={() => setSubTab("recommendation")}
+                  className="w-full flex items-center justify-between hover:opacity-90 active:scale-[0.99] transition text-left"
+                >
+                  <div className="min-w-0 pr-2">
+                    <span className="text-emerald-100 text-[10px] block font-medium">
+                      Rekomendasi Admin (Perlu Approve Sales):
+                    </span>
+                    <span className="text-[11px] text-white/80 truncate block">
+                      {pendingRecs.length > 0
+                        ? `${pendingRecsQty.toLocaleString("id-ID")} pcs perlu Anda terima`
+                        : "0 perlu diapprove (Semua diterima)"}
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className={`px-2 py-0.5 rounded-md font-bold text-xs inline-block ${
+                      pendingRecs.length > 0
+                        ? "bg-amber-400 text-amber-950 font-black animate-pulse"
+                        : "bg-white/20 text-white"
+                    }`}>
+                      {pendingRecs.length > 0 ? `${pendingRecs.length} Menunggu` : "0 Selesai"}
+                    </span>
+                  </div>
+                </button>
+
+                {/* Bawah: Pengajuan Stok Sales */}
+                <button
+                  type="button"
+                  onClick={() => setSubTab("request")}
+                  className="w-full flex items-center justify-between hover:opacity-90 active:scale-[0.99] transition text-left pt-1.5 border-t border-white/10"
+                >
+                  <div className="min-w-0 pr-2">
+                    <span className="text-emerald-100 text-[10px] block font-medium">
+                      Pengajuan Stok Saya (Menunggu Approve Admin):
+                    </span>
+                    <span className="text-[11px] text-white/80 truncate block">
+                      {pendingReqs.length > 0
+                        ? `${pendingReqsQty.toLocaleString("id-ID")} pcs menunggu approve admin`
+                        : "0 menunggu (Semua disetujui)"}
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className={`px-2 py-0.5 rounded-md font-bold text-xs inline-block ${
+                      pendingReqs.length > 0
+                        ? "bg-blue-300 text-blue-950 font-black"
+                        : "bg-white/20 text-white"
+                    }`}>
+                      {pendingReqs.length > 0 ? `${pendingReqs.length} Menunggu` : "0 Disetujui"}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+            <Package size={110} className="absolute -right-4 -bottom-4 opacity-15 pointer-events-none" />
+          </div>
+
           {/* Sub-Tab Switcher: Rekomendasi vs Pengajuan Saya */}
           <div className="flex items-center justify-between gap-2">
             <div className="grid grid-cols-2 gap-1 p-0.5 bg-muted/70 rounded-xl border border-border/50 flex-1 max-w-[280px]">
@@ -357,7 +429,6 @@ export const MobileReceivedStock = () => {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Inbox size={12} className={pendingRecs.length > 0 ? "text-amber-500" : ""} />
                 <span>Rekomendasi</span>
                 {pendingRecs.length > 0 && (
                   <span className="px-1.5 py-0.2 bg-amber-500 text-white font-black text-[9px] rounded-full">
@@ -374,8 +445,12 @@ export const MobileReceivedStock = () => {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Send size={12} />
                 <span>Pengajuan Saya</span>
+                {pendingReqs.length > 0 && (
+                  <span className="px-1.5 py-0.2 bg-blue-500 text-white font-black text-[9px] rounded-full">
+                    {pendingReqs.length}
+                  </span>
+                )}
               </button>
             </div>
 

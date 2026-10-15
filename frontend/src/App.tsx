@@ -34,6 +34,7 @@ import { InventoryList } from "./pages/inventory/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { SalesDashboard } from "./pages/sales/dashboard";
 import { SalesStores } from "./pages/sales/stores";
+import { SalesStoreDetail } from "./pages/sales/store-detail";
 import { SalesVisitWizard } from "./pages/sales/visit-wizard";
 import { SalesHistory } from "./pages/sales/history";
 import { SalesProductDetail } from "./pages/sales/product-detail";
@@ -204,6 +205,7 @@ function App() {
 
             {/* 2. 🏪 Toko (Mitra Konsinyasi & Wizard Kunjungan) */}
             <Route path="toko" element={<SalesStores />} />
+            <Route path="toko/:storeId" element={<SalesStoreDetail />} />
             <Route path="toko/kunjungan/:storeId" element={<SalesVisitWizard />} />
             <Route path="visit-wizard/:storeId" element={<SalesVisitWizard />} />
             <Route path="visit-wizard" element={<SalesVisitWizard />} />

@@ -267,14 +267,7 @@ app.get('/api/inbound_batches/:id', async (c) => {
   return c.json(batch)
 })
 
-// ==========================================
-// STORES (AGEN) API
-// ==========================================
-app.get('/api/stores', async (c) => {
-  const tenant_id = 'tenant-1'
-  const { results } = await c.env.DB.prepare('SELECT id, name, owner_name FROM stores WHERE tenant_id = ? ORDER BY created_at DESC').bind(tenant_id).all()
-  return c.json(results)
-})
+
 
 // ==========================================
 // AGENTS API
@@ -1083,6 +1076,12 @@ app.get('/api/stores', async (c) => {
   const tenant_id = 'tenant-1'
   
   try {
+    // Pastikan kolom wilayah tersedia di tabel stores
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN province TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN city TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN district TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN village TEXT').run() } catch (e) {}
+
     const { results: stores } = await c.env.DB.prepare(`
       SELECT s.*,
         (SELECT COUNT(DISTINCT c.variant_id) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as active_variants_count,
@@ -1106,9 +1105,27 @@ app.post('/api/stores', async (c) => {
   const tenant_id = 'tenant-1'
   
   try {
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN province TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN city TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN district TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN village TEXT').run() } catch (e) {}
+
     await c.env.DB.prepare(
-      'INSERT INTO stores (id, tenant_id, name, owner_name, address, wa_number, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, tenant_id, body.name, body.owner_name || '', body.address || null, body.wa_number || null, body.latitude || null, body.longitude || null).run()
+      'INSERT INTO stores (id, tenant_id, name, owner_name, address, wa_number, latitude, longitude, province, city, district, village) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      id,
+      tenant_id,
+      body.name,
+      body.owner_name || '',
+      body.address || null,
+      body.wa_number || null,
+      body.latitude || null,
+      body.longitude || null,
+      body.province || null,
+      body.city || null,
+      body.district || null,
+      body.village || null
+    ).run()
     
     const store = await c.env.DB.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first()
     return c.json(store, 201)
@@ -1152,8 +1169,20 @@ app.put('/api/stores/:id', async (c) => {
   
   try {
     await c.env.DB.prepare(
-      'UPDATE stores SET name = ?, owner_name = ?, address = ?, wa_number = ?, latitude = ?, longitude = ? WHERE id = ?'
-    ).bind(body.name, body.owner_name || '', body.address || null, body.wa_number || null, body.latitude || null, body.longitude || null, id).run()
+      'UPDATE stores SET name = ?, owner_name = ?, address = ?, wa_number = ?, latitude = ?, longitude = ?, province = ?, city = ?, district = ?, village = ? WHERE id = ?'
+    ).bind(
+      body.name,
+      body.owner_name || '',
+      body.address || null,
+      body.wa_number || null,
+      body.latitude || null,
+      body.longitude || null,
+      body.province || null,
+      body.city || null,
+      body.district || null,
+      body.village || null,
+      id
+    ).run()
     
     const store = await c.env.DB.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first()
     return c.json(store)
@@ -1292,11 +1321,140 @@ app.post('/api/visits', async (c) => {
       }
     }
     
+    // 5. Update status jadwal kunjungan toko jika ada jadwal pending untuk toko ini
+    try {
+      await c.env.DB.prepare(`
+        UPDATE visit_schedules SET status = 'completed', updated_at = CURRENT_TIMESTAMP
+        WHERE store_id = ? AND status = 'pending'
+      `).bind(body.store_id).run()
+    } catch (_) {
+      // ignore if table doesn't exist yet
+    }
+
     const visit = await c.env.DB.prepare('SELECT * FROM visits WHERE id = ?').bind(id).first()
     return c.json(visit, 201)
   } catch (error: any) {
     console.error('Error creating visit:', error)
     return c.json({ error: error.message }, 500)
+  }
+})
+
+// ==========================================
+// VISIT SCHEDULES API (Jadwal Kunjungan Toko)
+// ==========================================
+app.get('/api/visit-schedules', async (c) => {
+  const tenant_id = 'tenant-1'
+  const sales_id = c.req.query('sales_id')
+  const date = c.req.query('date')
+
+  try {
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS visit_schedules (
+        id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL,
+        sales_id TEXT,
+        store_id TEXT NOT NULL,
+        scheduled_date DATE NOT NULL,
+        notes TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run()
+
+    let query = `
+      SELECT vs.*, s.name as store_name, s.owner_name, s.address, s.wa_number, s.latitude, s.longitude,
+        (SELECT COUNT(DISTINCT c.variant_id) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as active_variants_count,
+        (SELECT COALESCE(SUM(c.remaining_qty), 0) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as total_remaining_stock,
+        (SELECT COALESCE(SUM(v.outstanding_amount), 0) FROM visits v WHERE v.store_id = s.id) as total_debt,
+        (SELECT MAX(v.visit_date) FROM visits v WHERE v.store_id = s.id) as last_visit_date
+      FROM visit_schedules vs
+      JOIN stores s ON vs.store_id = s.id
+      WHERE vs.tenant_id = ?
+    `
+    const params: any[] = [tenant_id]
+    if (sales_id) { query += ' AND (vs.sales_id = ? OR vs.sales_id IS NULL)'; params.push(sales_id) }
+    if (date) { query += ' AND vs.scheduled_date = ?'; params.push(date) }
+    query += ' ORDER BY vs.scheduled_date ASC, vs.created_at DESC'
+
+    const { results } = await c.env.DB.prepare(query).bind(...params).all()
+    return c.json(results || [])
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+app.post('/api/visit-schedules', async (c) => {
+  const tenant_id = 'tenant-1'
+  const body = await c.req.json()
+  const id = crypto.randomUUID()
+
+  try {
+    await c.env.DB.prepare(`
+      CREATE TABLE IF NOT EXISTS visit_schedules (
+        id TEXT PRIMARY KEY,
+        tenant_id TEXT NOT NULL,
+        sales_id TEXT,
+        store_id TEXT NOT NULL,
+        scheduled_date DATE NOT NULL,
+        notes TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run()
+
+    await c.env.DB.prepare(`
+      INSERT INTO visit_schedules (id, tenant_id, sales_id, store_id, scheduled_date, notes, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending')
+    `).bind(id, tenant_id, body.sales_id || null, body.store_id, body.scheduled_date, body.notes || '').run()
+
+    const item = await c.env.DB.prepare(`
+      SELECT vs.*, s.name as store_name, s.owner_name, s.address, s.wa_number, s.latitude, s.longitude
+      FROM visit_schedules vs
+      JOIN stores s ON vs.store_id = s.id
+      WHERE vs.id = ?
+    `).bind(id).first()
+    return c.json(item, 201)
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+app.put('/api/visit-schedules/:id', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json()
+
+  try {
+    const fields: string[] = []
+    const params: any[] = []
+
+    if (body.scheduled_date !== undefined) { fields.push('scheduled_date = ?'); params.push(body.scheduled_date) }
+    if (body.notes !== undefined) { fields.push('notes = ?'); params.push(body.notes) }
+    if (body.status !== undefined) { fields.push('status = ?'); params.push(body.status) }
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+
+    params.push(id)
+    await c.env.DB.prepare(`UPDATE visit_schedules SET ${fields.join(', ')} WHERE id = ?`).bind(...params).run()
+    const item = await c.env.DB.prepare(`
+      SELECT vs.*, s.name as store_name, s.owner_name, s.address, s.wa_number, s.latitude, s.longitude
+      FROM visit_schedules vs
+      JOIN stores s ON vs.store_id = s.id
+      WHERE vs.id = ?
+    `).bind(id).first()
+    return c.json(item)
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+app.delete('/api/visit-schedules/:id', async (c) => {
+  const id = c.req.param('id')
+  try {
+    await c.env.DB.prepare('DELETE FROM visit_schedules WHERE id = ?').bind(id).run()
+    return c.json({ success: true })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
   }
 })
 
