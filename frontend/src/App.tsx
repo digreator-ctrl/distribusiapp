@@ -30,6 +30,10 @@ import { AgentList } from "./pages/agents/list";
 import { AgentCreate } from "./pages/agents/create";
 import { AgentShow } from "./pages/agents/show";
 import { AgentEdit } from "./pages/agents/edit";
+import { StoreList } from "./pages/stores/list";
+import { StoreCreate } from "./pages/stores/create";
+import { StoreShow } from "./pages/stores/show";
+import { StoreEdit } from "./pages/stores/edit";
 import { InventoryList } from "./pages/inventory/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { SalesDashboard } from "./pages/sales/dashboard";
@@ -100,6 +104,14 @@ function App() {
             create: "/agents/create",
             show: "/agents/:id",
             edit: "/agents/:id/edit",
+          },
+          {
+            name: "stores",
+            meta: { label: "Mitra Toko", group: "Mitra Bisnis" },
+            list: "/stores",
+            create: "/stores/create",
+            show: "/stores/:id",
+            edit: "/stores/:id/edit",
           },
           {
             name: "users",
@@ -187,6 +199,10 @@ function App() {
             <Route path="/agents/create" element={<AgentCreate />} />
             <Route path="/agents/:id" element={<AgentShow />} />
             <Route path="/agents/:id/edit" element={<AgentEdit />} />
+            <Route path="/stores" element={<StoreList />} />
+            <Route path="/stores/create" element={<StoreCreate />} />
+            <Route path="/stores/:id" element={<StoreShow />} />
+            <Route path="/stores/:id/edit" element={<StoreEdit />} />
             <Route path="/inventory" element={<InventoryList />} />
           </Route>
 

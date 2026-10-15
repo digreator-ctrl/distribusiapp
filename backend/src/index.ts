@@ -1076,11 +1076,12 @@ app.get('/api/stores', async (c) => {
   const tenant_id = 'tenant-1'
   
   try {
-    // Pastikan kolom wilayah tersedia di tabel stores
+    // Pastikan kolom wilayah dan status tersedia di tabel stores
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN province TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN city TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN district TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN village TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare("ALTER TABLE stores ADD COLUMN status TEXT DEFAULT 'Aktif'").run() } catch (e) {}
 
     const { results: stores } = await c.env.DB.prepare(`
       SELECT s.*,
@@ -1109,9 +1110,11 @@ app.post('/api/stores', async (c) => {
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN city TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN district TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN village TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare("ALTER TABLE stores ADD COLUMN status TEXT DEFAULT 'Aktif'").run() } catch (e) {}
 
+    const status = body.status || 'Aktif'
     await c.env.DB.prepare(
-      'INSERT INTO stores (id, tenant_id, name, owner_name, address, wa_number, latitude, longitude, province, city, district, village) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO stores (id, tenant_id, name, owner_name, address, wa_number, latitude, longitude, province, city, district, village, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(
       id,
       tenant_id,
@@ -1124,7 +1127,8 @@ app.post('/api/stores', async (c) => {
       body.province || null,
       body.city || null,
       body.district || null,
-      body.village || null
+      body.village || null,
+      status
     ).run()
     
     const store = await c.env.DB.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first()
@@ -1136,19 +1140,79 @@ app.post('/api/stores', async (c) => {
 
 app.get('/api/stores/:id', async (c) => {
   const id = c.req.param('id')
-  const store = await c.env.DB.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first()
+  const store = await c.env.DB.prepare(`
+    SELECT s.*,
+      (SELECT COUNT(DISTINCT c.variant_id) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as active_variants_count,
+      (SELECT COALESCE(SUM(c.remaining_qty), 0) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as total_remaining_stock,
+      (SELECT COALESCE(SUM(v.outstanding_amount), 0) FROM visits v WHERE v.store_id = s.id) as total_debt,
+      (SELECT MAX(v.visit_date) FROM visits v WHERE v.store_id = s.id) as last_visit_date
+    FROM stores s
+    WHERE s.id = ?
+  `).bind(id).first()
   if (!store) return c.json({ message: 'Toko tidak ditemukan' }, 404)
 
   // Ambil ringkasan konsinyasi aktif dengan harga produk
   const { results: consignments } = await c.env.DB.prepare(`
     SELECT c.*, pv.name as variant_name, p.name as product_name, pv.sku,
-      COALESCE(pv.override_sales_price, p.base_sales_price, 0) as price
+      COALESCE(pv.override_sales_price, p.base_sales_price, 0) as price,
+      u.full_name as sales_name
     FROM consignments c
     LEFT JOIN product_variants pv ON c.variant_id = pv.id
     LEFT JOIN products p ON pv.product_id = p.id
+    LEFT JOIN users u ON c.sales_id = u.id
     WHERE c.store_id = ? AND c.status = 'active'
     ORDER BY c.created_at DESC
   `).bind(id).all()
+
+  // Ambil Riwayat Stok Masuk (Seluruh konsinyasi / stok masuk ke toko ini)
+  const { results: inboundHistory } = await c.env.DB.prepare(`
+    SELECT c.id, c.created_at as date, c.initial_stock as qty, c.remaining_qty, c.sold_qty, c.status,
+      pv.name as variant_name, p.name as product_name, pv.sku,
+      COALESCE(pv.override_sales_price, p.base_sales_price, 0) as price,
+      u.full_name as sales_name
+    FROM consignments c
+    LEFT JOIN product_variants pv ON c.variant_id = pv.id
+    LEFT JOIN products p ON pv.product_id = p.id
+    LEFT JOIN users u ON c.sales_id = u.id
+    WHERE c.store_id = ?
+    ORDER BY c.created_at DESC
+    LIMIT 100
+  `).bind(id).all()
+
+  // Ambil Riwayat Terjual (Dari item kunjungan penjualan)
+  const { results: visitSold } = await c.env.DB.prepare(`
+    SELECT vi.id, vi.sold_qty as qty, vi.unit_price, (vi.sold_qty * vi.unit_price) as total_price,
+      v.visit_date as date, u.full_name as sales_name,
+      pv.name as variant_name, p.name as product_name, pv.sku
+    FROM visit_items vi
+    JOIN visits v ON vi.visit_id = v.id
+    LEFT JOIN product_variants pv ON vi.variant_id = pv.id
+    LEFT JOIN products p ON pv.product_id = p.id
+    LEFT JOIN users u ON v.sales_id = u.id
+    WHERE v.store_id = ? AND vi.sold_qty > 0
+    ORDER BY v.visit_date DESC, vi.id DESC
+    LIMIT 100
+  `).bind(id).all()
+
+  // Fallback riwayat terjual dari consignments jika belum ada visit_items
+  let soldHistory = visitSold || []
+  if (soldHistory.length === 0) {
+    const { results: consSold } = await c.env.DB.prepare(`
+      SELECT c.id, c.updated_at as date, c.sold_qty as qty,
+        COALESCE(pv.override_sales_price, p.base_sales_price, 0) as unit_price,
+        (c.sold_qty * COALESCE(pv.override_sales_price, p.base_sales_price, 0)) as total_price,
+        u.full_name as sales_name,
+        pv.name as variant_name, p.name as product_name, pv.sku
+      FROM consignments c
+      LEFT JOIN product_variants pv ON c.variant_id = pv.id
+      LEFT JOIN products p ON pv.product_id = p.id
+      LEFT JOIN users u ON c.sales_id = u.id
+      WHERE c.store_id = ? AND c.sold_qty > 0
+      ORDER BY c.updated_at DESC
+      LIMIT 100
+    `).bind(id).all()
+    soldHistory = consSold || []
+  }
 
   // Ambil riwayat kunjungan terakhir
   const { results: recentVisits } = await c.env.DB.prepare(`
@@ -1160,7 +1224,13 @@ app.get('/api/stores/:id', async (c) => {
     LIMIT 10
   `).bind(id).all()
 
-  return c.json({ ...store, consignments: consignments || [], recent_visits: recentVisits || [] })
+  return c.json({
+    ...store,
+    consignments: consignments || [],
+    inbound_history: inboundHistory || [],
+    sold_history: soldHistory || [],
+    recent_visits: recentVisits || []
+  })
 })
 
 app.put('/api/stores/:id', async (c) => {
@@ -1168,8 +1238,10 @@ app.put('/api/stores/:id', async (c) => {
   const body = await c.req.json()
   
   try {
+    try { await c.env.DB.prepare("ALTER TABLE stores ADD COLUMN status TEXT DEFAULT 'Aktif'").run() } catch (e) {}
+
     await c.env.DB.prepare(
-      'UPDATE stores SET name = ?, owner_name = ?, address = ?, wa_number = ?, latitude = ?, longitude = ?, province = ?, city = ?, district = ?, village = ? WHERE id = ?'
+      'UPDATE stores SET name = ?, owner_name = ?, address = ?, wa_number = ?, latitude = ?, longitude = ?, province = ?, city = ?, district = ?, village = ?, status = ? WHERE id = ?'
     ).bind(
       body.name,
       body.owner_name || '',
@@ -1181,6 +1253,7 @@ app.put('/api/stores/:id', async (c) => {
       body.city || null,
       body.district || null,
       body.village || null,
+      body.status || 'Aktif',
       id
     ).run()
     
@@ -1194,6 +1267,16 @@ app.put('/api/stores/:id', async (c) => {
 app.delete('/api/stores/:id', async (c) => {
   const id = c.req.param('id')
   try {
+    try { await c.env.DB.prepare('DELETE FROM visit_schedules WHERE store_id = ?').bind(id).run() } catch (_) {}
+    try { await c.env.DB.prepare('DELETE FROM consignments WHERE store_id = ?').bind(id).run() } catch (_) {}
+    try { 
+      const { results: vIds } = await c.env.DB.prepare('SELECT id FROM visits WHERE store_id = ?').bind(id).all()
+      for (const v of (vIds || [])) {
+        await c.env.DB.prepare('DELETE FROM visit_items WHERE visit_id = ?').bind((v as any).id).run()
+      }
+      await c.env.DB.prepare('DELETE FROM visits WHERE store_id = ?').bind(id).run()
+    } catch (_) {}
+
     await c.env.DB.prepare('DELETE FROM stores WHERE id = ?').bind(id).run()
     return c.json({ success: true })
   } catch (error: any) {

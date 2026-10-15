@@ -2,10 +2,67 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Store, Plus, Search, MapPin, MessageSquare,
-  Clock, CheckCircle2, ChevronRight, X,
+  Clock, CheckCircle2, X,
   Compass, User, Calendar, Trash2, Edit2, AlertCircle,
   ArrowUpDown, SlidersHorizontal, RotateCcw
 } from "lucide-react";
+import {
+  PROVINCES_DATA,
+  fetchRegencies,
+  fetchDistricts,
+  fetchVillages,
+  parseGmapsInput,
+  type RegionItem
+} from "../../lib/wilayah";
+import { SearchableSelect } from "../../components/SearchableSelect";
+import { MapPickerModal } from "../../components/MapPickerModal";
+
+// Komponen Floating Toast Notification Kustom (Bukan Bawaan Browser)
+const Toast = ({
+  message,
+  type,
+  onClose,
+}: {
+  message: string;
+  type: "success" | "error";
+  onClose: () => void;
+}) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none w-full max-w-md px-4 animate-in fade-in slide-in-from-top-4">
+      <div
+        className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-2xl border text-xs backdrop-blur-md transition-all ${
+          type === "success"
+            ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
+            : "bg-red-50/95 border-red-200 text-red-900 shadow-red-500/10"
+        }`}
+      >
+        <div
+          className={`p-2 rounded-xl shrink-0 ${
+            type === "success" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+          }`}
+        >
+          {type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+        </div>
+        <div className="flex-1 pt-0.5">
+          <p className="font-bold text-sm">{type === "success" ? "Berhasil!" : "Wajib Terisi!"}</p>
+          <p className="mt-0.5 opacity-90 leading-relaxed font-medium">{message}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1 rounded-lg opacity-60 hover:opacity-100 hover:bg-black/5 transition"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export const SalesStores = () => {
   const navigate = useNavigate();
@@ -39,16 +96,68 @@ export const SalesStores = () => {
   const [newName, setNewName] = useState("");
   const [newOwner, setNewOwner] = useState("");
   const [newAddress, setNewAddress] = useState("");
-  const [newProvince, setNewProvince] = useState("");
-  const [newCity, setNewCity] = useState("");
-  const [newDistrict, setNewDistrict] = useState("");
-  const [newVillage, setNewVillage] = useState("");
   const [newWa, setNewWa] = useState("");
+  const [newGmaps, setNewGmaps] = useState("");
   const [newLat, setNewLat] = useState<number | null>(null);
   const [newLng, setNewLng] = useState<number | null>(null);
-  const [isGettingGps, setIsGettingGps] = useState(false);
+
+  const [selectedProvId, setSelectedProvId] = useState("");
+  const [newProvince, setNewProvince] = useState("");
+  const [modalRegencies, setModalRegencies] = useState<RegionItem[]>([]);
+  const [selectedRegId, setSelectedRegId] = useState("");
+  const [newCity, setNewCity] = useState("");
+  const [isLoadingModalRegencies, setIsLoadingModalRegencies] = useState(false);
+
+  const [modalDistricts, setModalDistricts] = useState<RegionItem[]>([]);
+  const [selectedDistId, setSelectedDistId] = useState("");
+  const [newDistrict, setNewDistrict] = useState("");
+  const [isLoadingModalDistricts, setIsLoadingModalDistricts] = useState(false);
+
+  const [modalVillages, setModalVillages] = useState<RegionItem[]>([]);
+  const [newVillage, setNewVillage] = useState("");
+  const [isLoadingModalVillages, setIsLoadingModalVillages] = useState(false);
+
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [addErrors, setAddErrors] = useState<{ [key: string]: string }>({});
+
+  // Reset form tambah toko ke kondisi default normal
+  const resetAddForm = () => {
+    setNewName("");
+    setNewOwner("");
+    setNewAddress("");
+    setNewWa("");
+    setNewGmaps("");
+    setNewLat(null);
+    setNewLng(null);
+    setSelectedProvId("");
+    setNewProvince("");
+    setSelectedRegId("");
+    setNewCity("");
+    setSelectedDistId("");
+    setNewDistrict("");
+    setNewVillage("");
+    setModalRegencies([]);
+    setModalDistricts([]);
+    setModalVillages([]);
+    setAddErrors({});
+    setFormError("");
+    setIsMapModalOpen(false);
+    if (toast?.type === "error") {
+      setToast(null);
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    resetAddForm();
+    setIsAddOpen(true);
+  };
+
+  const handleCloseAddModal = () => {
+    resetAddForm();
+    setIsAddOpen(false);
+  };
 
   // Modal Jadwal Kunjungan (Tambah / Edit)
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -100,34 +209,159 @@ export const SalesStores = () => {
     fetchSchedules();
   }, []);
 
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Browser Anda tidak mendukung geolokasi GPS");
+  const handleSelectFromMap = (data: { lat: number; lng: number; gmapsUrl: string }) => {
+    setNewLat(data.lat);
+    setNewLng(data.lng);
+    setNewGmaps(data.gmapsUrl);
+    setToast({
+      message: `Titik koordinat berhasil dipilih (${data.lat.toFixed(5)}, ${data.lng.toFixed(5)})!`,
+      type: "success",
+    });
+  };
+
+  const handleModalProvSelect = async (opt: RegionItem | null) => {
+    if (!opt) {
+      setSelectedProvId("");
+      setNewProvince("");
+      setSelectedRegId("");
+      setNewCity("");
+      setModalRegencies([]);
+      setSelectedDistId("");
+      setNewDistrict("");
+      setModalDistricts([]);
+      setNewVillage("");
+      setModalVillages([]);
       return;
     }
-    setIsGettingGps(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setNewLat(pos.coords.latitude);
-        setNewLng(pos.coords.longitude);
-        setIsGettingGps(false);
-      },
-      (err) => {
-        console.error(err);
-        alert("Gagal membaca GPS: " + err.message);
-        setIsGettingGps(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+
+    setSelectedProvId(opt.id);
+    setNewProvince(opt.name);
+    setAddErrors((prev) => ({ ...prev, province: "" }));
+
+    setSelectedRegId("");
+    setNewCity("");
+    setModalRegencies([]);
+    setSelectedDistId("");
+    setNewDistrict("");
+    setModalDistricts([]);
+    setNewVillage("");
+    setModalVillages([]);
+
+    setIsLoadingModalRegencies(true);
+    const data = await fetchRegencies(opt.id);
+    setModalRegencies(data);
+    setIsLoadingModalRegencies(false);
+  };
+
+  const handleModalRegSelect = async (opt: RegionItem | null) => {
+    if (!opt) {
+      setSelectedRegId("");
+      setNewCity("");
+      setSelectedDistId("");
+      setNewDistrict("");
+      setModalDistricts([]);
+      setNewVillage("");
+      setModalVillages([]);
+      return;
+    }
+
+    setSelectedRegId(opt.id);
+    setNewCity(opt.name);
+    setAddErrors((prev) => ({ ...prev, city: "" }));
+
+    setSelectedDistId("");
+    setNewDistrict("");
+    setModalDistricts([]);
+    setNewVillage("");
+    setModalVillages([]);
+
+    setIsLoadingModalDistricts(true);
+    const data = await fetchDistricts(opt.id);
+    setModalDistricts(data);
+    setIsLoadingModalDistricts(false);
+  };
+
+  const handleModalDistSelect = async (opt: RegionItem | null) => {
+    if (!opt) {
+      setSelectedDistId("");
+      setNewDistrict("");
+      setNewVillage("");
+      setModalVillages([]);
+      return;
+    }
+
+    setSelectedDistId(opt.id);
+    setNewDistrict(opt.name);
+    setAddErrors((prev) => ({ ...prev, district: "" }));
+
+    setNewVillage("");
+    setModalVillages([]);
+
+    setIsLoadingModalVillages(true);
+    const data = await fetchVillages(opt.id);
+    setModalVillages(data);
+    setIsLoadingModalVillages(false);
+  };
+
+  const handleModalVillageSelect = (opt: RegionItem | null) => {
+    if (!opt) {
+      setNewVillage("");
+      return;
+    }
+    setNewVillage(opt.name);
+    setAddErrors((prev) => ({ ...prev, village: "" }));
+  };
+
+  const handleModalGmapsChange = (val: string) => {
+    setNewGmaps(val);
+    const parsed = parseGmapsInput(val);
+    if (parsed.lat !== null && parsed.lng !== null) {
+      setNewLat(parsed.lat);
+      setNewLng(parsed.lng);
+    } else {
+      setNewLat(null);
+      setNewLng(null);
+    }
   };
 
   const handleAddStore = async (e: React.FormEvent) => {
     e.preventDefault();
+    const newErrors: { [key: string]: string } = {};
+
     if (!newName.trim()) {
-      setFormError("Nama toko wajib diisi.");
+      newErrors.name = "Nama Toko wajib diisi.";
+    }
+    if (!newOwner.trim()) {
+      newErrors.owner = "Nama Pemilik / PIC Toko wajib diisi.";
+    }
+    if (!newWa.trim()) {
+      newErrors.wa = "Nomor WhatsApp wajib diisi.";
+    } else if (newWa.length < 11 || newWa.length > 15) {
+      newErrors.wa = "Nomor WhatsApp harus 11 sampai 15 digit angka.";
+    }
+    if (!selectedProvId || !newProvince) {
+      newErrors.province = "Provinsi wajib dipilih.";
+    }
+    if (!selectedRegId || !newCity) {
+      newErrors.city = "Kabupaten / Kota wajib dipilih.";
+    }
+    if (!selectedDistId || !newDistrict) {
+      newErrors.district = "Kecamatan wajib dipilih.";
+    }
+    if (!newVillage) {
+      newErrors.village = "Desa / Kelurahan wajib dipilih.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setAddErrors(newErrors);
+      setToast({
+        message: "Kolom yang wajib terisi masih kosong atau belum valid. Silakan lengkapi kolom yang berwarna merah.",
+        type: "error",
+      });
       return;
     }
 
+    setAddErrors({});
     setFormError("");
     setIsSubmitting(true);
     try {
@@ -149,26 +383,16 @@ export const SalesStores = () => {
       });
 
       if (res.ok) {
-        setToast({ message: "Toko berhasil ditambahkan!", type: "success" });
-        setIsAddOpen(false);
-        setNewName("");
-        setNewOwner("");
-        setNewAddress("");
-        setNewProvince("");
-        setNewCity("");
-        setNewDistrict("");
-        setNewVillage("");
-        setNewWa("");
-        setNewLat(null);
-        setNewLng(null);
+        setToast({ message: `Mitra toko "${newName.trim()}" berhasil ditambahkan!`, type: "success" });
+        handleCloseAddModal();
         fetchStores();
       } else {
         const err = await res.json();
-        setFormError(err.error || "Gagal menambahkan toko.");
+        setToast({ message: err.error || "Gagal menambahkan toko.", type: "error" });
       }
     } catch (err) {
       console.error(err);
-      setFormError("Terjadi kesalahan jaringan.");
+      setToast({ message: "Terjadi gangguan koneksi ke server.", type: "error" });
     } finally {
       setIsSubmitting(false);
     }
@@ -383,20 +607,13 @@ export const SalesStores = () => {
 
   return (
     <div className="space-y-4 pb-6">
-      {/* Toast */}
+      {/* Floating Toast Notification */}
       {toast && (
-        <div
-          className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between ${
-            toast.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button onClick={() => setToast(null)}>
-            <X size={14} />
-          </button>
-        </div>
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
 
       {/* Header Info */}
@@ -415,7 +632,7 @@ export const SalesStores = () => {
 
         {mainTab === "stores" ? (
           <button
-            onClick={() => setIsAddOpen(true)}
+            onClick={handleOpenAddModal}
             className="bg-primary text-primary-foreground font-bold text-xs px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 transition shrink-0"
           >
             <Plus size={16} />
@@ -476,22 +693,161 @@ export const SalesStores = () => {
             />
           </div>
 
-          {/* Sort Dropdown (dibawah search) */}
-          <div className="flex items-center gap-1.5 bg-card border border-border/80 rounded-xl px-3 py-2 text-xs font-semibold text-foreground">
-            <ArrowUpDown size={14} className="text-primary shrink-0" />
-            <span className="text-[11px] text-muted-foreground shrink-0">Urutkan:</span>
-            <select
-              value={storeSortBy}
-              onChange={(e: any) => setStoreSortBy(e.target.value)}
-              className="bg-transparent text-xs font-bold text-foreground focus:outline-none w-full cursor-pointer"
-            >
-              <option value="name_asc">Nama Toko (A - Z)</option>
-              <option value="name_desc">Nama Toko (Z - A)</option>
-              <option value="province">Provinsi (A - Z)</option>
-              <option value="city">Kabupaten / Kota (A - Z)</option>
-              <option value="district">Kecamatan (A - Z)</option>
-              <option value="village">Desa / Kelurahan (A - Z)</option>
-            </select>
+          {/* Baris Sort & Filter di Bawah Search */}
+          <div className="relative">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Sort Dropdown */}
+              <div className="flex items-center gap-1.5 bg-card border border-border/80 rounded-xl px-2.5 py-2 text-xs font-semibold text-foreground shadow-xs">
+                <ArrowUpDown size={13} className="text-primary shrink-0" />
+                <select
+                  value={storeSortBy}
+                  onChange={(e: any) => setStoreSortBy(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-foreground focus:outline-none w-full cursor-pointer truncate"
+                >
+                  <option value="name_asc">Nama (A-Z)</option>
+                  <option value="name_desc">Nama (Z-A)</option>
+                  <option value="province">Provinsi (A-Z)</option>
+                  <option value="city">Kota/Kab (A-Z)</option>
+                  <option value="district">Kecamatan (A-Z)</option>
+                  <option value="village">Desa/Kel (A-Z)</option>
+                </select>
+              </div>
+
+              {/* Filter Wilayah Button (Membuka Pilihan Float) */}
+              <button
+                type="button"
+                onClick={() => setIsFilterModalOpen(!isFilterModalOpen)}
+                className={`flex items-center justify-between gap-1.5 border rounded-xl px-3 py-2 text-xs font-semibold transition active:scale-98 shadow-xs ${
+                  activeFiltersCount > 0
+                    ? "bg-primary text-primary-foreground border-primary shadow-primary/20"
+                    : "bg-card border-border/80 hover:border-primary/50 text-foreground"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  <SlidersHorizontal size={13} className={activeFiltersCount > 0 ? "text-primary-foreground" : "text-primary"} />
+                  <span className="truncate">Filter Wilayah</span>
+                </div>
+                {activeFiltersCount > 0 ? (
+                  <span className="w-4 h-4 rounded-full bg-white text-primary text-[10px] font-black flex items-center justify-center shrink-0">
+                    {activeFiltersCount}
+                  </span>
+                ) : (
+                  <span className="text-[10px] opacity-60">▼</span>
+                )}
+              </button>
+            </div>
+
+            {/* Pilihan Float Filter Wilayah (Tampil melayang tepat di area PWA saat diklik) */}
+            {isFilterModalOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setIsFilterModalOpen(false)}
+                />
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-card border border-border shadow-2xl rounded-2xl p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                    <span className="font-bold text-xs text-foreground flex items-center gap-1.5">
+                      <SlidersHorizontal size={14} className="text-primary" />
+                      Pilihan Filter Wilayah
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsFilterModalOpen(false)}
+                      className="p-1 rounded-full text-muted-foreground hover:bg-muted"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Provinsi</label>
+                      <select
+                        value={filterProvince}
+                        onChange={(e) => {
+                          setFilterProvince(e.target.value);
+                          setFilterCity("");
+                          setFilterDistrict("");
+                        }}
+                        className="w-full bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="">Semua Provinsi</option>
+                        {availableProvinces.map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Kabupaten / Kota</label>
+                      <select
+                        value={filterCity}
+                        onChange={(e) => {
+                          setFilterCity(e.target.value);
+                          setFilterDistrict("");
+                        }}
+                        className="w-full bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="">Semua Kabupaten / Kota</option>
+                        {availableCities.map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Kecamatan</label>
+                      <select
+                        value={filterDistrict}
+                        onChange={(e) => setFilterDistrict(e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="">Semua Kecamatan</option>
+                        {availableDistricts.map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase block mb-1">Status Piutang</label>
+                      <select
+                        value={filterDebt}
+                        onChange={(e: any) => setFilterDebt(e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="all">Semua Status</option>
+                        <option value="has_debt">Ada Piutang</option>
+                        <option value="no_debt">Lunas (Tidak Ada Piutang)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between border-t border-border/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterProvince("");
+                        setFilterCity("");
+                        setFilterDistrict("");
+                        setFilterDebt("all");
+                      }}
+                      className="text-[11px] font-bold text-muted-foreground hover:text-red-500 flex items-center gap-1 transition"
+                    >
+                      <RotateCcw size={11} />
+                      <span>Reset</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsFilterModalOpen(false)}
+                      className="px-4 py-1.5 bg-primary text-primary-foreground font-black text-xs rounded-xl shadow-xs active:scale-95 transition"
+                    >
+                      Terapkan Filter
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Active Filter Badges */}
@@ -531,135 +887,8 @@ export const SalesStores = () => {
                 className="text-[10px] text-muted-foreground hover:text-red-500 font-bold ml-1 flex items-center gap-0.5"
               >
                 <RotateCcw size={10} />
-                <span>Reset Filter</span>
+                <span>Reset</span>
               </button>
-            </div>
-          )}
-
-          {/* Floating Filter Button (Sesuai instruksi: filter dibuat float) */}
-          <div className="fixed bottom-20 right-4 z-40">
-            <button
-              type="button"
-              onClick={() => setIsFilterModalOpen(true)}
-              className={`px-4 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 shadow-xl active:scale-95 transition-all border ${
-                activeFiltersCount > 0
-                  ? "bg-primary text-primary-foreground border-primary shadow-primary/25 ring-2 ring-primary/30"
-                  : "bg-foreground text-background border-border/80 hover:opacity-90"
-              }`}
-            >
-              <SlidersHorizontal size={14} />
-              <span>Filter Wilayah</span>
-              {activeFiltersCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-white text-primary text-[10px] font-black flex items-center justify-center">
-                  {activeFiltersCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Floating Filter Modal / Bottom Sheet */}
-          {isFilterModalOpen && (
-            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
-              <div className="bg-card w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-border shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-5">
-                <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                  <span className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                    <SlidersHorizontal size={16} className="text-primary" />
-                    Filter Mitra Toko
-                  </span>
-                  <button
-                    onClick={() => setIsFilterModalOpen(false)}
-                    className="p-1 rounded-full text-muted-foreground hover:bg-muted"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">Provinsi</label>
-                    <select
-                      value={filterProvince}
-                      onChange={(e) => {
-                        setFilterProvince(e.target.value);
-                        setFilterCity("");
-                        setFilterDistrict("");
-                      }}
-                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="">Semua Provinsi</option>
-                      {availableProvinces.map((p) => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">Kabupaten / Kota</label>
-                    <select
-                      value={filterCity}
-                      onChange={(e) => {
-                        setFilterCity(e.target.value);
-                        setFilterDistrict("");
-                      }}
-                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="">Semua Kota/Kabupaten</option>
-                      {availableCities.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">Kecamatan</label>
-                    <select
-                      value={filterDistrict}
-                      onChange={(e) => setFilterDistrict(e.target.value)}
-                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="">Semua Kecamatan</option>
-                      {availableDistricts.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-muted-foreground block mb-1">Status Piutang</label>
-                    <select
-                      value={filterDebt}
-                      onChange={(e: any) => setFilterDebt(e.target.value)}
-                      className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="all">Semua Status</option>
-                      <option value="has_debt">Ada Piutang</option>
-                      <option value="no_debt">Lunas (Tidak Ada Piutang)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterProvince("");
-                      setFilterCity("");
-                      setFilterDistrict("");
-                      setFilterDebt("all");
-                    }}
-                    className="flex-1 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsFilterModalOpen(false)}
-                    className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-sm active:scale-95 transition"
-                  >
-                    Terapkan Filter
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
@@ -682,15 +911,24 @@ export const SalesStores = () => {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {filteredStores.map((store) => (
-                <div
-                  key={store.id}
-                  onClick={() => navigate(`/sales/toko/${store.id}`)}
-                  className="bg-card rounded-2xl border border-border/80 p-3.5 shadow-2xs hover:border-primary/50 active:scale-[0.99] transition-all cursor-pointer group space-y-2"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
+              {filteredStores.map((store) => {
+                const regionParts = [
+                  store.province,
+                  store.city,
+                  store.district,
+                  store.village,
+                ].filter(Boolean);
+                const regionText = regionParts.length > 0 ? regionParts.join(" - ") : (store.address || "-");
+
+                return (
+                  <div
+                    key={store.id}
+                    onClick={() => navigate(`/sales/toko/${store.id}`)}
+                    className="bg-card rounded-2xl border border-border/80 p-3.5 shadow-2xs hover:border-primary/50 active:scale-[0.99] transition-all cursor-pointer group space-y-1.5"
+                  >
+                    {/* Pojok Kiri Atas: Nama Toko sejajar Pojok Kanan Atas: Nama Owner/PIC */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">
                           {store.name}
                         </h3>
@@ -698,38 +936,19 @@ export const SalesStores = () => {
                           <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" title="Ada Piutang" />
                         )}
                       </div>
-                      {store.owner_name && (
-                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                          Pemilik: {store.owner_name}
-                        </p>
-                      )}
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0">
-                      <ChevronRight size={16} />
-                    </div>
-                  </div>
 
-                  {/* Rincian Wilayah: Provinsi, Kab/Kota, Kecamatan, Desa/Kelurahan */}
-                  <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-border/50 text-[11px]">
-                    <div className="bg-muted/40 px-2.5 py-1.5 rounded-xl border border-border/30">
-                      <span className="text-[9px] text-muted-foreground block font-bold uppercase tracking-wider">Provinsi</span>
-                      <span className="font-semibold text-foreground truncate block">{store.province || "-"}</span>
+                      <span className="text-xs font-semibold text-muted-foreground shrink-0 text-right truncate max-w-[45%]">
+                        {store.owner_name || "-"}
+                      </span>
                     </div>
-                    <div className="bg-muted/40 px-2.5 py-1.5 rounded-xl border border-border/30">
-                      <span className="text-[9px] text-muted-foreground block font-bold uppercase tracking-wider">Kabupaten / Kota</span>
-                      <span className="font-semibold text-foreground truncate block">{store.city || "-"}</span>
-                    </div>
-                    <div className="bg-muted/40 px-2.5 py-1.5 rounded-xl border border-border/30">
-                      <span className="text-[9px] text-muted-foreground block font-bold uppercase tracking-wider">Kecamatan</span>
-                      <span className="font-semibold text-foreground truncate block">{store.district || "-"}</span>
-                    </div>
-                    <div className="bg-muted/40 px-2.5 py-1.5 rounded-xl border border-border/30">
-                      <span className="text-[9px] text-muted-foreground block font-bold uppercase tracking-wider">Desa / Kelurahan</span>
-                      <span className="font-semibold text-foreground truncate block">{store.village || "-"}</span>
-                    </div>
+
+                    {/* Tepat Dibawah Nama Toko: Font lebih kecil Provinsi - Kab/Kota - Kecamatan - Desa/Kelurahan */}
+                    <p className="text-[11px] text-muted-foreground/85 leading-snug">
+                      {regionText}
+                    </p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1104,7 +1323,12 @@ export const SalesStores = () => {
       {/* DRAWER / MODAL TAMBAH TOKO BARU                           */}
       {/* ========================================================= */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseAddModal();
+          }}
+        >
           <div className="bg-card w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-border shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-5">
             <div className="flex items-center justify-between pb-2 border-b border-border">
               <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
@@ -1112,7 +1336,8 @@ export const SalesStores = () => {
                 Tambah Mitra Toko Baru
               </h3>
               <button
-                onClick={() => setIsAddOpen(false)}
+                type="button"
+                onClick={handleCloseAddModal}
                 className="p-1 rounded-full text-muted-foreground hover:bg-muted"
               >
                 <X size={18} />
@@ -1125,124 +1350,222 @@ export const SalesStores = () => {
               </div>
             )}
 
-            <form onSubmit={handleAddStore} className="space-y-3">
+            <form onSubmit={handleAddStore} noValidate className="space-y-3.5 text-xs">
               <div>
-                <label className="text-xs font-bold text-foreground">Nama Toko *</label>
+                <label className={`font-bold block mb-1 ${addErrors.name ? "text-red-600 font-extrabold" : "text-foreground"}`}>
+                  Nama Toko <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  required
                   placeholder="Contoh: Toko Berkah Jaya"
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="w-full mt-1 bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onChange={(e) => {
+                    setNewName(e.target.value);
+                    if (addErrors.name) setAddErrors((prev) => ({ ...prev, name: "" }));
+                  }}
+                  className={`w-full rounded-xl px-3 py-2 text-foreground focus:outline-none transition ${
+                    addErrors.name
+                      ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200"
+                      : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
+                  }`}
                 />
+                {addErrors.name && (
+                  <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle size={12} className="shrink-0" />
+                    {addErrors.name}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="text-xs font-bold text-foreground">Nama Pemilik</label>
+                <label className={`font-bold block mb-1 ${addErrors.owner ? "text-red-600 font-extrabold" : "text-foreground"}`}>
+                  Nama Pemilik / PIC <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   placeholder="Contoh: Pak Haji Samsul"
                   value={newOwner}
-                  onChange={(e) => setNewOwner(e.target.value)}
-                  className="w-full mt-1 bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onChange={(e) => {
+                    setNewOwner(e.target.value);
+                    if (addErrors.owner) setAddErrors((prev) => ({ ...prev, owner: "" }));
+                  }}
+                  className={`w-full rounded-xl px-3 py-2 text-foreground focus:outline-none transition ${
+                    addErrors.owner
+                      ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200"
+                      : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
+                  }`}
                 />
+                {addErrors.owner && (
+                  <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle size={12} className="shrink-0" />
+                    {addErrors.owner}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="text-xs font-bold text-foreground">Nomor WhatsApp</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className={`font-bold ${addErrors.wa ? "text-red-600 font-extrabold" : "text-foreground"}`}>
+                    Nomor WhatsApp <span className="text-red-500">*</span>
+                  </label>
+                  <span className={`text-[10px] font-semibold ${
+                    newWa.length >= 11 && newWa.length <= 15
+                      ? "text-emerald-600"
+                      : newWa.length > 0
+                      ? "text-amber-600"
+                      : "text-muted-foreground"
+                  }`}>
+                    {newWa.length} / 15 digit (min. 11)
+                  </span>
+                </div>
                 <input
                   type="tel"
-                  placeholder="Contoh: 081234567890"
+                  placeholder="Hanya angka, contoh: 081234567890"
                   value={newWa}
-                  onChange={(e) => setNewWa(e.target.value)}
-                  className="w-full mt-1 bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 15);
+                    setNewWa(val);
+                    if (addErrors.wa && val.length >= 11 && val.length <= 15) {
+                      setAddErrors((prev) => ({ ...prev, wa: "" }));
+                    }
+                  }}
+                  className={`w-full rounded-xl px-3 py-2 text-foreground focus:outline-none font-mono transition ${
+                    addErrors.wa
+                      ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200"
+                      : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
+                  }`}
                 />
+                {addErrors.wa ? (
+                  <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle size={12} className="shrink-0" />
+                    {addErrors.wa}
+                  </p>
+                ) : (
+                  newWa.length > 0 && newWa.length < 11 && (
+                    <p className="text-[10px] text-amber-600 mt-1">
+                      Nomor WhatsApp minimal 11 digit angka.
+                    </p>
+                  )
+                )}
               </div>
 
-              {/* Regional Fields */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs font-bold text-foreground">Provinsi</label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Jawa Barat"
+              {/* Regional Fields Searchable Inputs */}
+              <div className="p-3 bg-muted/30 rounded-xl border border-border/60 space-y-2.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  <MapPin size={12} className="text-primary" />
+                  <span>Wilayah Toko (Bisa Ketik untuk Memilih Cepat)</span>
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <SearchableSelect
+                    id="modal-province"
+                    label="Provinsi"
+                    required
+                    placeholder="Ketik nama provinsi..."
+                    options={PROVINCES_DATA}
                     value={newProvince}
-                    onChange={(e) => setNewProvince(e.target.value)}
-                    className="w-full mt-1 bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    onSelect={handleModalProvSelect}
+                    hasError={!!addErrors.province}
+                    errorMessage={addErrors.province}
                   />
-                </div>
 
-                <div>
-                  <label className="text-xs font-bold text-foreground">Kabupaten / Kota</label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Kota Depok"
+                  <SearchableSelect
+                    id="modal-city"
+                    label="Kabupaten / Kota"
+                    required
+                    placeholder="Ketik nama kab/kota..."
+                    options={modalRegencies}
                     value={newCity}
-                    onChange={(e) => setNewCity(e.target.value)}
-                    className="w-full mt-1 bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    disabled={!selectedProvId}
+                    disabledPlaceholder="Pilih Provinsi terlebih dahulu"
+                    isLoading={isLoadingModalRegencies}
+                    onSelect={handleModalRegSelect}
+                    hasError={!!addErrors.city}
+                    errorMessage={addErrors.city}
                   />
-                </div>
 
-                <div>
-                  <label className="text-xs font-bold text-foreground">Kecamatan</label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Cilodong"
+                  <SearchableSelect
+                    id="modal-district"
+                    label="Kecamatan"
+                    required
+                    placeholder="Ketik nama kecamatan..."
+                    options={modalDistricts}
                     value={newDistrict}
-                    onChange={(e) => setNewDistrict(e.target.value)}
-                    className="w-full mt-1 bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    disabled={!selectedRegId}
+                    disabledPlaceholder="Pilih Kab/Kota terlebih dahulu"
+                    isLoading={isLoadingModalDistricts}
+                    onSelect={handleModalDistSelect}
+                    hasError={!!addErrors.district}
+                    errorMessage={addErrors.district}
                   />
-                </div>
 
-                <div>
-                  <label className="text-xs font-bold text-foreground">Desa / Kelurahan</label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Kalibaru"
+                  <SearchableSelect
+                    id="modal-village"
+                    label="Desa / Kelurahan"
+                    required
+                    placeholder="Ketik nama desa/kelurahan..."
+                    options={modalVillages}
                     value={newVillage}
-                    onChange={(e) => setNewVillage(e.target.value)}
-                    className="w-full mt-1 bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    disabled={!selectedDistId}
+                    disabledPlaceholder="Pilih Kecamatan terlebih dahulu"
+                    isLoading={isLoadingModalVillages}
+                    onSelect={handleModalVillageSelect}
+                    hasError={!!addErrors.village}
+                    errorMessage={addErrors.village}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-foreground">Alamat Lengkap / Patokan</label>
+                <label className="font-bold text-foreground block mb-1">Alamat Lengkap / Patokan</label>
                 <textarea
                   rows={2}
                   placeholder="Jl. Raya Kalibaru No. 45, samping kantor pos..."
                   value={newAddress}
                   onChange={(e) => setNewAddress(e.target.value)}
-                  className="w-full mt-1 bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  className="w-full bg-background border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-foreground block mb-1">Titik GPS</label>
-                <div className="flex items-center gap-2">
+              {/* Titik Google Maps Input & Helper (GPS Saya Dihapus, Peta Interaktif) */}
+              <div className="p-3 bg-muted/30 rounded-xl border border-border/60 space-y-2">
+                <div className="flex items-center justify-between gap-1">
+                  <label className="font-bold text-foreground flex items-center gap-1 text-[11px]">
+                    <Compass size={13} className="text-primary" />
+                    <span>Titik Google Maps</span>
+                  </label>
+
                   <button
                     type="button"
-                    onClick={handleGetLocation}
-                    disabled={isGettingGps}
-                    className="flex-1 bg-muted/80 hover:bg-muted text-foreground text-xs font-bold py-2 px-3 rounded-xl border border-border flex items-center justify-center gap-1.5 transition"
+                    onClick={() => setIsMapModalOpen(true)}
+                    className="px-2.5 py-1 bg-primary text-primary-foreground rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs hover:opacity-90 active:scale-95 transition"
+                    title="Buka peta untuk memilih titik lokasi dan otomatis terinput"
                   >
-                    <MapPin size={14} className={newLat ? "text-emerald-500" : "text-muted-foreground"} />
-                    <span>{isGettingGps ? "Membaca GPS..." : newLat ? "Lokasi Terkunci ✓" : "Ambil Lokasi Saat Ini"}</span>
+                    <MapPin size={11} />
+                    <span>Peta</span>
                   </button>
-                  {newLat && (
-                    <span className="text-[10px] text-muted-foreground font-mono">
-                      {newLat.toFixed(4)}, {newLng?.toFixed(4)}
-                    </span>
-                  )}
                 </div>
+
+                <input
+                  type="text"
+                  placeholder="Tempel link Google Maps atau klik Peta di atas"
+                  value={newGmaps}
+                  onChange={(e) => handleModalGmapsChange(e.target.value)}
+                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono text-[11px]"
+                />
+
+                {newLat !== null && newLng !== null && (
+                  <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200 inline-block">
+                    ✓ Koordinat: {newLat.toFixed(5)}, {newLng?.toFixed(5)}
+                  </span>
+                )}
               </div>
 
               <div className="pt-2 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsAddOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted"
+                  onClick={handleCloseAddModal}
+                  className="flex-1 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted transition"
                 >
                   Batal
                 </button>
@@ -1258,6 +1581,16 @@ export const SalesStores = () => {
           </div>
         </div>
       )}
+
+      {/* Map Picker Modal */}
+      <MapPickerModal
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        initialLat={newLat}
+        initialLng={newLng}
+        initialSearchQuery={[newAddress, newVillage, newDistrict, newCity, newProvince].filter(Boolean).join(", ")}
+        onSelectLocation={handleSelectFromMap}
+      />
     </div>
   );
 };
