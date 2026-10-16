@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, MessageSquare, Compass,
   User, AlertCircle, Phone, Edit2, Trash2, X, Check,
@@ -17,12 +17,16 @@ import {
 export const SalesStoreDetail = () => {
   const { storeId } = useParams<{ storeId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const userRole = (localStorage.getItem("distribusi_role") || "sales").toLowerCase();
   const isOwner = userRole === "owner";
 
-  const [store, setStore] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Ambil state toko yang dioper dari halaman list toko untuk transisi instan tanpa jeda
+  const initialStore = location.state?.store;
+  const [store, setStore] = useState<any | null>(initialStore || null);
+  const [isLoading, setIsLoading] = useState(!initialStore);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [error, setError] = useState("");
 
   // Tab State: "inbound" (Riwayat Stok Masuk) vs "sold" (Riwayat Terjual)
@@ -31,15 +35,15 @@ export const SalesStoreDetail = () => {
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: "",
-    owner_name: "",
-    status: "Aktif",
-    wa_number: "",
-    province: "",
-    city: "",
-    district: "",
-    village: "",
-    address: "",
+    name: initialStore?.name || "",
+    owner_name: initialStore?.owner_name || "",
+    status: initialStore?.status || "Aktif",
+    wa_number: initialStore?.wa_number ? String(initialStore.wa_number).replace(/\D/g, "") : "",
+    province: initialStore?.province || "",
+    city: initialStore?.city || "",
+    district: initialStore?.district || "",
+    village: initialStore?.village || "",
+    address: initialStore?.address || "",
   });
 
   const [selectedProvId, setSelectedProvId] = useState("");
@@ -55,23 +59,57 @@ export const SalesStoreDetail = () => {
   const [isLoadingVillages, setIsLoadingVillages] = useState(false);
 
   const [editGmaps, setEditGmaps] = useState("");
-  const [editLat, setEditLat] = useState<number | null>(null);
-  const [editLng, setEditLng] = useState<number | null>(null);
+  const [editLat, setEditLat] = useState<number | null>(initialStore?.latitude || null);
+  const [editLng, setEditLng] = useState<number | null>(initialStore?.longitude || null);
   const [isGettingGps, setIsGettingGps] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
+  // Muat dropdown wilayah secara background tanpa memblokir rendering halaman detail
+  const loadEditRegions = useCallback(async (data: any) => {
+    try {
+      const prov = PROVINCES_DATA.find((p) => p.name.toLowerCase() === (data.province || "").toLowerCase());
+      if (prov) {
+        setSelectedProvId(prov.id);
+        const regList = await fetchRegencies(prov.id);
+        setEditRegencies(regList);
+
+        const reg = regList.find((r) => r.name.toLowerCase() === (data.city || "").toLowerCase());
+        if (reg) {
+          setSelectedRegId(reg.id);
+          const distList = await fetchDistricts(reg.id);
+          setEditDistricts(distList);
+
+          const dist = distList.find((d) => d.name.toLowerCase() === (data.district || "").toLowerCase());
+          if (dist) {
+            setSelectedDistId(dist.id);
+            const vilList = await fetchVillages(dist.id);
+            setEditVillages(vilList);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Gagal pre-load data wilayah edit:", err);
+    }
+  }, []);
+
   const fetchStoreDetail = async () => {
     if (!storeId) return;
     try {
-      setIsLoading(true);
+      if (!store) {
+        setIsLoading(true);
+      }
+      setIsFetchingDetail(true);
       setError("");
+
       const res = await fetch(`http://localhost:8787/api/stores/${storeId}`);
       if (res.ok) {
         const data = await res.json();
         setStore(data);
+        setIsLoading(false); // Selesaikan loading langsung tanpa menunggu panggilan API luar
+
         setEditForm({
           name: data.name || "",
           owner_name: data.owner_name || "",
@@ -90,35 +128,21 @@ export const SalesStoreDetail = () => {
           setEditGmaps(`${data.latitude}, ${data.longitude}`);
         }
 
-        // Initialize regions if existing
-        const prov = PROVINCES_DATA.find((p) => p.name.toLowerCase() === (data.province || "").toLowerCase());
-        if (prov) {
-          setSelectedProvId(prov.id);
-          const regList = await fetchRegencies(prov.id);
-          setEditRegencies(regList);
-
-          const reg = regList.find((r) => r.name.toLowerCase() === (data.city || "").toLowerCase());
-          if (reg) {
-            setSelectedRegId(reg.id);
-            const distList = await fetchDistricts(reg.id);
-            setEditDistricts(distList);
-
-            const dist = distList.find((d) => d.name.toLowerCase() === (data.district || "").toLowerCase());
-            if (dist) {
-              setSelectedDistId(dist.id);
-              const vilList = await fetchVillages(dist.id);
-              setEditVillages(vilList);
-            }
-          }
-        }
+        // Jalankan pemuatan wilayah di latar belakang untuk modal edit
+        loadEditRegions(data);
       } else {
-        setError("Toko tidak ditemukan atau telah dihapus.");
+        if (!store) {
+          setError("Toko tidak ditemukan atau telah dihapus.");
+        }
       }
     } catch (err: any) {
       console.error("Fetch store detail error:", err);
-      setError("Gagal memuat detail toko. Periksa koneksi Anda.");
+      if (!store) {
+        setError("Gagal memuat detail toko. Periksa koneksi Anda.");
+      }
     } finally {
       setIsLoading(false);
+      setIsFetchingDetail(false);
     }
   };
 
@@ -341,13 +365,47 @@ export const SalesStoreDetail = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !store) {
     return (
-      <div className="space-y-4 pb-12 animate-pulse">
-        <div className="h-10 bg-muted/40 rounded-xl w-36" />
-        <div className="h-44 bg-muted/40 rounded-2xl" />
-        <div className="h-12 bg-muted/40 rounded-2xl" />
-        <div className="h-64 bg-muted/40 rounded-2xl" />
+      <div className="space-y-4 pb-12">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate("/sales/toko")}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition px-2 py-1.5 rounded-lg hover:bg-muted/50 -ml-2"
+          >
+            <ArrowLeft size={16} />
+            <span>Mitra Toko</span>
+          </button>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border/80 p-4 shadow-2xs space-y-3 animate-pulse">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-2 flex-1">
+              <div className="h-5 bg-muted rounded-lg w-2/3" />
+              <div className="h-3.5 bg-muted/70 rounded-md w-1/2" />
+              <div className="h-3.5 bg-muted/50 rounded-md w-4/5" />
+            </div>
+            <div className="h-5 bg-muted rounded-full w-14 shrink-0" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+            <div className="h-9 bg-muted/50 rounded-xl" />
+            <div className="h-9 bg-muted/50 rounded-xl" />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/50">
+            <div className="h-12 bg-muted/40 rounded-xl" />
+            <div className="h-12 bg-muted/40 rounded-xl" />
+            <div className="h-12 bg-muted/40 rounded-xl" />
+          </div>
+        </div>
+
+        <div className="h-10 bg-muted/60 rounded-2xl animate-pulse" />
+
+        <div className="space-y-2">
+          <div className="h-16 bg-card border border-border/70 rounded-2xl animate-pulse" />
+          <div className="h-16 bg-card border border-border/70 rounded-2xl animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -563,7 +621,12 @@ export const SalesStoreDetail = () => {
       {/* ========================================================= */}
       {historyTab === "inbound" && (
         <div className="space-y-2.5">
-          {inboundList.length === 0 ? (
+          {isFetchingDetail && !store.inbound_history ? (
+            <div className="bg-card rounded-2xl border border-border/80 p-8 text-center space-y-2">
+              <Loader2 size={20} className="animate-spin text-primary mx-auto" />
+              <p className="text-xs text-muted-foreground">Memuat riwayat stok masuk...</p>
+            </div>
+          ) : inboundList.length === 0 ? (
             <div className="bg-card rounded-2xl border border-dashed border-border p-8 text-center space-y-1.5">
               <p className="text-xs font-bold text-foreground">Belum Ada Riwayat Stok Masuk</p>
               <p className="text-[11px] text-muted-foreground">
@@ -634,7 +697,12 @@ export const SalesStoreDetail = () => {
       {/* ========================================================= */}
       {historyTab === "sold" && (
         <div className="space-y-2.5">
-          {soldList.length === 0 ? (
+          {isFetchingDetail && !store.sold_history ? (
+            <div className="bg-card rounded-2xl border border-border/80 p-8 text-center space-y-2">
+              <Loader2 size={20} className="animate-spin text-primary mx-auto" />
+              <p className="text-xs text-muted-foreground">Memuat riwayat terjual...</p>
+            </div>
+          ) : soldList.length === 0 ? (
             <div className="bg-card rounded-2xl border border-dashed border-border p-8 text-center space-y-1.5">
               <p className="text-xs font-bold text-foreground">Belum Ada Riwayat Terjual</p>
               <p className="text-[11px] text-muted-foreground">

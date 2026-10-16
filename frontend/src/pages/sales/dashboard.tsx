@@ -202,7 +202,7 @@ export const SalesDashboard = () => {
             {d.pending_stores.slice(0, 5).map((store: any) => (
               <button
                 key={store.id}
-                onClick={() => navigate(`/sales/toko/${store.id}`)}
+                onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store } })}
                 className="w-full bg-card px-3.5 py-3 rounded-xl border border-border/70 shadow-2xs flex items-center gap-3 active:scale-[0.98] transition-all text-left group"
               >
                 <div className="w-9 h-9 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-600 shrink-0">

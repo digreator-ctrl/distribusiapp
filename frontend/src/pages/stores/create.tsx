@@ -13,7 +13,6 @@ import {
   type RegionItem,
 } from "../../lib/wilayah";
 import { SearchableSelect } from "../../components/SearchableSelect";
-import { MapPickerModal } from "../../components/MapPickerModal";
 
 // Komponen Floating Toast Notification Kustom (Bukan Bawaan Browser)
 const Toast = ({
@@ -33,16 +32,14 @@ const Toast = ({
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none w-full max-w-md px-4 animate-in fade-in slide-in-from-top-4">
       <div
-        className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-2xl border text-xs backdrop-blur-md transition-all ${
-          type === "success"
+        className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-2xl border text-xs backdrop-blur-md transition-all ${type === "success"
             ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
             : "bg-red-50/95 border-red-200 text-red-900 shadow-red-500/10"
-        }`}
+          }`}
       >
         <div
-          className={`p-2 rounded-xl shrink-0 ${
-            type === "success" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
-          }`}
+          className={`p-2 rounded-xl shrink-0 ${type === "success" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+            }`}
         >
           {type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
         </div>
@@ -96,10 +93,92 @@ export const StoreCreate = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+
+  // Restore draft and picked map location on mount
+  useEffect(() => {
+    // 1. Cek draft formulir
+    const rawDraft = sessionStorage.getItem("store_create_draft");
+    if (rawDraft) {
+      try {
+        const d = JSON.parse(rawDraft);
+        if (d.name) setName(d.name);
+        if (d.ownerName) setOwnerName(d.ownerName);
+        if (d.waNumber) setWaNumber(d.waNumber);
+        if (d.address) setAddress(d.address);
+        if (d.selectedProvinceId) setSelectedProvinceId(d.selectedProvinceId);
+        if (d.provinceName) setProvinceName(d.provinceName);
+        if (d.selectedRegencyId) setSelectedRegencyId(d.selectedRegencyId);
+        if (d.cityName) setCityName(d.cityName);
+        if (d.selectedDistrictId) setSelectedDistrictId(d.selectedDistrictId);
+        if (d.districtName) setDistrictName(d.districtName);
+        if (d.villageName) setVillageName(d.villageName);
+        if (d.gmapsInput) setGmapsInput(d.gmapsInput);
+        if (d.latitude) setLatitude(d.latitude);
+        if (d.longitude) setLongitude(d.longitude);
+      } catch (e) {
+        console.warn("Restore draft error:", e);
+      }
+    }
+
+    // 2. Cek apakah ada koordinat baru dari halaman MapPickerPage
+    const rawPicked = sessionStorage.getItem("picked_map_location");
+    if (rawPicked) {
+      try {
+        const p = JSON.parse(rawPicked);
+        if (p.lat && p.lng) {
+          setLatitude(p.lat);
+          setLongitude(p.lng);
+          setGmapsInput(p.gmapsUrl);
+          setToast({
+            message: `Titik koordinat berhasil dipilih dari Peta (${p.lat.toFixed(5)}, ${p.lng.toFixed(5)})!`,
+            type: "success",
+          });
+        }
+      } catch (e) {
+        console.warn("Parse picked location error:", e);
+      } finally {
+        sessionStorage.removeItem("picked_map_location");
+      }
+    }
+
+    // Event listener jika user membuka peta di tab baru
+    const handleStorageOrMessage = (event: StorageEvent | MessageEvent) => {
+      let payload = null;
+      if ("data" in event && event.data?.type === "MAP_LOCATION_PICKED") {
+        payload = event.data.payload;
+      } else if ("key" in event && event.key === "picked_map_location_event" && event.newValue) {
+        try {
+          payload = JSON.parse(event.newValue);
+        } catch {
+          // ignore
+        }
+      }
+      if (payload && payload.lat && payload.lng) {
+        setLatitude(payload.lat);
+        setLongitude(payload.lng);
+        setGmapsInput(payload.gmapsUrl);
+        setToast({
+          message: `Titik koordinat berhasil diperbarui dari Peta (${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)})!`,
+          type: "success",
+        });
+      }
+    };
+
+    window.addEventListener("message", handleStorageOrMessage as any);
+    window.addEventListener("storage", handleStorageOrMessage as any);
+
+    return () => {
+      setErrors({});
+      setToast(null);
+      window.removeEventListener("message", handleStorageOrMessage as any);
+      window.removeEventListener("storage", handleStorageOrMessage as any);
+    };
+  }, []);
 
   // Reset form to default normal state
   const resetForm = () => {
+    sessionStorage.removeItem("store_create_draft");
+    sessionStorage.removeItem("picked_map_location");
     setName("");
     setOwnerName("");
     setWaNumber("");
@@ -128,13 +207,7 @@ export const StoreCreate = () => {
     navigate("/stores");
   };
 
-  // Reset errors and toast on mount / unmount
-  useEffect(() => {
-    return () => {
-      setErrors({});
-      setToast(null);
-    };
-  }, []);
+
 
   // WA input handler: hanya angka, maks 15 digit
   const handleWaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,15 +231,35 @@ export const StoreCreate = () => {
     }
   };
 
-  // Handle ketika titik dipilih dari Peta Interaktif
-  const handleSelectFromMap = (data: { lat: number; lng: number; gmapsUrl: string }) => {
-    setLatitude(data.lat);
-    setLongitude(data.lng);
-    setGmapsInput(data.gmapsUrl);
-    setToast({
-      message: `Titik koordinat berhasil dipilih (${data.lat.toFixed(5)}, ${data.lng.toFixed(5)})!`,
-      type: "success",
-    });
+  // Buka Halaman Peta Baru (Fullscreen & Powerful)
+  const handleOpenMapPicker = () => {
+    const draft = {
+      name,
+      ownerName,
+      waNumber,
+      address,
+      selectedProvinceId,
+      provinceName,
+      selectedRegencyId,
+      cityName,
+      selectedDistrictId,
+      districtName,
+      villageName,
+      gmapsInput,
+      latitude,
+      longitude,
+    };
+    sessionStorage.setItem("store_create_draft", JSON.stringify(draft));
+
+    const searchTarget = [address, villageName, districtName, cityName, provinceName]
+      .filter(Boolean)
+      .join(", ");
+
+    navigate(
+      `/map-picker?source=stores-create&returnTo=/stores/create&lat=${latitude ?? ""}&lng=${
+        longitude ?? ""
+      }&query=${encodeURIComponent(searchTarget)}&storeName=${encodeURIComponent(name)}`
+    );
   };
 
   // 1. Province Select Handler
@@ -381,16 +474,6 @@ export const StoreCreate = () => {
         />
       )}
 
-      {/* Interactive Map Picker Modal */}
-      <MapPickerModal
-        isOpen={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
-        initialLat={latitude}
-        initialLng={longitude}
-        initialSearchQuery={[address, villageName, districtName, cityName, provinceName].filter(Boolean).join(", ")}
-        onSelectLocation={handleSelectFromMap}
-      />
-
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Top Header */}
         <div className="flex items-center justify-between">
@@ -422,9 +505,8 @@ export const StoreCreate = () => {
               <div>
                 <label
                   htmlFor="field-name"
-                  className={`font-bold block mb-1 transition ${
-                    errors.name ? "text-red-600 font-extrabold" : "text-foreground"
-                  }`}
+                  className={`font-bold block mb-1 transition ${errors.name ? "text-red-600 font-extrabold" : "text-foreground"
+                    }`}
                 >
                   Nama Toko <span className="text-red-500">*</span>
                 </label>
@@ -437,11 +519,10 @@ export const StoreCreate = () => {
                     setName(e.target.value);
                     if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
                   }}
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-foreground transition focus:outline-none ${
-                    errors.name
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-foreground transition focus:outline-none ${errors.name
                       ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200 placeholder:text-red-300"
                       : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
-                  }`}
+                    }`}
                 />
                 {errors.name && (
                   <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
@@ -454,9 +535,8 @@ export const StoreCreate = () => {
               <div>
                 <label
                   htmlFor="field-ownerName"
-                  className={`font-bold block mb-1 transition ${
-                    errors.ownerName ? "text-red-600 font-extrabold" : "text-foreground"
-                  }`}
+                  className={`font-bold block mb-1 transition ${errors.ownerName ? "text-red-600 font-extrabold" : "text-foreground"
+                    }`}
                 >
                   Nama Pemilik / PIC Toko <span className="text-red-500">*</span>
                 </label>
@@ -469,11 +549,10 @@ export const StoreCreate = () => {
                     setOwnerName(e.target.value);
                     if (errors.ownerName) setErrors((prev) => ({ ...prev, ownerName: "" }));
                   }}
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-foreground transition focus:outline-none ${
-                    errors.ownerName
+                  className={`w-full rounded-xl px-3.5 py-2.5 text-foreground transition focus:outline-none ${errors.ownerName
                       ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200 placeholder:text-red-300"
                       : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
-                  }`}
+                    }`}
                 />
                 {errors.ownerName && (
                   <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
@@ -489,20 +568,18 @@ export const StoreCreate = () => {
               <div className="flex items-center justify-between mb-1">
                 <label
                   htmlFor="field-waNumber"
-                  className={`font-bold transition ${
-                    errors.waNumber ? "text-red-600 font-extrabold" : "text-foreground"
-                  }`}
+                  className={`font-bold transition ${errors.waNumber ? "text-red-600 font-extrabold" : "text-foreground"
+                    }`}
                 >
                   Nomor WhatsApp Toko <span className="text-red-500">*</span>
                 </label>
                 <span
-                  className={`text-[10px] font-semibold ${
-                    waNumber.length >= 11 && waNumber.length <= 15
+                  className={`text-[10px] font-semibold ${waNumber.length >= 11 && waNumber.length <= 15
                       ? "text-emerald-600"
                       : waNumber.length > 0
-                      ? "text-amber-600"
-                      : "text-muted-foreground"
-                  }`}
+                        ? "text-amber-600"
+                        : "text-muted-foreground"
+                    }`}
                 >
                   {waNumber.length} / 15 digit (min. 11)
                 </span>
@@ -513,11 +590,10 @@ export const StoreCreate = () => {
                 placeholder="Hanya angka, contoh: 081234567890"
                 value={waNumber}
                 onChange={handleWaChange}
-                className={`w-full rounded-xl px-3.5 py-2.5 text-foreground font-mono text-xs transition focus:outline-none ${
-                  errors.waNumber
+                className={`w-full rounded-xl px-3.5 py-2.5 text-foreground font-mono text-xs transition focus:outline-none ${errors.waNumber
                     ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200 placeholder:text-red-300"
                     : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
-                }`}
+                  }`}
               />
               {errors.waNumber ? (
                 <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
@@ -541,7 +617,8 @@ export const StoreCreate = () => {
                 <span>Hierarki Wilayah Toko (Bisa Diketik untuk Mencari Cepat)</span>
               </span>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {/* Susunan Wilayah Menurun ke Bawah */}
+              <div className="flex flex-col gap-3.5">
                 {/* Searchable Input Provinsi */}
                 <SearchableSelect
                   id="field-province"
@@ -619,62 +696,60 @@ export const StoreCreate = () => {
               />
             </div>
 
-            {/* Baris 4: Titik Google Maps dengan Bantuan Peta Interaktif (GPS Saya Dihapus) */}
-            <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-2.5">
+            {/* Baris 4: Titik Google Maps - Buka Halaman Baru Peta Interaktif */}
+            <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <MapPin size={13} className="text-primary" />
-                  <span>Titik Google Maps (Koordinat / Link)</span>
-                </span>
+                  <span>Titik Lokasi Google Maps</span>
+                </label>
+                {latitude !== null && longitude !== null && (
+                  <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    ✓ Koordinat: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                  </span>
+                )}
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsMapModalOpen(true)}
-                    className="px-3 py-1 bg-primary text-primary-foreground rounded-lg text-[11px] font-bold flex items-center gap-1.5 shadow-xs hover:opacity-90 active:scale-95 transition"
-                    title="Buka Peta untuk memilih titik lokasi dan otomatis terinput"
-                  >
-                    <MapPin size={13} />
-                    <span>Peta</span>
-                  </button>
+              {/* Button Memanjang Penuh (Full Width): Pilih pada Peta (Buka Halaman Baru) */}
+              <button
+                type="button"
+                onClick={handleOpenMapPicker}
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.99] transition shadow-xs flex items-center justify-center gap-2"
+                title="Buka Halaman Peta Lengkap untuk memilih titik lokasi secara presisi"
+              >
+                <MapPin size={15} />
+                <span>Pilih pada Peta</span>
+              </button>
 
+              {/* Kolom di Bawah Button: Memanjang untuk Link Hasil Klik Lokasi dari Peta */}
+              <div className="space-y-1">
+                <input
+                  type="text"
+                  placeholder="Link hasil klik lokasi dari peta (atau tempel link Google Maps di sini)"
+                  value={gmapsInput}
+                  onChange={(e) => handleGmapsChange(e.target.value)}
+                  className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs font-mono"
+                />
+
+                <div className="flex justify-end text-[11px] px-0.5">
                   <button
                     type="button"
                     onClick={() => {
                       const searchTarget = [address, villageName, districtName, cityName, provinceName]
                         .filter(Boolean)
                         .join(", ");
-                      const url = searchTarget
+                      const url = gmapsInput || (searchTarget
                         ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchTarget)}`
-                        : "https://www.google.com/maps";
+                        : "https://www.google.com/maps");
                       window.open(url, "_blank");
                     }}
-                    className="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition"
+                    className="text-[10px] text-primary hover:underline flex items-center gap-1 font-semibold"
                     title="Buka Google Maps di tab baru"
                   >
-                    <ExternalLink size={12} />
-                    <span>Google Maps</span>
+                    <ExternalLink size={11} />
+                    <span>Buka Google Maps Web</span>
                   </button>
                 </div>
-              </div>
-
-              <input
-                type="text"
-                placeholder="Tempelkan link Google Maps atau klik tombol 'Peta' di atas (contoh: https://www.google.com/maps?q=-6.3728,106.8329)"
-                value={gmapsInput}
-                onChange={(e) => handleGmapsChange(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs font-mono"
-              />
-
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
-                <span>
-                  Tips: Klik tombol <strong className="text-primary">"Peta"</strong> untuk memilih titik langsung di peta, atau tempel link Google Maps.
-                </span>
-                {latitude !== null && longitude !== null && (
-                  <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
-                    ✓ Titik: {latitude.toFixed(5)}, {longitude.toFixed(5)}
-                  </span>
-                )}
               </div>
             </div>
 

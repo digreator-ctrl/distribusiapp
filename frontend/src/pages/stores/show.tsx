@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Edit, Trash2, Phone, Compass,
   AlertCircle, User, MapPin
@@ -8,29 +8,37 @@ import {
 export const StoreShow = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const userRole = (localStorage.getItem("distribusi_role") || "admin").toLowerCase();
   const isOwner = userRole === "owner";
 
-  const [store, setStore] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialStore = location.state?.store;
+  const [store, setStore] = useState<any | null>(initialStore || null);
+  const [isLoading, setIsLoading] = useState(!initialStore);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"inbound" | "sold">("inbound");
 
   const fetchStore = async () => {
     if (!id) return;
     try {
-      setIsLoading(true);
+      if (!store) {
+        setIsLoading(true);
+      }
       const res = await fetch(`http://localhost:8787/api/stores/${id}`);
       if (res.ok) {
         const data = await res.json();
         setStore(data);
       } else {
-        setError("Toko tidak ditemukan.");
+        if (!store) {
+          setError("Toko tidak ditemukan.");
+        }
       }
     } catch (err) {
       console.error(err);
-      setError("Gagal memuat detail toko.");
+      if (!store) {
+        setError("Gagal memuat detail toko.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +93,7 @@ export const StoreShow = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !store) {
     return (
       <div className="py-12 text-center text-muted-foreground animate-pulse text-sm">
         Memuat detail mitra toko...

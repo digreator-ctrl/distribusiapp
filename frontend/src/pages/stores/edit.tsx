@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Store, ArrowLeft, Check, AlertCircle,
-  Compass, MapPin, Navigation, ExternalLink, Loader2
+  MapPin, ExternalLink, Loader2
 } from "lucide-react";
 import {
   PROVINCES_DATA,
@@ -49,7 +49,6 @@ export const StoreEdit = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [isGettingGps, setIsGettingGps] = useState(false);
 
   useEffect(() => {
     const fetchStore = async () => {
@@ -108,6 +107,71 @@ export const StoreEdit = () => {
     };
 
     fetchStore();
+
+    // Cek draf dan koordinat baru yang dipilih dari MapPickerPage
+    const rawDraft = sessionStorage.getItem("stores_edit_draft_" + id);
+    if (rawDraft) {
+      try {
+        const d = JSON.parse(rawDraft);
+        if (d.name) setName(d.name);
+        if (d.ownerName) setOwnerName(d.ownerName);
+        if (d.waNumber) setWaNumber(d.waNumber);
+        if (d.status) setStatus(d.status);
+        if (d.address) setAddress(d.address);
+        if (d.provinceName) setProvinceName(d.provinceName);
+        if (d.cityName) setCityName(d.cityName);
+        if (d.districtName) setDistrictName(d.districtName);
+        if (d.villageName) setVillageName(d.villageName);
+        if (d.gmapsInput) setGmapsInput(d.gmapsInput);
+        if (d.latitude) setLatitude(d.latitude);
+        if (d.longitude) setLongitude(d.longitude);
+      } catch (e) {
+        console.warn("Restore edit draft error:", e);
+      }
+    }
+
+    const rawPicked = sessionStorage.getItem("picked_map_location");
+    if (rawPicked) {
+      try {
+        const p = JSON.parse(rawPicked);
+        if (p.lat && p.lng) {
+          setLatitude(p.lat);
+          setLongitude(p.lng);
+          setGmapsInput(p.gmapsUrl);
+        }
+      } catch (e) {
+        console.warn("Parse picked location error:", e);
+      } finally {
+        sessionStorage.removeItem("picked_map_location");
+        sessionStorage.removeItem("stores_edit_draft_" + id);
+      }
+    }
+
+    const handleStorageOrMessage = (event: StorageEvent | MessageEvent) => {
+      let payload = null;
+      if ("data" in event && event.data?.type === "MAP_LOCATION_PICKED") {
+        payload = event.data.payload;
+      } else if ("key" in event && event.key === "picked_map_location_event" && event.newValue) {
+        try {
+          payload = JSON.parse(event.newValue);
+        } catch {
+          // ignore
+        }
+      }
+      if (payload && payload.lat && payload.lng) {
+        setLatitude(payload.lat);
+        setLongitude(payload.lng);
+        setGmapsInput(payload.gmapsUrl);
+      }
+    };
+
+    window.addEventListener("message", handleStorageOrMessage as any);
+    window.addEventListener("storage", handleStorageOrMessage as any);
+
+    return () => {
+      window.removeEventListener("message", handleStorageOrMessage as any);
+      window.removeEventListener("storage", handleStorageOrMessage as any);
+    };
   }, [id]);
 
   const handleWaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,38 +191,36 @@ export const StoreEdit = () => {
     }
   };
 
-  const handleGetGps = () => {
-    if (!navigator.geolocation) {
-      alert("Browser Anda tidak mendukung deteksi lokasi otomatis.");
-      return;
-    }
+  // Buka Halaman Peta Baru (Fullscreen & Powerful)
+  const handleOpenMapPicker = () => {
+    const draft = {
+      name,
+      ownerName,
+      waNumber,
+      status,
+      address,
+      selectedProvinceId,
+      provinceName,
+      selectedRegencyId,
+      cityName,
+      selectedDistrictId,
+      districtName,
+      villageName,
+      latitude,
+      longitude,
+      gmapsInput,
+    };
+    sessionStorage.setItem("stores_edit_draft_" + id, JSON.stringify(draft));
 
-    setIsGettingGps(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsGettingGps(false);
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setLatitude(lat);
-        setLongitude(lng);
-        setGmapsInput(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-      },
-      (err) => {
-        setIsGettingGps(false);
-        alert(`Gagal mendeteksi lokasi GPS: ${err.message}`);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const handleOpenGmaps = () => {
     const searchTarget = [address, villageName, districtName, cityName, provinceName]
       .filter(Boolean)
       .join(", ");
-    const url = searchTarget
-      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchTarget)}`
-      : "https://www.google.com/maps";
-    window.open(url, "_blank");
+
+    navigate(
+      `/map-picker?source=stores-edit&returnTo=/stores/${id}/edit&lat=${latitude ?? ""}&lng=${
+        longitude ?? ""
+      }&query=${encodeURIComponent(searchTarget)}&storeName=${encodeURIComponent(name)}`
+    );
   };
 
   const handleProvinceChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -378,13 +440,12 @@ export const StoreEdit = () => {
                 <label className="font-bold text-foreground">
                   Nomor WhatsApp Toko <span className="text-red-500">*</span>
                 </label>
-                <span className={`text-[10px] font-semibold ${
-                  waNumber.length >= 11 && waNumber.length <= 15
+                <span className={`text-[10px] font-semibold ${waNumber.length >= 11 && waNumber.length <= 15
                     ? "text-emerald-600"
                     : waNumber.length > 0
-                    ? "text-amber-600"
-                    : "text-muted-foreground"
-                }`}>
+                      ? "text-amber-600"
+                      : "text-muted-foreground"
+                  }`}>
                   {waNumber.length} / 15 digit (min. 11)
                 </span>
               </div>
@@ -553,55 +614,60 @@ export const StoreEdit = () => {
             />
           </div>
 
-          {/* Titik Google Maps Input & Helper */}
-          <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-2.5">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <label className="font-bold text-foreground flex items-center gap-1.5">
-                <Compass size={14} className="text-blue-600" />
-                <span>Titik Google Maps (Link / Koordinat)</span>
+          {/* Titik Google Maps - Buka Halaman Baru Peta Interaktif */}
+          <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <MapPin size={13} className="text-primary" />
+                <span>Titik Lokasi Google Maps</span>
               </label>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleGetGps}
-                  disabled={isGettingGps}
-                  className="px-2.5 py-1 bg-background hover:bg-muted border border-border rounded-lg text-[10px] font-bold text-foreground flex items-center gap-1 transition"
-                  title="Gunakan titik koordinat perangkat sekarang"
-                >
-                  <Navigation size={12} className={isGettingGps ? "animate-spin text-primary" : "text-primary"} />
-                  <span>{isGettingGps ? "Mencari GPS..." : "GPS Saya"}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleOpenGmaps}
-                  className="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold flex items-center gap-1 transition"
-                  title="Buka Google Maps di tab baru untuk memilih titik"
-                >
-                  <ExternalLink size={12} />
-                  <span>Buka Google Maps</span>
-                </button>
-              </div>
-            </div>
-
-            <input
-              type="text"
-              placeholder="Tempelkan link Google Maps atau koordinat (contoh: -6.3728, 106.8329)"
-              value={gmapsInput}
-              onChange={(e) => handleGmapsChange(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs"
-            />
-
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
-              <span>
-                Tips: Buka Google Maps, klik kanan atau pin lokasi toko, lalu salin koordinat/link dan tempel di sini.
-              </span>
               {latitude !== null && longitude !== null && (
-                <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
-                  ✓ Titik: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  ✓ Koordinat: {latitude.toFixed(5)}, {longitude.toFixed(5)}
                 </span>
               )}
+            </div>
+
+            {/* Button Memanjang Penuh (Full Width): Buka Halaman Peta */}
+            <button
+              type="button"
+              onClick={handleOpenMapPicker}
+              className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.99] transition shadow-xs flex items-center justify-center gap-2"
+              title="Buka Halaman Peta Lengkap untuk memilih titik lokasi secara presisi"
+            >
+              <MapPin size={15} />
+              <span>Pilih pada Peta</span>
+            </button>
+
+            {/* Kolom di Bawah Button: Memanjang untuk Link Hasil Klik Lokasi dari Peta */}
+            <div className="space-y-1">
+              <input
+                type="text"
+                placeholder="Link hasil klik lokasi dari peta (atau tempel link Google Maps di sini)"
+                value={gmapsInput}
+                onChange={(e) => handleGmapsChange(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs font-mono"
+              />
+
+              <div className="flex justify-end text-[11px] px-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const searchTarget = [address, villageName, districtName, cityName, provinceName]
+                      .filter(Boolean)
+                      .join(", ");
+                    const url = gmapsInput || (searchTarget
+                      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchTarget)}`
+                      : "https://www.google.com/maps");
+                    window.open(url, "_blank");
+                  }}
+                  className="text-[10px] text-primary hover:underline flex items-center gap-1 font-semibold"
+                  title="Buka Google Maps di tab baru"
+                >
+                  <ExternalLink size={11} />
+                  <span>Buka Google Maps Web</span>
+                </button>
+              </div>
             </div>
           </div>
 

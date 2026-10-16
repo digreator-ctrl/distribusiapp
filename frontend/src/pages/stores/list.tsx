@@ -253,7 +253,7 @@ export const StoreList = () => {
                     return (
                       <tr key={store.id} className="hover:bg-muted/30 transition-colors">
                         <td className="px-5 py-3.5">
-                          <p className="font-bold text-sm text-foreground hover:text-primary transition-colors cursor-pointer" onClick={() => navigate(`/stores/${store.id}`)}>
+                          <p className="font-bold text-sm text-foreground hover:text-primary transition-colors cursor-pointer" onClick={() => navigate(`/stores/${store.id}`, { state: { store } })}>
                             {store.name}
                           </p>
                           <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -303,7 +303,7 @@ export const StoreList = () => {
                         <td className="px-5 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() => navigate(`/stores/${store.id}`)}
+                              onClick={() => navigate(`/stores/${store.id}`, { state: { store } })}
                               className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition"
                               title="Lihat Detail"
                             >

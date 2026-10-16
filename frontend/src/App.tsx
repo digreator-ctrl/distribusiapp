@@ -34,6 +34,7 @@ import { StoreList } from "./pages/stores/list";
 import { StoreCreate } from "./pages/stores/create";
 import { StoreShow } from "./pages/stores/show";
 import { StoreEdit } from "./pages/stores/edit";
+import { MapPickerPage } from "./pages/stores/MapPickerPage";
 import { InventoryList } from "./pages/inventory/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { SalesDashboard } from "./pages/sales/dashboard";
@@ -259,6 +260,16 @@ function App() {
               </div>
             } />
           </Route>
+
+          {/* Rute Halaman Fullscreen Map Picker */}
+          <Route
+            path="/map-picker"
+            element={
+              <Authenticated key="authenticated-map-picker" fallback={<CatchAllNavigate to="/login" />}>
+                <MapPickerPage />
+              </Authenticated>
+            }
+          />
 
           {/* Rute Halaman Login */}
           <Route

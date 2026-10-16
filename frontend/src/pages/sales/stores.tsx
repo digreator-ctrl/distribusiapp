@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Store, Plus, Search, MapPin, MessageSquare,
-  Clock, CheckCircle2, X,
+  Clock, CheckCircle2, X, ArrowLeft,
   Compass, User, Calendar, Trash2, Edit2, AlertCircle,
   ArrowUpDown, SlidersHorizontal, RotateCcw
 } from "lucide-react";
@@ -15,7 +15,6 @@ import {
   type RegionItem
 } from "../../lib/wilayah";
 import { SearchableSelect } from "../../components/SearchableSelect";
-import { MapPickerModal } from "../../components/MapPickerModal";
 
 // Komponen Floating Toast Notification Kustom (Bukan Bawaan Browser)
 const Toast = ({
@@ -117,13 +116,14 @@ export const SalesStores = () => {
   const [newVillage, setNewVillage] = useState("");
   const [isLoadingModalVillages, setIsLoadingModalVillages] = useState(false);
 
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [addErrors, setAddErrors] = useState<{ [key: string]: string }>({});
 
   // Reset form tambah toko ke kondisi default normal
   const resetAddForm = () => {
+    sessionStorage.removeItem("sales_store_draft");
+    sessionStorage.removeItem("picked_map_location");
     setNewName("");
     setNewOwner("");
     setNewAddress("");
@@ -143,11 +143,90 @@ export const SalesStores = () => {
     setModalVillages([]);
     setAddErrors({});
     setFormError("");
-    setIsMapModalOpen(false);
     if (toast?.type === "error") {
       setToast(null);
     }
   };
+
+  // Restore draft and picked map location on mount
+  useEffect(() => {
+    const rawDraft = sessionStorage.getItem("sales_store_draft");
+    if (rawDraft) {
+      try {
+        const d = JSON.parse(rawDraft);
+        setIsAddOpen(true);
+        if (d.newName) setNewName(d.newName);
+        if (d.newOwner) setNewOwner(d.newOwner);
+        if (d.newAddress) setNewAddress(d.newAddress);
+        if (d.newWa) setNewWa(d.newWa);
+        if (d.selectedProvId) setSelectedProvId(d.selectedProvId);
+        if (d.newProvince) setNewProvince(d.newProvince);
+        if (d.selectedRegId) setSelectedRegId(d.selectedRegId);
+        if (d.newCity) setNewCity(d.newCity);
+        if (d.selectedDistId) setSelectedDistId(d.selectedDistId);
+        if (d.newDistrict) setNewDistrict(d.newDistrict);
+        if (d.newVillage) setNewVillage(d.newVillage);
+        if (d.newGmaps) setNewGmaps(d.newGmaps);
+        if (d.newLat) setNewLat(d.newLat);
+        if (d.newLng) setNewLng(d.newLng);
+      } catch (e) {
+        console.warn("Restore sales draft error:", e);
+      }
+    }
+
+    const rawPicked = sessionStorage.getItem("picked_map_location");
+    if (rawPicked) {
+      try {
+        const p = JSON.parse(rawPicked);
+        if (p.lat && p.lng) {
+          setIsAddOpen(true);
+          setNewLat(p.lat);
+          setNewLng(p.lng);
+          setNewGmaps(p.gmapsUrl);
+          setToast({
+            message: `Titik koordinat berhasil dipilih dari Peta (${p.lat.toFixed(5)}, ${p.lng.toFixed(5)})!`,
+            type: "success",
+          });
+        }
+      } catch (e) {
+        console.warn("Parse picked location error:", e);
+      } finally {
+        sessionStorage.removeItem("picked_map_location");
+        sessionStorage.removeItem("sales_store_draft");
+      }
+    }
+
+    const handleStorageOrMessage = (event: StorageEvent | MessageEvent) => {
+      let payload = null;
+      if ("data" in event && event.data?.type === "MAP_LOCATION_PICKED") {
+        payload = event.data.payload;
+      } else if ("key" in event && event.key === "picked_map_location_event" && event.newValue) {
+        try {
+          payload = JSON.parse(event.newValue);
+        } catch {
+          // ignore
+        }
+      }
+      if (payload && payload.lat && payload.lng) {
+        setIsAddOpen(true);
+        setNewLat(payload.lat);
+        setNewLng(payload.lng);
+        setNewGmaps(payload.gmapsUrl);
+        setToast({
+          message: `Titik koordinat berhasil diperbarui dari Peta (${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)})!`,
+          type: "success",
+        });
+      }
+    };
+
+    window.addEventListener("message", handleStorageOrMessage as any);
+    window.addEventListener("storage", handleStorageOrMessage as any);
+
+    return () => {
+      window.removeEventListener("message", handleStorageOrMessage as any);
+      window.removeEventListener("storage", handleStorageOrMessage as any);
+    };
+  }, []);
 
   const handleOpenAddModal = () => {
     resetAddForm();
@@ -209,15 +288,7 @@ export const SalesStores = () => {
     fetchSchedules();
   }, []);
 
-  const handleSelectFromMap = (data: { lat: number; lng: number; gmapsUrl: string }) => {
-    setNewLat(data.lat);
-    setNewLng(data.lng);
-    setNewGmaps(data.gmapsUrl);
-    setToast({
-      message: `Titik koordinat berhasil dipilih (${data.lat.toFixed(5)}, ${data.lng.toFixed(5)})!`,
-      type: "success",
-    });
-  };
+
 
   const handleModalProvSelect = async (opt: RegionItem | null) => {
     if (!opt) {
@@ -923,7 +994,7 @@ export const SalesStores = () => {
                 return (
                   <div
                     key={store.id}
-                    onClick={() => navigate(`/sales/toko/${store.id}`)}
+                    onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store } })}
                     className="bg-card rounded-2xl border border-border/80 p-3.5 shadow-2xs hover:border-primary/50 active:scale-[0.99] transition-all cursor-pointer group space-y-1.5"
                   >
                     {/* Pojok Kiri Atas: Nama Toko sejajar Pojok Kanan Atas: Nama Owner/PIC */}
@@ -1320,37 +1391,49 @@ export const SalesStores = () => {
       )}
 
       {/* ========================================================= */}
-      {/* DRAWER / MODAL TAMBAH TOKO BARU                           */}
+      {/* HALAMAN PENUH (FULLPAGE) TAMBAH MITRA TOKO BARU (PWA SIZE) */}
       {/* ========================================================= */}
       {isAddOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) handleCloseAddModal();
-          }}
-        >
-          <div className="bg-card w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-border shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-5">
-            <div className="flex items-center justify-between pb-2 border-b border-border">
-              <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
-                <Store size={18} className="text-primary" />
-                Tambah Mitra Toko Baru
-              </h3>
+        <div className="fixed inset-0 z-50 bg-muted/40 flex justify-center">
+          <div className="bg-background w-full max-w-md mx-auto h-screen flex flex-col shadow-2xl border-x border-border relative overflow-hidden animate-in fade-in">
+            {/* Header Fullpage */}
+            <div className="bg-primary text-primary-foreground px-4 py-3 sticky top-0 z-20 shadow-md flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleCloseAddModal}
+                  className="p-1 rounded-lg text-primary-foreground hover:bg-black/10 transition flex items-center"
+                  title="Kembali ke Daftar Toko"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <div>
+                  <h3 className="font-bold text-sm leading-tight flex items-center gap-1.5">
+                    <Store size={16} />
+                    <span>Tambah Mitra Toko Baru</span>
+                  </h3>
+                  <p className="text-[10px] text-primary-foreground/80">Mode Sales PWA</p>
+                </div>
+              </div>
+
               <button
                 type="button"
                 onClick={handleCloseAddModal}
-                className="p-1 rounded-full text-muted-foreground hover:bg-muted"
+                className="p-1 rounded-lg text-primary-foreground/80 hover:text-primary-foreground hover:bg-black/10 transition"
               >
                 <X size={18} />
               </button>
             </div>
 
-            {formError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold">
-                {formError}
-              </div>
-            )}
+            {/* Scrollable Form Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {formError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold">
+                  {formError}
+                </div>
+              )}
 
-            <form onSubmit={handleAddStore} noValidate className="space-y-3.5 text-xs">
+              <form id="add-store-form" onSubmit={handleAddStore} noValidate className="space-y-3.5 text-xs">
               <div>
                 <label className={`font-bold block mb-1 ${addErrors.name ? "text-red-600 font-extrabold" : "text-foreground"}`}>
                   Nama Toko <span className="text-red-500">*</span>
@@ -1456,7 +1539,8 @@ export const SalesStores = () => {
                   <span>Wilayah Toko (Bisa Ketik untuk Memilih Cepat)</span>
                 </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* Susunan Wilayah Menurun ke Bawah */}
+                <div className="flex flex-col gap-2.5">
                   <SearchableSelect
                     id="modal-province"
                     label="Provinsi"
@@ -1527,70 +1611,95 @@ export const SalesStores = () => {
                 />
               </div>
 
-              {/* Titik Google Maps Input & Helper (GPS Saya Dihapus, Peta Interaktif) */}
-              <div className="p-3 bg-muted/30 rounded-xl border border-border/60 space-y-2">
-                <div className="flex items-center justify-between gap-1">
-                  <label className="font-bold text-foreground flex items-center gap-1 text-[11px]">
-                    <Compass size={13} className="text-primary" />
-                    <span>Titik Google Maps</span>
+              {/* Titik Google Maps dengan Bantuan Peta Interaktif */}
+              <div className="p-3 bg-muted/30 rounded-xl border border-border/60 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-foreground flex items-center gap-1.5 text-[11px]">
+                    <MapPin size={13} className="text-primary" />
+                    <span>Titik Lokasi Google Maps</span>
                   </label>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsMapModalOpen(true)}
-                    className="px-2.5 py-1 bg-primary text-primary-foreground rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs hover:opacity-90 active:scale-95 transition"
-                    title="Buka peta untuk memilih titik lokasi dan otomatis terinput"
-                  >
-                    <MapPin size={11} />
-                    <span>Peta</span>
-                  </button>
+                  {newLat !== null && newLng !== null && (
+                    <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200">
+                      ✓ Koordinat: {newLat.toFixed(5)}, {newLng?.toFixed(5)}
+                    </span>
+                  )}
                 </div>
 
-                <input
-                  type="text"
-                  placeholder="Tempel link Google Maps atau klik Peta di atas"
-                  value={newGmaps}
-                  onChange={(e) => handleModalGmapsChange(e.target.value)}
-                  className="w-full bg-background border border-border rounded-xl px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono text-[11px]"
-                />
-
-                {newLat !== null && newLng !== null && (
-                  <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200 inline-block">
-                    ✓ Koordinat: {newLat.toFixed(5)}, {newLng?.toFixed(5)}
-                  </span>
-                )}
-              </div>
-
-              <div className="pt-2 flex gap-2">
+                {/* Button Memanjang Penuh (Full Width): Buka Halaman Peta */}
                 <button
                   type="button"
-                  onClick={handleCloseAddModal}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted transition"
+                  onClick={() => {
+                    const draft = {
+                      newName,
+                      newOwner,
+                      newAddress,
+                      newWa,
+                      newGmaps,
+                      newLat,
+                      newLng,
+                      selectedProvId,
+                      newProvince,
+                      selectedRegId,
+                      newCity,
+                      selectedDistId,
+                      newDistrict,
+                      newVillage,
+                    };
+                    sessionStorage.setItem("sales_store_draft", JSON.stringify(draft));
+
+                    const searchTarget = [newAddress, newVillage, newDistrict, newCity, newProvince]
+                      .filter(Boolean)
+                      .join(", ");
+
+                    navigate(
+                      `/map-picker?source=sales-stores&returnTo=/sales/toko&lat=${newLat ?? ""}&lng=${
+                        newLng ?? ""
+                      }&query=${encodeURIComponent(searchTarget)}&storeName=${encodeURIComponent(newName)}`
+                    );
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl font-bold text-xs bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.99] transition shadow-xs flex items-center justify-center gap-2"
+                  title="Buka Halaman Peta Lengkap untuk memilih titik lokasi secara presisi"
                 >
-                  Batal
+                  <MapPin size={15} />
+                  <span>Pilih pada Peta</span>
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-sm active:scale-95 transition disabled:opacity-50"
-                >
-                  {isSubmitting ? "Menyimpan..." : "Simpan Toko"}
-                </button>
+
+                {/* Kolom di Bawah Button: Memanjang untuk Link Hasil Klik Lokasi dari Peta */}
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Link hasil klik lokasi dari peta (atau tempel link Google Maps)"
+                    value={newGmaps}
+                    onChange={(e) => handleModalGmapsChange(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono text-[11px]"
+                  />
+                </div>
               </div>
-            </form>
+
+              </form>
+            </div>
+
+            {/* Sticky Bottom Action Bar dengan Jarak Bawah yang Lega (pb-8) */}
+            <div className="px-4 pt-3 pb-8 bg-card border-t border-border shrink-0 flex gap-2.5 z-10 shadow-2xl">
+              <button
+                type="button"
+                onClick={handleCloseAddModal}
+                className="flex-1 py-2.5 rounded-xl border border-border text-xs font-bold text-muted-foreground hover:bg-muted transition"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                form="add-store-form"
+                disabled={isSubmitting}
+                className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-sm active:scale-95 transition disabled:opacity-50"
+              >
+                {isSubmitting ? "Menyimpan..." : "Simpan Toko"}
+              </button>
+            </div>
           </div>
         </div>
       )}
-
-      {/* Map Picker Modal */}
-      <MapPickerModal
-        isOpen={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
-        initialLat={newLat}
-        initialLng={newLng}
-        initialSearchQuery={[newAddress, newVillage, newDistrict, newCity, newProvince].filter(Boolean).join(", ")}
-        onSelectLocation={handleSelectFromMap}
-      />
     </div>
   );
 };
