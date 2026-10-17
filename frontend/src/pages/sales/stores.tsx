@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   Store, Plus, Search, MapPin, MessageSquare,
   Clock, CheckCircle2, X, ArrowLeft,
   Compass, User, Calendar, Trash2, Edit2, AlertCircle,
-  ArrowUpDown, SlidersHorizontal, RotateCcw
+  ArrowUpDown, SlidersHorizontal, RotateCcw,
+  AlertTriangle, RefreshCw, CalendarDays, Hourglass, ShieldAlert,
+  Sparkles, ChevronRight, Check, ChevronDown
 } from "lucide-react";
 import {
   PROVINCES_DATA,
@@ -65,12 +67,46 @@ const Toast = ({
 
 export const SalesStores = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Helper untuk membaca inisial tab/subtab/sort dari URL, location.state, atau sessionStorage
+  const getInitialMainTab = (): "stores" | "schedules" => {
+    const qTab = searchParams.get("tab");
+    if (qTab === "stores" || qTab === "schedules") return qTab;
+    const locTab = location.state?.fromTab;
+    if (locTab === "stores" || locTab === "schedules") return locTab;
+    const sTab = sessionStorage.getItem("sales_stores_main_tab");
+    if (sTab === "stores" || sTab === "schedules") return sTab as any;
+    return "stores";
+  };
+
+  const getInitialSubTab = (): "recommendation" | "manual" => {
+    const qSub = searchParams.get("subtab");
+    if (qSub === "recommendation" || qSub === "manual") return qSub;
+    const locSub = location.state?.fromSubTab;
+    if (locSub === "recommendation" || locSub === "manual") return locSub;
+    const sSub = sessionStorage.getItem("sales_stores_sub_tab");
+    if (sSub === "recommendation" || sSub === "manual") return sSub as any;
+    return "recommendation";
+  };
+
+  const getInitialSort = (): "expiry" | "period" => {
+    const qSort = searchParams.get("sort");
+    if (qSort === "expiry" || qSort === "period") return qSort;
+    const locSort = location.state?.fromSort;
+    if (locSort === "expiry" || locSort === "period") return locSort;
+    const sSort = sessionStorage.getItem("sales_stores_recom_sort");
+    if (sSort === "expiry" || sSort === "period") return sSort as any;
+    return "expiry";
+  };
+
   const [activeSalesId] = useState<string>(
     localStorage.getItem("distribusi_user_id") || ""
   );
 
   // Main Tab: "stores" (Data Toko) vs "schedules" (Jadwal Kunjungan)
-  const [mainTab, setMainTab] = useState<"stores" | "schedules">("stores");
+  const [mainTab, setMainTabState] = useState<"stores" | "schedules">(getInitialMainTab);
 
   // Stores State
   const [stores, setStores] = useState<any[]>([]);
@@ -89,6 +125,62 @@ export const SalesStores = () => {
   const [schedules, setSchedules] = useState<any[]>([]);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
   const [scheduleFilter, setScheduleFilter] = useState<"all" | "today" | "upcoming" | "completed">("today");
+  // Sub-Tab Jadwal Kunjungan: "recommendation" (Rekomendasi) | "manual" (Agenda)
+  const [scheduleSubTab, setScheduleSubTabState] = useState<"recommendation" | "manual">(getInitialSubTab);
+  // Prioritas Pengurutan di Tab Rekomendasi: "expiry" (By Kedaluwarsa) vs "period" (By Periode Bulanan)
+  const [recomSortBy, setRecomSortByState] = useState<"expiry" | "period">(getInitialSort);
+  // View mode untuk tab otomatis: "active" (Perlu Dikunjungi) vs "completed" (Sudah Dikunjungi Periode Ini)
+  const [autoScheduleView, setAutoScheduleView] = useState<"active" | "completed">("active");
+  const [showCompletedStores, setShowCompletedStores] = useState(false);
+
+  const setMainTab = (tab: "stores" | "schedules") => {
+    setMainTabState(tab);
+    sessionStorage.setItem("sales_stores_main_tab", tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", tab);
+      return next;
+    }, { replace: true });
+  };
+
+  const setScheduleSubTab = (sub: "recommendation" | "manual") => {
+    setScheduleSubTabState(sub);
+    sessionStorage.setItem("sales_stores_sub_tab", sub);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("subtab", sub);
+      return next;
+    }, { replace: true });
+  };
+
+  const setRecomSortBy = (sort: "expiry" | "period") => {
+    setRecomSortByState(sort);
+    sessionStorage.setItem("sales_stores_recom_sort", sort);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("sort", sort);
+      return next;
+    }, { replace: true });
+  };
+
+  // Sinkronisasi jika parameter URL berubah (misal tombol back browser)
+  useEffect(() => {
+    const qTab = searchParams.get("tab");
+    if (qTab === "stores" || qTab === "schedules") {
+      setMainTabState(qTab);
+      sessionStorage.setItem("sales_stores_main_tab", qTab);
+    }
+    const qSub = searchParams.get("subtab");
+    if (qSub === "recommendation" || qSub === "manual") {
+      setScheduleSubTabState(qSub);
+      sessionStorage.setItem("sales_stores_sub_tab", qSub);
+    }
+    const qSort = searchParams.get("sort");
+    if (qSort === "expiry" || qSort === "period") {
+      setRecomSortByState(qSort);
+      sessionStorage.setItem("sales_stores_recom_sort", qSort);
+    }
+  }, [searchParams]);
 
   // Modal Tambah Toko
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -676,6 +768,171 @@ export const SalesStores = () => {
   const scheduleUpcomingCount = schedules.filter((s) => (s.scheduled_date?.split("T")[0] > todayStr && s.status !== "completed")).length;
   const schedulePendingTodayCount = schedules.filter((s) => (s.scheduled_date?.split("T")[0] === todayStr && s.status !== "completed")).length;
 
+  // =========================================================
+  // LOGIKA KUNJUNGAN OTOMATIS: PERIODE BULANAN & KEDALUWARSA
+  // =========================================================
+  // Batas periode kunjungan toko rutin: 30 hari (1 bulan)
+  const PERIOD_DAYS = 30;
+
+  // Metadata Kunjungan Bulanan per toko (1 bulan hanya 1x)
+  const getStoreVisitMeta = (s: any) => {
+    if (!s.last_visit_date) {
+      return {
+        hasVisited: false,
+        isVisitedThisPeriod: false,
+        daysSinceLastVisit: null,
+        daysUntilReappear: 0,
+        nextDueDate: null,
+        statusLabel: "Belum Pernah Dikunjungi",
+        lastVisitFormatted: "Belum pernah dikunjungi",
+      };
+    }
+
+    const lastVisit = new Date(s.last_visit_date);
+    const now = new Date();
+    const diffMs = now.getTime() - lastVisit.getTime();
+    const daysSince = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    const isVisitedThisPeriod = daysSince < PERIOD_DAYS;
+    const daysUntilReappear = Math.max(0, PERIOD_DAYS - daysSince);
+    const nextDueDate = new Date(lastVisit.getTime() + PERIOD_DAYS * 24 * 60 * 60 * 1000);
+
+    const lastVisitFormatted = lastVisit.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+    return {
+      hasVisited: true,
+      isVisitedThisPeriod,
+      daysSinceLastVisit: daysSince,
+      daysUntilReappear,
+      nextDueDate,
+      statusLabel: isVisitedThisPeriod
+        ? `Sudah dikunjungi ${daysSince === 0 ? "hari ini" : `${daysSince} hari lalu`}`
+        : `Jatuh tempo (${daysSince} hari lalu)`,
+      lastVisitFormatted,
+    };
+  };
+
+  // Metadata Kedaluwarsa Produk di Toko
+  const getStoreExpiryMeta = (s: any) => {
+    if (!s.nearest_expired_date) {
+      return {
+        hasExpiry: false,
+        expiredDate: null,
+        daysUntilExpired: null,
+        formattedDate: "-",
+        urgency: "none" as const,
+        urgencyLabel: "Belum ada produk kedaluwarsa",
+      };
+    }
+
+    const expDate = new Date(s.nearest_expired_date);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const diffMs = expDate.getTime() - now.getTime();
+    const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    const formattedDate = expDate.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+    let urgency: "critical" | "warning" | "normal" = "normal";
+    let urgencyLabel = `${days} hari lagi`;
+
+    if (days <= 0) {
+      urgency = "critical";
+      urgencyLabel = days === 0 ? "Kedaluwarsa Hari Ini!" : `Lewat ${Math.abs(days)} hari!`;
+    } else if (days <= 14) {
+      urgency = "critical";
+      urgencyLabel = `${days} hari lagi (Kritis)`;
+    } else if (days <= 30) {
+      urgency = "warning";
+      urgencyLabel = `${days} hari lagi (Waspada)`;
+    } else {
+      urgency = "normal";
+      urgencyLabel = `${days} hari lagi`;
+    }
+
+    return {
+      hasExpiry: true,
+      expiredDate: expDate,
+      daysUntilExpired: days,
+      formattedDate,
+      urgency,
+      urgencyLabel,
+    };
+  };
+
+  // Data Rekomendasi Kunjungan (Merger By Kedaluwarsa & By Periode Bulanan)
+  const { recomActiveStores, recomCompletedStores } = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const filtered = stores.filter((s) => {
+      if (!q) return true;
+      return (
+        s.name?.toLowerCase().includes(q) ||
+        s.owner_name?.toLowerCase().includes(q) ||
+        s.address?.toLowerCase().includes(q) ||
+        s.nearest_expiring_product_name?.toLowerCase().includes(q) ||
+        s.nearest_expiring_variant_name?.toLowerCase().includes(q) ||
+        s.city?.toLowerCase().includes(q) ||
+        s.district?.toLowerCase().includes(q)
+      );
+    });
+
+    const active: any[] = [];
+    const completed: any[] = [];
+
+    filtered.forEach((s) => {
+      const vMeta = getStoreVisitMeta(s);
+      if (vMeta.isVisitedThisPeriod) {
+        // Toko yang telah dikunjungi dalam periode 30 hari ini otomatis tidak nampak pada daftar aktif
+        completed.push(s);
+      } else {
+        active.push(s);
+      }
+    });
+
+    // Urutkan daftar aktif berdasarkan switch pilihan sales:
+    if (recomSortBy === "expiry") {
+      // Prioritas 1: Tanggal kedaluwarsa terdekat ke akhir (FEFO)
+      active.sort((a, b) => {
+        if (a.nearest_expired_date && b.nearest_expired_date) {
+          return a.nearest_expired_date.localeCompare(b.nearest_expired_date);
+        }
+        if (a.nearest_expired_date && !b.nearest_expired_date) return -1;
+        if (!a.nearest_expired_date && b.nearest_expired_date) return 1;
+        return (a.name || "").localeCompare(b.name || "");
+      });
+    } else {
+      // Prioritas 2: Periode Jatuh Tempo (belum pernah dikunjungi di atas, lalu terlama belum dikunjungi)
+      active.sort((a, b) => {
+        const aMeta = getStoreVisitMeta(a);
+        const bMeta = getStoreVisitMeta(b);
+
+        if (!aMeta.hasVisited && bMeta.hasVisited) return -1;
+        if (aMeta.hasVisited && !bMeta.hasVisited) return 1;
+
+        if (aMeta.daysSinceLastVisit !== null && bMeta.daysSinceLastVisit !== null) {
+          return bMeta.daysSinceLastVisit - aMeta.daysSinceLastVisit;
+        }
+        return (a.name || "").localeCompare(b.name || "");
+      });
+    }
+
+    // Urutkan completed: kunjungan terbaru di atas
+    completed.sort((a, b) => {
+      const aDate = a.last_visit_date || "";
+      const bDate = b.last_visit_date || "";
+      return bDate.localeCompare(aDate);
+    });
+
+    return { recomActiveStores: active, recomCompletedStores: completed };
+  }, [stores, searchQuery, recomSortBy]);
+
   return (
     <div className="space-y-4 pb-6">
       {/* Floating Toast Notification */}
@@ -994,7 +1251,7 @@ export const SalesStores = () => {
                 return (
                   <div
                     key={store.id}
-                    onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store } })}
+                    onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store, fromTab: "stores" } })}
                     className="bg-card rounded-2xl border border-border/80 p-3.5 shadow-2xs hover:border-primary/50 active:scale-[0.99] transition-all cursor-pointer group space-y-1.5"
                   >
                     {/* Pojok Kiri Atas: Nama Toko sejajar Pojok Kanan Atas: Nama Owner/PIC */}
@@ -1029,275 +1286,550 @@ export const SalesStores = () => {
       {/* TAB 2: JADWAL KUNJUNGAN                                    */}
       {/* ========================================================= */}
       {mainTab === "schedules" && (
-        <div className="space-y-3">
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-2xs">
-              <span className="text-[10px] text-muted-foreground font-semibold block">Hari Ini</span>
-              <div className="flex items-baseline gap-1 mt-0.5">
-                <span className="text-lg font-black text-foreground">{scheduleTodayCount}</span>
-                {schedulePendingTodayCount > 0 && (
-                  <span className="text-[10px] text-amber-600 font-bold">({schedulePendingTodayCount} pending)</span>
-                )}
-              </div>
-            </div>
+        <div className="space-y-3.5">
+          {/* Sub-Tabs: Rekomendasi & Agenda (Teks bersih tanpa icon & angka) */}
+          <div className="flex bg-muted/60 p-1 rounded-xl border border-border/60 gap-1">
+            <button
+              onClick={() => {
+                setScheduleSubTab("recommendation");
+                setAutoScheduleView("active");
+              }}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all text-center whitespace-nowrap ${
+                scheduleSubTab === "recommendation"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Rekomendasi
+            </button>
 
-            <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-2xs">
-              <span className="text-[10px] text-muted-foreground font-semibold block">Mendatang</span>
-              <p className="text-lg font-black text-foreground mt-0.5">{scheduleUpcomingCount}</p>
-            </div>
-
-            <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-2xs">
-              <span className="text-[10px] text-muted-foreground font-semibold block">Selesai</span>
-              <p className="text-lg font-black text-emerald-600 mt-0.5">{scheduleCompletedCount}</p>
-            </div>
+            <button
+              onClick={() => setScheduleSubTab("manual")}
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all text-center whitespace-nowrap ${
+                scheduleSubTab === "manual"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Agenda
+            </button>
           </div>
 
-          {/* Search Bar */}
+          {/* Search Bar (Universal for schedules) */}
           <div className="relative">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Cari jadwal, nama toko, catatan..."
+              placeholder={
+                scheduleSubTab === "recommendation"
+                  ? "Cari toko, produk kedaluwarsa, atau alamat..."
+                  : "Cari agenda kunjungan, toko, catatan..."
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-card border border-border/80 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
-          {/* Sub-Filter Tabs: Text Only */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            <button
-              onClick={() => setScheduleFilter("today")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                scheduleFilter === "today"
-                  ? "bg-primary text-primary-foreground shadow-2xs"
-                  : "bg-muted/70 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              Hari Ini ({scheduleTodayCount})
-            </button>
-            <button
-              onClick={() => setScheduleFilter("upcoming")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                scheduleFilter === "upcoming"
-                  ? "bg-primary text-primary-foreground shadow-2xs"
-                  : "bg-muted/70 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              Mendatang ({scheduleUpcomingCount})
-            </button>
-            <button
-              onClick={() => setScheduleFilter("completed")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                scheduleFilter === "completed"
-                  ? "bg-emerald-600 text-white shadow-2xs"
-                  : "bg-muted/70 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              Selesai ({scheduleCompletedCount})
-            </button>
-            <button
-              onClick={() => setScheduleFilter("all")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                scheduleFilter === "all"
-                  ? "bg-primary text-primary-foreground shadow-2xs"
-                  : "bg-muted/70 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              Semua ({schedules.length})
-            </button>
-          </div>
+          {/* ========================================================= */}
+          {/* SUB-TAB 1: REKOMENDASI KUNJUNGAN (HASIL MERGER OTOMATIS)  */}
+          {/* ========================================================= */}
+          {scheduleSubTab === "recommendation" && (
+            <div className="space-y-3">
+              {/* Switch On/Off Toggle untuk Prioritas Urutan */}
+              <div className="flex items-center justify-between gap-2 bg-card p-2 rounded-xl border border-border/70 shadow-2xs">
+                <span className="text-xs font-bold text-muted-foreground shrink-0 pl-1">
+                  Urutkan Berdasarkan:
+                </span>
 
-          {/* Schedule List */}
-          {isLoadingSchedules ? (
-            <div className="space-y-3 animate-pulse">
-              <div className="h-28 bg-muted/40 rounded-2xl" />
-              <div className="h-28 bg-muted/40 rounded-2xl" />
-            </div>
-          ) : filteredSchedules.length === 0 ? (
-            <div className="bg-card border border-dashed border-border rounded-2xl p-8 text-center space-y-3">
-              <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center text-muted-foreground mx-auto">
-                <Calendar size={24} />
-              </div>
-              <div>
-                <p className="font-bold text-xs text-foreground">Tidak Ada Jadwal Kunjungan</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {scheduleFilter === "today"
-                    ? "Belum ada agenda kunjungan untuk hari ini."
-                    : "Tidak ada jadwal dengan filter yang dipilih."}
-                </p>
-              </div>
-              <button
-                onClick={() => openScheduleModal()}
-                className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs"
-              >
-                <Plus size={14} />
-                <span>Buat Jadwal Baru</span>
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {filteredSchedules.map((item) => {
-                const sDate = item.scheduled_date ? item.scheduled_date.split("T")[0] : "";
-                const isCompleted = item.status === "completed";
-                const isToday = sDate === todayStr;
-                const isOverdue = sDate < todayStr && !isCompleted;
-                const hasDebt = Number(item.total_debt) > 0;
-                const remaining = Number(item.total_remaining_stock) || 0;
-
-                return (
-                  <div
-                    key={item.id}
-                    className={`bg-card rounded-2xl border p-3.5 shadow-2xs space-y-3 transition-all ${
-                      isCompleted
-                        ? "border-emerald-500/30 bg-emerald-500/5"
-                        : isOverdue
-                        ? "border-red-500/40 bg-red-500/5"
-                        : isToday
-                        ? "border-amber-500/50 bg-amber-500/5"
-                        : "border-border/80"
+                {/* Saklar Geser (Segmented Switch Toggle) */}
+                <div className="flex bg-muted/80 p-0.5 rounded-lg border border-border/60 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setRecomSortBy("expiry")}
+                    className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                      recomSortBy === "expiry"
+                        ? "bg-primary text-primary-foreground shadow-2xs"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {/* Header Row */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h3 className="font-bold text-sm text-foreground truncate">{item.store_name}</h3>
-                          
-                          {/* Status Badge */}
-                          {isCompleted ? (
-                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-full shrink-0 flex items-center gap-1 border border-emerald-300">
-                              <CheckCircle2 size={10} />
-                              Selesai
-                            </span>
-                          ) : isOverdue ? (
-                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-black rounded-full shrink-0 flex items-center gap-1 border border-red-300">
-                              <AlertCircle size={10} />
-                              Terlewat
-                            </span>
-                          ) : isToday ? (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-900 text-[10px] font-black rounded-full shrink-0 flex items-center gap-1 border border-amber-300">
-                              <Clock size={10} />
-                              Hari Ini
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 bg-muted text-muted-foreground text-[10px] font-bold rounded-full shrink-0">
-                              Mendatang
-                            </span>
-                          )}
+                    <Hourglass size={12} className={recomSortBy === "expiry" ? "text-primary-foreground" : "text-amber-500"} />
+                    <span>Kedaluwarsa</span>
+                  </button>
 
-                          {hasDebt && (
-                            <span className="px-1.5 py-0.2 bg-red-100 text-red-700 text-[9px] font-black rounded-full shrink-0 border border-red-200">
-                              Piutang
-                            </span>
-                          )}
-                        </div>
+                  <button
+                    type="button"
+                    onClick={() => setRecomSortBy("period")}
+                    className={`px-3 py-1.5 rounded-md transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                      recomSortBy === "period"
+                        ? "bg-primary text-primary-foreground shadow-2xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <RefreshCw size={12} className={recomSortBy === "period" ? "text-primary-foreground" : "text-blue-500"} />
+                    <span>Periode</span>
+                  </button>
+                </div>
+              </div>
 
-                        {item.owner_name && (
-                          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <User size={11} className="shrink-0" />
-                            <span className="truncate">{item.owner_name}</span>
-                          </p>
-                        )}
-
-                        {item.address && (
-                          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
-                            <MapPin size={11} className="shrink-0 text-primary/70" />
-                            <span className="truncate">{item.address}</span>
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Action Icon: Edit or Delete */}
-                      <div className="flex items-center gap-1 shrink-0">
-                        {!isCompleted && (
-                          <button
-                            onClick={() => openScheduleModal(item.store_id, item)}
-                            className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:text-foreground"
-                            title="Ubah Jadwal"
-                          >
-                            <Edit2 size={13} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteSchedule(item.id)}
-                          className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:text-red-600"
-                          title="Hapus Jadwal"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Scheduled Date & Agenda Note */}
-                    <div className="bg-muted/40 rounded-xl p-2.5 space-y-1.5 border border-border/40 text-[11px]">
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span className="flex items-center gap-1 font-semibold text-foreground">
-                          <Calendar size={12} className="text-primary" />
-                          {formatScheduleDate(item.scheduled_date)}
-                        </span>
-                        <span className="text-[10px]">
-                          Stok rak: <strong className="text-foreground">{remaining} pcs</strong>
-                        </span>
-                      </div>
-
-                      {item.notes ? (
-                        <p className="text-foreground/90 bg-background/80 p-2 rounded-lg border border-border/50 text-[11px]">
-                          <span className="font-bold text-muted-foreground block text-[10px] uppercase tracking-wider mb-0.5">Agenda / Catatan:</span>
-                          {item.notes}
-                        </p>
-                      ) : (
-                        <p className="text-muted-foreground italic text-[10px]">
-                          Tidak ada catatan agenda khusus.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Bottom Actions */}
-                    <div className="flex items-center gap-1.5 pt-1">
-                      {!isCompleted ? (
-                        <button
-                          onClick={() => navigate(`/sales/toko/kunjungan/${item.store_id}`)}
-                          className="flex-1 bg-primary text-primary-foreground font-black text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.98] transition shadow-xs"
-                        >
-                          <Store size={14} />
-                          <span>Mulai Kunjungan</span>
-                        </button>
-                      ) : (
-                        <div className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-500/10 text-emerald-700 text-xs font-bold text-center flex items-center justify-center gap-1.5">
-                          <CheckCircle2 size={14} />
-                          <span>Kunjungan Telah Selesai</span>
-                        </div>
-                      )}
-
-                      {item.wa_number && (
-                        <a
-                          href={`https://wa.me/${item.wa_number.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 active:scale-95 transition shrink-0"
-                          title="Chat WhatsApp"
-                        >
-                          <MessageSquare size={16} />
-                        </a>
-                      )}
-
-                      {item.latitude && item.longitude && (
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-2 rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 active:scale-95 transition shrink-0"
-                          title="Buka Peta"
-                        >
-                          <Compass size={16} />
-                        </a>
-                      )}
-                    </div>
+              {/* List Toko Rekomendasi Langsung di Bawah Switch */}
+              {isLoadingStores ? (
+                <div className="space-y-2.5 animate-pulse">
+                  <div className="h-20 bg-muted/40 rounded-2xl" />
+                  <div className="h-20 bg-muted/40 rounded-2xl" />
+                  <div className="h-20 bg-muted/40 rounded-2xl" />
+                </div>
+              ) : recomActiveStores.length === 0 ? (
+                <div className="bg-card border border-dashed border-border rounded-2xl p-8 text-center space-y-2">
+                  <div className="w-12 h-12 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle2 size={24} />
                   </div>
-                );
-              })}
+                  <p className="font-bold text-xs text-foreground">Seluruh Toko Telah Dikunjungi Periode Ini! 🎉</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Semua mitra toko telah selesai dikunjungi dalam periode 1 bulan ini. Toko akan otomatis muncul kembali saat siklus bulan berikutnya tiba.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {recomActiveStores.map((store) => {
+                    const eMeta = getStoreExpiryMeta(store);
+                    const vMeta = getStoreVisitMeta(store);
+
+                    // Format: Nama Produk - Varian - Jumlah Stok
+                    const productName = store.nearest_expiring_product_name || "Semua Produk";
+                    const variantName = store.nearest_expiring_variant_name || "Standar";
+                    const stockQty =
+                      store.nearest_expiring_qty !== null && store.nearest_expiring_qty !== undefined
+                        ? `${store.nearest_expiring_qty} pcs`
+                        : store.total_remaining_stock > 0
+                        ? `${store.total_remaining_stock} pcs`
+                        : "0 pcs";
+                    const productVariantStockText = `${productName} - ${variantName} - ${stockQty}`;
+
+                    return (
+                      <div
+                        key={store.id}
+                        onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store, fromTab: mainTab, fromSubTab: scheduleSubTab, fromSort: recomSortBy } })}
+                        className="bg-card rounded-2xl border border-border/80 p-3.5 shadow-2xs hover:border-primary/50 active:scale-[0.99] transition-all cursor-pointer space-y-2 group"
+                      >
+                        {/* Baris 1: Nama Toko pojok kiri atas */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                                {store.name}
+                              </h3>
+                              {recomSortBy === "period" ? (
+                                !vMeta.hasVisited ? (
+                                  <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 border border-blue-200 dark:border-blue-800 text-[10px] font-bold rounded-md shrink-0">
+                                    Perdana
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-700 border border-amber-200 dark:border-amber-800 text-[10px] font-bold rounded-md shrink-0">
+                                    {vMeta.daysSinceLastVisit} hr lalu
+                                  </span>
+                                )
+                              ) : (
+                                eMeta.urgency === "critical" && (
+                                  <span className="px-1.5 py-0.5 bg-red-500/10 text-red-600 border border-red-200 dark:border-red-800 text-[10px] font-bold rounded-md shrink-0">
+                                    Kritis
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          </div>
+
+                          <ChevronRight
+                            size={16}
+                            className="text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 mt-0.5"
+                          />
+                        </div>
+
+                        {/* Baris 2: Nama Produk - Varian - Jumlah Stok dibawah Nama Toko & Tanggal Kedaluwarsa sejajar disebelah kanan */}
+                        <div className="flex items-center justify-between gap-3 text-xs pt-1.5 border-t border-border/40">
+                          {/* Nama Produk - Varian - Jumlah Stok */}
+                          <div className="min-w-0 flex-1 truncate text-muted-foreground">
+                            <span className="font-medium text-foreground">
+                              {productVariantStockText}
+                            </span>
+                          </div>
+
+                          {/* Tanggal Kedaluwarsa sejajar disebelah kanan */}
+                          <div className="shrink-0 text-right">
+                            {eMeta.hasExpiry ? (
+                              <span
+                                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                                  eMeta.urgency === "critical"
+                                    ? "bg-red-500/10 text-red-600 border-red-200 dark:border-red-900/50"
+                                    : eMeta.urgency === "warning"
+                                    ? "bg-amber-500/10 text-amber-700 border-amber-200 dark:border-amber-900/50"
+                                    : "bg-muted/70 text-muted-foreground border-border/60"
+                                }`}
+                              >
+                                <Calendar size={11} className="shrink-0" />
+                                <span>{eMeta.formattedDate}</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-muted-foreground font-medium">
+                                -
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Toko Selesai Dikunjungi Periode Ini (Collapsible di bagian bawah) */}
+              {recomCompletedStores.length > 0 && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCompletedStores(!showCompletedStores)}
+                    className="w-full py-2 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/40 hover:bg-muted/70 rounded-xl transition flex items-center justify-between border border-border/60"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-emerald-600" />
+                      <span>Sudah Dikunjungi Periode Ini ({recomCompletedStores.length})</span>
+                    </span>
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform duration-200 ${showCompletedStores ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {showCompletedStores && (
+                    <div className="space-y-2.5 mt-2">
+                      {recomCompletedStores.map((store) => {
+                        const vMeta = getStoreVisitMeta(store);
+                        const eMeta = getStoreExpiryMeta(store);
+
+                        const productName = store.nearest_expiring_product_name || "Semua Produk";
+                        const variantName = store.nearest_expiring_variant_name || "Standar";
+                        const stockQty =
+                          store.nearest_expiring_qty !== null && store.nearest_expiring_qty !== undefined
+                            ? `${store.nearest_expiring_qty} pcs`
+                            : store.total_remaining_stock > 0
+                            ? `${store.total_remaining_stock} pcs`
+                            : "0 pcs";
+                        const productVariantStockText = `${productName} - ${variantName} - ${stockQty}`;
+
+                        return (
+                          <div
+                            key={store.id}
+                            onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store, fromTab: mainTab, fromSubTab: scheduleSubTab, fromSort: recomSortBy } })}
+                            className="bg-card/70 rounded-2xl border border-border/60 p-3 shadow-2xs space-y-2 opacity-85 hover:opacity-100 hover:border-primary/40 transition cursor-pointer group"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                                    {store.name}
+                                  </h3>
+                                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-full shrink-0 flex items-center gap-1 border border-emerald-300">
+                                    <CheckCircle2 size={10} />
+                                    Selesai Periode Ini
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">
+                                  Muncul kembali dalam {vMeta.daysUntilReappear} hari lagi ({vMeta.nextDueDate?.toLocaleDateString("id-ID", { day: "numeric", month: "short" })})
+                                </p>
+                              </div>
+                              <ChevronRight
+                                size={14}
+                                className="text-muted-foreground/40 group-hover:text-primary transition shrink-0 mt-0.5"
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between gap-3 text-xs pt-1.5 border-t border-border/40">
+                              <div className="min-w-0 flex-1 truncate text-muted-foreground">
+                                <span className="font-medium text-foreground">
+                                  {productVariantStockText}
+                                </span>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <span className="text-[11px] text-muted-foreground font-medium">
+                                  {eMeta.hasExpiry ? eMeta.formattedDate : "-"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* SUB-TAB 3: AGENDA TERJADWAL MANUAL                        */}
+          {/* ========================================================= */}
+          {scheduleSubTab === "manual" && (
+            <div className="space-y-3">
+              {/* Quick Metrics Bar Agenda Manual */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-2xs">
+                  <span className="text-[10px] text-muted-foreground font-semibold block">Hari Ini</span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-lg font-black text-foreground">{scheduleTodayCount}</span>
+                    {schedulePendingTodayCount > 0 && (
+                      <span className="text-[10px] text-amber-600 font-bold">({schedulePendingTodayCount} pending)</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-2xs">
+                  <span className="text-[10px] text-muted-foreground font-semibold block">Mendatang</span>
+                  <p className="text-lg font-black text-foreground mt-0.5">{scheduleUpcomingCount}</p>
+                </div>
+
+                <div className="bg-card border border-border/80 rounded-2xl p-3 shadow-2xs">
+                  <span className="text-[10px] text-muted-foreground font-semibold block">Selesai</span>
+                  <p className="text-lg font-black text-emerald-600 mt-0.5">{scheduleCompletedCount}</p>
+                </div>
+              </div>
+
+              {/* Sub-Filter Tabs: Text Only */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                  onClick={() => setScheduleFilter("today")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    scheduleFilter === "today"
+                      ? "bg-primary text-primary-foreground shadow-2xs"
+                      : "bg-muted/70 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  Hari Ini ({scheduleTodayCount})
+                </button>
+                <button
+                  onClick={() => setScheduleFilter("upcoming")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    scheduleFilter === "upcoming"
+                      ? "bg-primary text-primary-foreground shadow-2xs"
+                      : "bg-muted/70 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  Mendatang ({scheduleUpcomingCount})
+                </button>
+                <button
+                  onClick={() => setScheduleFilter("completed")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    scheduleFilter === "completed"
+                      ? "bg-emerald-600 text-white shadow-2xs"
+                      : "bg-muted/70 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  Selesai ({scheduleCompletedCount})
+                </button>
+                <button
+                  onClick={() => setScheduleFilter("all")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    scheduleFilter === "all"
+                      ? "bg-primary text-primary-foreground shadow-2xs"
+                      : "bg-muted/70 text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  Semua ({schedules.length})
+                </button>
+              </div>
+
+              {/* Schedule List */}
+              {isLoadingSchedules ? (
+                <div className="space-y-3 animate-pulse">
+                  <div className="h-28 bg-muted/40 rounded-2xl" />
+                  <div className="h-28 bg-muted/40 rounded-2xl" />
+                </div>
+              ) : filteredSchedules.length === 0 ? (
+                <div className="bg-card border border-dashed border-border rounded-2xl p-8 text-center space-y-3">
+                  <div className="w-12 h-12 bg-muted/50 rounded-full flex items-center justify-center text-muted-foreground mx-auto">
+                    <Calendar size={24} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs text-foreground">Tidak Ada Jadwal Manual</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {scheduleFilter === "today"
+                        ? "Belum ada agenda kunjungan khusus untuk hari ini."
+                        : "Tidak ada jadwal dengan filter yang dipilih."}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => openScheduleModal()}
+                    className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs"
+                  >
+                    <Plus size={14} />
+                    <span>Buat Jadwal Baru</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {filteredSchedules.map((item) => {
+                    const sDate = item.scheduled_date ? item.scheduled_date.split("T")[0] : "";
+                    const isCompleted = item.status === "completed";
+                    const isToday = sDate === todayStr;
+                    const isOverdue = sDate < todayStr && !isCompleted;
+                    const hasDebt = Number(item.total_debt) > 0;
+                    const remaining = Number(item.total_remaining_stock) || 0;
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`bg-card rounded-2xl border p-3.5 shadow-2xs space-y-3 transition-all ${
+                          isCompleted
+                            ? "border-emerald-500/30 bg-emerald-500/5"
+                            : isOverdue
+                            ? "border-red-500/40 bg-red-500/5"
+                            : isToday
+                            ? "border-amber-500/50 bg-amber-500/5"
+                            : "border-border/80"
+                        }`}
+                      >
+                        {/* Header Row */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-bold text-sm text-foreground truncate">{item.store_name}</h3>
+
+                              {/* Status Badge */}
+                              {isCompleted ? (
+                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-full shrink-0 flex items-center gap-1 border border-emerald-300">
+                                  <CheckCircle2 size={10} />
+                                  Selesai
+                                </span>
+                              ) : isOverdue ? (
+                                <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-black rounded-full shrink-0 flex items-center gap-1 border border-red-300">
+                                  <AlertCircle size={10} />
+                                  Terlewat
+                                </span>
+                              ) : isToday ? (
+                                <span className="px-2 py-0.5 bg-amber-100 text-amber-900 text-[10px] font-black rounded-full shrink-0 flex items-center gap-1 border border-amber-300">
+                                  <Clock size={10} />
+                                  Hari Ini
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-muted text-muted-foreground text-[10px] font-bold rounded-full shrink-0">
+                                  Mendatang
+                                </span>
+                              )}
+
+                              {hasDebt && (
+                                <span className="px-1.5 py-0.2 bg-red-100 text-red-700 text-[9px] font-black rounded-full shrink-0 border border-red-200">
+                                  Piutang
+                                </span>
+                              )}
+                            </div>
+
+                            {item.owner_name && (
+                              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <User size={11} className="shrink-0" />
+                                <span className="truncate">{item.owner_name}</span>
+                              </p>
+                            )}
+
+                            {item.address && (
+                              <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                                <MapPin size={11} className="shrink-0 text-primary/70" />
+                                <span className="truncate">{item.address}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Action Icon: Edit or Delete */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            {!isCompleted && (
+                              <button
+                                onClick={() => openScheduleModal(item.store_id, item)}
+                                className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:text-foreground"
+                                title="Ubah Jadwal"
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteSchedule(item.id)}
+                              className="p-1.5 rounded-lg bg-muted/60 text-muted-foreground hover:text-red-600"
+                              title="Hapus Jadwal"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Scheduled Date & Agenda Note */}
+                        <div className="bg-muted/40 rounded-xl p-2.5 space-y-1.5 border border-border/40 text-[11px]">
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span className="flex items-center gap-1 font-semibold text-foreground">
+                              <Calendar size={12} className="text-primary" />
+                              {formatScheduleDate(item.scheduled_date)}
+                            </span>
+                            <span className="text-[10px]">
+                              Stok rak: <strong className="text-foreground">{remaining} pcs</strong>
+                            </span>
+                          </div>
+
+                          {item.notes ? (
+                            <p className="text-foreground/90 bg-background/80 p-2 rounded-lg border border-border/50 text-[11px]">
+                              <span className="font-bold text-muted-foreground block text-[10px] uppercase tracking-wider mb-0.5">
+                                Agenda / Catatan:
+                              </span>
+                              {item.notes}
+                            </p>
+                          ) : (
+                            <p className="text-muted-foreground italic text-[10px]">
+                              Tidak ada catatan agenda khusus.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Bottom Actions */}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          {!isCompleted ? (
+                            <button
+                              onClick={() => navigate(`/sales/toko/kunjungan/${item.store_id}`)}
+                              className="flex-1 bg-primary text-primary-foreground font-black text-xs py-2 rounded-xl flex items-center justify-center gap-1.5 active:scale-[0.98] transition shadow-xs"
+                            >
+                              <Store size={14} />
+                              <span>Mulai Kunjungan</span>
+                            </button>
+                          ) : (
+                            <div className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-500/10 text-emerald-700 text-xs font-bold text-center flex items-center justify-center gap-1.5">
+                              <CheckCircle2 size={14} />
+                              <span>Kunjungan Telah Selesai</span>
+                            </div>
+                          )}
+
+                          {item.wa_number && (
+                            <a
+                              href={`https://wa.me/${item.wa_number.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 active:scale-95 transition shrink-0"
+                              title="Chat WhatsApp"
+                            >
+                              <MessageSquare size={16} />
+                            </a>
+                          )}
+
+                          {item.latitude && item.longitude && (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-2 rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 active:scale-95 transition shrink-0"
+                              title="Buka Peta"
+                            >
+                              <Compass size={16} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

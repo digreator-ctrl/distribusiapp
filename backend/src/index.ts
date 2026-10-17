@@ -1082,13 +1082,49 @@ app.get('/api/stores', async (c) => {
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN district TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN village TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare("ALTER TABLE stores ADD COLUMN status TEXT DEFAULT 'Aktif'").run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE consignments ADD COLUMN batch_id TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE consignments ADD COLUMN expired_date DATE').run() } catch (e) {}
 
     const { results: stores } = await c.env.DB.prepare(`
       SELECT s.*,
         (SELECT COUNT(DISTINCT c.variant_id) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as active_variants_count,
         (SELECT COALESCE(SUM(c.remaining_qty), 0) FROM consignments c WHERE c.store_id = s.id AND c.status = 'active') as total_remaining_stock,
         (SELECT COALESCE(SUM(v.outstanding_amount), 0) FROM visits v WHERE v.store_id = s.id) as total_debt,
-        (SELECT MAX(v.visit_date) FROM visits v WHERE v.store_id = s.id) as last_visit_date
+        (SELECT MAX(v.visit_date) FROM visits v WHERE v.store_id = s.id) as last_visit_date,
+        (SELECT COUNT(v.id) FROM visits v WHERE v.store_id = s.id) as total_visits_count,
+        (
+          SELECT MIN(COALESCE(c.expired_date, ib.expired_date))
+          FROM consignments c
+          LEFT JOIN inbound_batches ib ON ib.variant_id = c.variant_id
+          WHERE c.store_id = s.id AND c.status = 'active' AND c.remaining_qty > 0
+        ) as nearest_expired_date,
+        (
+          SELECT p.name
+          FROM consignments c
+          LEFT JOIN inbound_batches ib ON ib.variant_id = c.variant_id
+          LEFT JOIN product_variants pv ON pv.id = c.variant_id
+          LEFT JOIN products p ON pv.product_id = p.id
+          WHERE c.store_id = s.id AND c.status = 'active' AND c.remaining_qty > 0
+          ORDER BY COALESCE(c.expired_date, ib.expired_date) ASC
+          LIMIT 1
+        ) as nearest_expiring_product_name,
+        (
+          SELECT pv.name
+          FROM consignments c
+          LEFT JOIN inbound_batches ib ON ib.variant_id = c.variant_id
+          LEFT JOIN product_variants pv ON pv.id = c.variant_id
+          WHERE c.store_id = s.id AND c.status = 'active' AND c.remaining_qty > 0
+          ORDER BY COALESCE(c.expired_date, ib.expired_date) ASC
+          LIMIT 1
+        ) as nearest_expiring_variant_name,
+        (
+          SELECT c.remaining_qty
+          FROM consignments c
+          LEFT JOIN inbound_batches ib ON ib.variant_id = c.variant_id
+          WHERE c.store_id = s.id AND c.status = 'active' AND c.remaining_qty > 0
+          ORDER BY COALESCE(c.expired_date, ib.expired_date) ASC
+          LIMIT 1
+        ) as nearest_expiring_qty
       FROM stores s
       WHERE s.tenant_id = ?
       ORDER BY s.name ASC
@@ -1397,10 +1433,26 @@ app.post('/api/visits', async (c) => {
       // 4. Buat konsinyasi baru jika ada titip stok baru
       if (Number(item.new_consignment_qty) > 0) {
         const consId = crypto.randomUUID()
+        let expDate = null
+        let bId = null
+        try {
+          const batchInfo: any = await c.env.DB.prepare(
+            'SELECT id, expired_date FROM inbound_batches WHERE variant_id = ? AND current_quantity > 0 ORDER BY expired_date ASC LIMIT 1'
+          ).bind(item.variant_id).first()
+          if (batchInfo) {
+            expDate = batchInfo.expired_date
+            bId = batchInfo.id
+          }
+        } catch (_) {}
+
         await c.env.DB.prepare(`
-          INSERT INTO consignments (id, tenant_id, sales_id, store_id, variant_id, initial_stock, remaining_qty, status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
-        `).bind(consId, tenant_id, body.sales_id, body.store_id, item.variant_id, Number(item.new_consignment_qty), Number(item.new_consignment_qty)).run()
+          INSERT INTO consignments (id, tenant_id, sales_id, store_id, variant_id, initial_stock, remaining_qty, status, batch_id, expired_date)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+        `).bind(
+          consId, tenant_id, body.sales_id, body.store_id, item.variant_id,
+          Number(item.new_consignment_qty), Number(item.new_consignment_qty),
+          bId, expDate
+        ).run()
       }
     }
     

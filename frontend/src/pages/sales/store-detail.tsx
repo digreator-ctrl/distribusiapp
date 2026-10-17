@@ -365,12 +365,28 @@ export const SalesStoreDetail = () => {
     }
   };
 
+  const handleBack = () => {
+    const fromTab = location.state?.fromTab || sessionStorage.getItem("sales_stores_main_tab") || "stores";
+    const fromSubTab = location.state?.fromSubTab || sessionStorage.getItem("sales_stores_sub_tab") || "recommendation";
+    const fromSort = location.state?.fromSort || sessionStorage.getItem("sales_stores_recom_sort") || "expiry";
+
+    const params = new URLSearchParams();
+    params.set("tab", fromTab);
+    if (fromTab === "schedules") {
+      params.set("subtab", fromSubTab);
+      if (fromSubTab === "recommendation") {
+        params.set("sort", fromSort);
+      }
+    }
+    navigate(`/sales/toko?${params.toString()}`);
+  };
+
   if (isLoading && !store) {
     return (
       <div className="space-y-4 pb-12">
         <div className="flex items-center justify-between">
           <button
-            onClick={() => navigate("/sales/toko")}
+            onClick={handleBack}
             className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition px-2 py-1.5 rounded-lg hover:bg-muted/50 -ml-2"
           >
             <ArrowLeft size={16} />
@@ -414,7 +430,7 @@ export const SalesStoreDetail = () => {
     return (
       <div className="space-y-4 pb-12">
         <button
-          onClick={() => navigate("/sales/toko")}
+          onClick={handleBack}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition"
         >
           <ArrowLeft size={16} />
@@ -426,7 +442,7 @@ export const SalesStoreDetail = () => {
           <h2 className="font-bold text-sm text-foreground">Data Toko Tidak Ditemukan</h2>
           <p className="text-xs text-muted-foreground">{error || "Informasi toko tidak dapat ditampilkan."}</p>
           <button
-            onClick={() => navigate("/sales/toko")}
+            onClick={handleBack}
             className="mt-3 inline-flex items-center gap-1.5 bg-primary text-primary-foreground font-bold text-xs px-4 py-2 rounded-xl"
           >
             Kembali ke Mitra Toko
@@ -468,7 +484,7 @@ export const SalesStoreDetail = () => {
       {/* Top Header Navigation & Action Buttons (Edit & Delete) */}
       <div className="flex items-center justify-between gap-2">
         <button
-          onClick={() => navigate("/sales/toko")}
+          onClick={handleBack}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition px-2 py-1.5 rounded-lg hover:bg-muted/50 -ml-2"
         >
           <ArrowLeft size={16} />
