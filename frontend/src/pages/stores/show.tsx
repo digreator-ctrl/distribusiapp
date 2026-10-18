@@ -12,6 +12,8 @@ export const StoreShow = () => {
 
   const userRole = (localStorage.getItem("distribusi_role") || "admin").toLowerCase();
   const isOwner = userRole === "owner";
+  const canUpdate = isOwner; // Hanya Owner yang bisa Edit (Admin & Sales hanya CR)
+  const canDelete = isOwner; // Hanya Owner yang bisa Hapus (Admin & Sales hanya CR)
 
   const initialStore = location.state?.store;
   const [store, setStore] = useState<any | null>(initialStore || null);
@@ -49,8 +51,8 @@ export const StoreShow = () => {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!isOwner) {
-      alert("Aksi hapus hanya dapat dilakukan oleh Owner.");
+    if (!canDelete) {
+      alert("Akses ditolak: Hanya Owner yang memiliki izin menghapus toko (CRUD).");
       return;
     }
 
@@ -165,15 +167,17 @@ export const StoreShow = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate(`/stores/${id}/edit`)}
-            className="px-4 py-2 rounded-xl border border-border/80 hover:bg-muted text-foreground text-xs font-bold flex items-center gap-1.5 transition"
-          >
-            <Edit size={14} className="text-primary" />
-            <span>Edit Toko</span>
-          </button>
+          {canUpdate && (
+            <button
+              onClick={() => navigate(`/stores/${id}/edit`)}
+              className="px-4 py-2 rounded-xl border border-border/80 hover:bg-muted text-foreground text-xs font-bold flex items-center gap-1.5 transition"
+            >
+              <Edit size={14} className="text-primary" />
+              <span>Edit Toko</span>
+            </button>
+          )}
 
-          {isOwner && (
+          {canDelete && (
             <button
               onClick={handleDelete}
               className="px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1.5 transition"

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { useLogout } from "@refinedev/core";
 import { LogOut, Home, Store, Package, Clock, UserCheck } from "lucide-react";
+import { FastActionButton } from "./FastActionButton";
 
 export const SalesLayout = () => {
   const { pathname } = useLocation();
@@ -140,6 +141,9 @@ export const SalesLayout = () => {
       <div className="flex-1 overflow-y-auto p-4">
         <Outlet />
       </div>
+
+      {/* Floating Fast Action Button (FAB) + Action Sheet */}
+      <FastActionButton />
 
       {/* Mobile Bottom Navigation (4 Menu Utama: Beranda, Toko, Stok Saya, Riwayat) */}
       <div className="fixed bottom-0 w-full max-w-md bg-white border-t border-border shadow-[0_-5px_15px_-10px_rgba(0,0,0,0.1)] z-20">

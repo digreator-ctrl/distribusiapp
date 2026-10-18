@@ -315,7 +315,7 @@ export const StockRequestShow = () => {
                   {getStatusBadge(request.status)}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                  {request.type === 'request' ? 'Pengajuan Saya' : 'Rekomendasi Admin'} • {new Date(request.created_at).toLocaleDateString('id-ID')}
+                  {request.type === 'request' ? (isSales ? 'Pengajuan Saya' : 'Pengajuan Sales') : 'Rekomendasi Admin'} • {new Date(request.created_at).toLocaleDateString('id-ID')}
                 </p>
               </div>
             </div>

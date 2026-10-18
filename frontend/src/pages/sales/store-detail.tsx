@@ -21,6 +21,8 @@ export const SalesStoreDetail = () => {
 
   const userRole = (localStorage.getItem("distribusi_role") || "sales").toLowerCase();
   const isOwner = userRole === "owner";
+  const canUpdate = isOwner; // Hanya Owner yang bisa Edit (Admin & Sales hanya CR)
+  const canDelete = isOwner; // Hanya Owner yang bisa Hapus (Admin & Sales hanya CR)
 
   // Ambil state toko yang dioper dari halaman list toko untuk transisi instan tanpa jeda
   const initialStore = location.state?.store;
@@ -29,8 +31,10 @@ export const SalesStoreDetail = () => {
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [error, setError] = useState("");
 
-  // Tab State: "inbound" (Riwayat Stok Masuk) vs "sold" (Riwayat Terjual)
-  const [historyTab, setHistoryTab] = useState<"inbound" | "sold">("inbound");
+  // Tab State: "stock" (Stok di Toko) vs "inbound" (Riwayat Stok Masuk) vs "sold" (Riwayat Terjual)
+  const [historyTab, setHistoryTab] = useState<"stock" | "inbound" | "sold">(() => {
+    return (location.state as any)?.defaultTab || "stock";
+  });
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -255,6 +259,10 @@ export const SalesStoreDetail = () => {
 
   const handleUpdateStore = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canUpdate) {
+      alert("Akses ditolak: Sales hanya memiliki izin melihat dan menambah toko (CR).");
+      return;
+    }
     if (!editForm.name.trim()) {
       alert("Nama Toko wajib diisi.");
       return;
@@ -318,8 +326,8 @@ export const SalesStoreDetail = () => {
   };
 
   const handleDeleteStore = async () => {
-    if (!isOwner) {
-      alert("Aksi hapus hanya dapat dilakukan oleh Owner.");
+    if (!canDelete) {
+      alert("Akses ditolak: Hanya Owner yang memiliki izin menghapus data toko (CRUD).");
       return;
     }
 
@@ -362,6 +370,46 @@ export const SalesStoreDetail = () => {
       });
     } catch {
       return dateStr;
+    }
+  };
+
+  const getExpiryMeta = (expiredDateStr?: string) => {
+    if (!expiredDateStr) return { text: "Exp: -", color: "bg-muted text-muted-foreground border-border/50", isUrgent: false };
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const exp = new Date(expiredDateStr.includes("T") ? expiredDateStr : expiredDateStr.replace(" ", "T"));
+      exp.setHours(0, 0, 0, 0);
+      const diffTime = exp.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      const formatted = exp.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+
+      if (diffDays < 0) {
+        return {
+          text: `Kedaluwarsa (${formatted})`,
+          color: "bg-red-100 text-red-800 border-red-300",
+          isUrgent: true,
+        };
+      }
+      if (diffDays <= 30) {
+        return {
+          text: `Exp ${diffDays} hari lagi (${formatted})`,
+          color: "bg-amber-100 text-amber-900 border-amber-300",
+          isUrgent: true,
+        };
+      }
+      return {
+        text: `Exp: ${formatted}`,
+        color: "bg-muted text-muted-foreground border-border/60",
+        isUrgent: false,
+      };
+    } catch {
+      return { text: `Exp: ${expiredDateStr}`, color: "bg-muted text-muted-foreground border-border/50", isUrgent: false };
     }
   };
 
@@ -456,12 +504,17 @@ export const SalesStoreDetail = () => {
   const regionParts = [store.province, store.city, store.district, store.village].filter(Boolean);
   const regionText = regionParts.length > 0 ? regionParts.join(" - ") : (store.address || "-");
 
+  const consignmentList: any[] = store.consignments || [];
   const inboundList: any[] = store.inbound_history || [];
   const soldList: any[] = store.sold_history || [];
 
   const totalInboundQty = inboundList.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
   const totalSoldQty = soldList.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
   const totalRemainingInStore = Number(store.total_remaining_stock) || 0;
+  const totalConsignmentValue = consignmentList.reduce(
+    (sum, c) => sum + (Number(c.remaining_qty) || 0) * (Number(c.price) || 0),
+    0
+  );
 
   return (
     <div className="space-y-4 pb-12">
@@ -492,17 +545,19 @@ export const SalesStoreDetail = () => {
         </button>
 
         <div className="flex items-center gap-1.5">
-          {/* Button Edit Toko */}
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground text-xs font-bold flex items-center gap-1 active:scale-95 transition border border-border/50"
-          >
-            <Edit2 size={13} className="text-primary" />
-            <span>Edit</span>
-          </button>
+          {/* Button Edit Toko (Hanya untuk Admin & Owner / CRU & CRUD) */}
+          {canUpdate && (
+            <button
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground text-xs font-bold flex items-center gap-1 active:scale-95 transition border border-border/50"
+            >
+              <Edit2 size={13} className="text-primary" />
+              <span>Edit</span>
+            </button>
+          )}
 
-          {/* Button Delete Toko (Khusus Owner) */}
-          {isOwner && (
+          {/* Button Delete Toko (Khusus Owner / CRUD) */}
+          {canDelete && (
             <button
               onClick={handleDeleteStore}
               disabled={isDeleting}
@@ -605,32 +660,169 @@ export const SalesStoreDetail = () => {
       </div>
 
       {/* ========================================================= */}
-      {/* TAB NAVIGATION: RIWAYAT STOK MASUK vs RIWAYAT TERJUAL     */}
+      {/* TAB NAVIGATION: STOK DI TOKO vs RIWAYAT MASUK vs TERJUAL  */}
       {/* ========================================================= */}
       <div className="flex border-b border-border bg-card rounded-2xl p-1 gap-1 shadow-2xs">
         <button
           type="button"
+          onClick={() => setHistoryTab("stock")}
+          className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+            historyTab === "stock"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <span>Stok di Toko</span>
+          <span
+            className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              historyTab === "stock"
+                ? "bg-white/20 text-white"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {consignmentList.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setHistoryTab("inbound")}
-          className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${
+          className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
             historyTab === "inbound"
               ? "bg-primary text-primary-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           }`}
         >
-          Riwayat Stok Masuk
+          <span>Riwayat Masuk</span>
+          <span
+            className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              historyTab === "inbound"
+                ? "bg-white/20 text-white"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {inboundList.length}
+          </span>
         </button>
+
         <button
           type="button"
           onClick={() => setHistoryTab("sold")}
-          className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all ${
+          className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
             historyTab === "sold"
               ? "bg-primary text-primary-foreground shadow-xs"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
           }`}
         >
-          Riwayat Terjual
+          <span>Riwayat Terjual</span>
+          <span
+            className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+              historyTab === "sold"
+                ? "bg-white/20 text-white"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {soldList.length}
+          </span>
         </button>
       </div>
+
+      {/* ========================================================= */}
+      {/* TAB 1: STOK DI TOKO (KONSINYASI AKTIF / SISA DI RAK)       */}
+      {/* ========================================================= */}
+      {historyTab === "stock" && (
+        <div className="space-y-2.5">
+          {consignmentList.length > 0 && (
+            <div className="flex items-center justify-between bg-muted/40 px-3 py-2 rounded-xl border border-border/50 text-xs">
+              <span className="text-muted-foreground font-medium">Total Nilai Stok di Rak:</span>
+              <span className="font-bold text-foreground">{formatRupiah(totalConsignmentValue)}</span>
+            </div>
+          )}
+
+          {isFetchingDetail && !store.consignments ? (
+            <div className="bg-card rounded-2xl border border-border/80 p-8 text-center space-y-2">
+              <Loader2 size={20} className="animate-spin text-primary mx-auto" />
+              <p className="text-xs text-muted-foreground">Memuat stok aktif di toko...</p>
+            </div>
+          ) : consignmentList.length === 0 ? (
+            <div className="bg-card rounded-2xl border border-dashed border-border p-8 text-center space-y-1.5">
+              <p className="text-xs font-bold text-foreground">Belum Ada Stok di Rak Toko Ini</p>
+              <p className="text-[11px] text-muted-foreground">
+                Toko ini belum memiliki stok konsinyasi aktif. Tambahkan penitipan stok pada kunjungan berikutnya.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {consignmentList.map((item: any) => {
+                const expMeta = getExpiryMeta(item.expired_date);
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`bg-card rounded-2xl border p-3.5 shadow-2xs space-y-2 transition-all ${
+                      expMeta.isUrgent
+                        ? "border-amber-300/80 bg-amber-500/5"
+                        : "border-border/80"
+                    }`}
+                  >
+                    {/* Baris Atas: Nama Produk & Status Kedaluwarsa */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-xs text-foreground truncate">
+                          {item.product_name ? `${item.product_name} - ${item.variant_name}` : (item.variant_name || "Produk")}
+                        </h4>
+                        {item.sku && (
+                          <span className="text-[10px] text-muted-foreground/80 font-mono block">
+                            SKU: {item.sku}
+                          </span>
+                        )}
+                      </div>
+
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${expMeta.color}`}
+                      >
+                        {expMeta.text}
+                      </span>
+                    </div>
+
+                    {/* Baris Tengah: Sisa Stok (Besar) & Detail Titip / Jual */}
+                    <div className="grid grid-cols-3 gap-1.5 bg-muted/30 p-2 rounded-xl border border-border/30 text-center">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block">Sisa di Rak</span>
+                        <span className="text-sm font-black text-primary">
+                          {item.remaining_qty ?? 0} pcs
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block">Awal Titip</span>
+                        <span className="text-xs font-bold text-foreground">
+                          {item.initial_stock ?? 0} pcs
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block">Terjual</span>
+                        <span className="text-xs font-bold text-emerald-600">
+                          {item.sold_qty ?? 0} pcs
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Baris Bawah: Harga Jual & Sales Penanggung Jawab */}
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/40 text-muted-foreground">
+                      <span>Harga: <strong className="text-foreground">{formatRupiah(Number(item.price) || 0)}</strong></span>
+                      {item.sales_name && (
+                        <span className="text-[10px] truncate max-w-[50%]">
+                          Dititipkan oleh: {item.sales_name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* TAB 1: RIWAYAT STOK MASUK                                  */}

@@ -1077,6 +1077,8 @@ app.get('/api/stores', async (c) => {
   
   try {
     // Pastikan kolom wilayah dan status tersedia di tabel stores
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN address TEXT').run() } catch (e) {}
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN wa_number TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN province TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN city TEXT').run() } catch (e) {}
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN district TEXT').run() } catch (e) {}
@@ -1190,14 +1192,16 @@ app.get('/api/stores/:id', async (c) => {
   // Ambil ringkasan konsinyasi aktif dengan harga produk
   const { results: consignments } = await c.env.DB.prepare(`
     SELECT c.*, pv.name as variant_name, p.name as product_name, pv.sku,
+      COALESCE(c.expired_date, ib.expired_date) as expired_date,
       COALESCE(pv.override_sales_price, p.base_sales_price, 0) as price,
       u.full_name as sales_name
     FROM consignments c
     LEFT JOIN product_variants pv ON c.variant_id = pv.id
     LEFT JOIN products p ON pv.product_id = p.id
     LEFT JOIN users u ON c.sales_id = u.id
+    LEFT JOIN inbound_batches ib ON ib.id = c.batch_id OR (c.batch_id IS NULL AND ib.variant_id = c.variant_id)
     WHERE c.store_id = ? AND c.status = 'active'
-    ORDER BY c.created_at DESC
+    ORDER BY COALESCE(c.expired_date, ib.expired_date) ASC, c.created_at DESC
   `).bind(id).all()
 
   // Ambil Riwayat Stok Masuk (Seluruh konsinyasi / stok masuk ke toko ini)

@@ -193,3 +193,53 @@ CREATE TABLE IF NOT EXISTS stock_request_items (
     FOREIGN KEY(request_id) REFERENCES stock_requests(id) ON DELETE CASCADE,
     FOREIGN KEY(variant_id) REFERENCES product_variants(id)
 );
+
+-- Tabel Kunjungan Toko
+CREATE TABLE IF NOT EXISTS visits (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    sales_id TEXT,
+    store_id TEXT NOT NULL,
+    visit_date DATETIME,
+    status TEXT DEFAULT 'completed',
+    total_sold_amount REAL DEFAULT 0,
+    payment_received REAL DEFAULT 0,
+    outstanding_amount REAL DEFAULT 0,
+    notes TEXT,
+    latitude REAL,
+    longitude REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id),
+    FOREIGN KEY(sales_id) REFERENCES users(id),
+    FOREIGN KEY(store_id) REFERENCES stores(id)
+);
+
+-- Tabel Rincian Item Penjualan saat Kunjungan
+CREATE TABLE IF NOT EXISTS visit_items (
+    id TEXT PRIMARY KEY,
+    visit_id TEXT NOT NULL,
+    variant_id TEXT NOT NULL,
+    previous_stock INTEGER DEFAULT 0,
+    remaining_stock INTEGER DEFAULT 0,
+    sold_qty INTEGER DEFAULT 0,
+    new_consignment_qty INTEGER DEFAULT 0,
+    unit_price REAL DEFAULT 0,
+    FOREIGN KEY(visit_id) REFERENCES visits(id) ON DELETE CASCADE,
+    FOREIGN KEY(variant_id) REFERENCES product_variants(id)
+);
+
+-- Tabel Jadwal Rencana Kunjungan Toko
+CREATE TABLE IF NOT EXISTS visit_schedules (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    sales_id TEXT,
+    store_id TEXT NOT NULL,
+    scheduled_date DATE NOT NULL,
+    notes TEXT,
+    status TEXT DEFAULT 'pending',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id),
+    FOREIGN KEY(sales_id) REFERENCES users(id),
+    FOREIGN KEY(store_id) REFERENCES stores(id)
+);

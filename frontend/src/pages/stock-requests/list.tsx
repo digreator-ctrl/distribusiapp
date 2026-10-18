@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CheckCircle2, X, Plus, FileText, Send, Inbox, AlertCircle, User } from "lucide-react";
+import { CheckCircle2, X, Plus, FileText, Inbox, AlertCircle, User } from "lucide-react";
 
 export const StockRequestList = () => {
   const navigate = useNavigate();
@@ -259,7 +259,6 @@ export const StockRequestList = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Inbox size={13} className={pendingRecCount > 0 ? "text-amber-500" : ""} />
               <span>Rekomendasi</span>
               {pendingRecCount > 0 && (
                 <span className="px-1.5 py-0.2 bg-amber-500 text-white font-black text-[10px] rounded-full">
@@ -275,8 +274,7 @@ export const StockRequestList = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Send size={13} />
-              <span>Pengajuan Saya</span>
+              <span>Pengajuan Sales</span>
             </button>
           </div>
 
@@ -360,7 +358,7 @@ export const StockRequestList = () => {
                 filterType === "recommendation" ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
-              Distribusi
+              Rekomendasi
             </button>
             <button 
               onClick={() => setFilterType("request")} 
@@ -368,7 +366,7 @@ export const StockRequestList = () => {
                 filterType === "request" ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
-              Approval Stok
+              Pengajuan Sales
             </button>
           </div>
 

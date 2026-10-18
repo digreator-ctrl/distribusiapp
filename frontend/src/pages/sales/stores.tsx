@@ -5,8 +5,7 @@ import {
   Clock, CheckCircle2, X, ArrowLeft,
   Compass, User, Calendar, Trash2, Edit2, AlertCircle,
   ArrowUpDown, SlidersHorizontal, RotateCcw,
-  AlertTriangle, RefreshCw, CalendarDays, Hourglass, ShieldAlert,
-  Sparkles, ChevronRight, Check, ChevronDown
+  RefreshCw, Hourglass, ChevronRight, ChevronDown
 } from "lucide-react";
 import {
   PROVINCES_DATA,
@@ -129,8 +128,7 @@ export const SalesStores = () => {
   const [scheduleSubTab, setScheduleSubTabState] = useState<"recommendation" | "manual">(getInitialSubTab);
   // Prioritas Pengurutan di Tab Rekomendasi: "expiry" (By Kedaluwarsa) vs "period" (By Periode Bulanan)
   const [recomSortBy, setRecomSortByState] = useState<"expiry" | "period">(getInitialSort);
-  // View mode untuk tab otomatis: "active" (Perlu Dikunjungi) vs "completed" (Sudah Dikunjungi Periode Ini)
-  const [autoScheduleView, setAutoScheduleView] = useState<"active" | "completed">("active");
+  // View mode untuk tab otomatis
   const [showCompletedStores, setShowCompletedStores] = useState(false);
 
   const setMainTab = (tab: "stores" | "schedules") => {
@@ -179,6 +177,10 @@ export const SalesStores = () => {
     if (qSort === "expiry" || qSort === "period") {
       setRecomSortByState(qSort);
       sessionStorage.setItem("sales_stores_recom_sort", qSort);
+    }
+    const qAction = searchParams.get("action");
+    if (qAction === "new-store") {
+      setIsAddOpen(true);
     }
   }, [searchParams]);
 
@@ -328,6 +330,13 @@ export const SalesStores = () => {
   const handleCloseAddModal = () => {
     resetAddForm();
     setIsAddOpen(false);
+    if (searchParams.get("action")) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("action");
+        return next;
+      }, { replace: true });
+    }
   };
 
   // Modal Jadwal Kunjungan (Tambah / Edit)
@@ -546,9 +555,22 @@ export const SalesStores = () => {
       });
 
       if (res.ok) {
-        setToast({ message: `Mitra toko "${newName.trim()}" berhasil ditambahkan!`, type: "success" });
+        const createdStore = await res.json();
+        const isFromFastAction = searchParams.get("action") === "new-store";
+        setToast({
+          message: isFromFastAction
+            ? `Mitra toko "${newName.trim()}" berhasil ditambahkan! Mengalihkan ke titip stok awal...`
+            : `Mitra toko "${newName.trim()}" berhasil ditambahkan!`,
+          type: "success"
+        });
         handleCloseAddModal();
         fetchStores();
+
+        if (isFromFastAction && createdStore?.id) {
+          setTimeout(() => {
+            navigate(`/sales/toko/kunjungan/${createdStore.id}`);
+          }, 1000);
+        }
       } else {
         const err = await res.json();
         setToast({ message: err.error || "Gagal menambahkan toko.", type: "error" });
@@ -1292,7 +1314,7 @@ export const SalesStores = () => {
             <button
               onClick={() => {
                 setScheduleSubTab("recommendation");
-                setAutoScheduleView("active");
+                setShowCompletedStores(false);
               }}
               className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all text-center whitespace-nowrap ${
                 scheduleSubTab === "recommendation"
@@ -1409,7 +1431,7 @@ export const SalesStores = () => {
                     return (
                       <div
                         key={store.id}
-                        onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store, fromTab: mainTab, fromSubTab: scheduleSubTab, fromSort: recomSortBy } })}
+                        onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store, fromTab: mainTab, fromSubTab: scheduleSubTab, fromSort: recomSortBy, defaultTab: "stock" } })}
                         className="bg-card rounded-2xl border border-border/80 p-3.5 shadow-2xs hover:border-primary/50 active:scale-[0.99] transition-all cursor-pointer space-y-2 group"
                       >
                         {/* Baris 1: Nama Toko pojok kiri atas */}
@@ -1519,7 +1541,7 @@ export const SalesStores = () => {
                         return (
                           <div
                             key={store.id}
-                            onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store, fromTab: mainTab, fromSubTab: scheduleSubTab, fromSort: recomSortBy } })}
+                            onClick={() => navigate(`/sales/toko/${store.id}`, { state: { store, fromTab: mainTab, fromSubTab: scheduleSubTab, fromSort: recomSortBy, defaultTab: "stock" } })}
                             className="bg-card/70 rounded-2xl border border-border/60 p-3 shadow-2xs space-y-2 opacity-85 hover:opacity-100 hover:border-primary/40 transition cursor-pointer group"
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -1942,9 +1964,17 @@ export const SalesStores = () => {
                 <div>
                   <h3 className="font-bold text-sm leading-tight flex items-center gap-1.5">
                     <Store size={16} />
-                    <span>Tambah Mitra Toko Baru</span>
+                    <span>
+                      {searchParams.get("action") === "new-store"
+                        ? "Daftar Mitra & Titip Stok Awal"
+                        : "Tambah Mitra Toko Baru"}
+                    </span>
                   </h3>
-                  <p className="text-[10px] text-primary-foreground/80">Mode Sales PWA</p>
+                  <p className="text-[10px] text-primary-foreground/80">
+                    {searchParams.get("action") === "new-store"
+                      ? "Langkah 1: Profil Toko → Langkah 2: Titip Stok Konsinyasi"
+                      : "Mode Sales PWA"}
+                  </p>
                 </div>
               </div>
 
@@ -2226,7 +2256,11 @@ export const SalesStores = () => {
                 disabled={isSubmitting}
                 className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-black shadow-sm active:scale-95 transition disabled:opacity-50"
               >
-                {isSubmitting ? "Menyimpan..." : "Simpan Toko"}
+                {isSubmitting
+                  ? "Menyimpan..."
+                  : searchParams.get("action") === "new-store"
+                    ? "Simpan & Lanjut Titip Stok"
+                    : "Simpan Toko"}
               </button>
             </div>
           </div>

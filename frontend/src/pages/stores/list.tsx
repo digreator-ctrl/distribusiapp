@@ -31,6 +31,7 @@ export const StoreList = () => {
 
   const userRole = (localStorage.getItem("distribusi_role") || "admin").toLowerCase();
   const isOwner = userRole === "owner";
+  const canUpdate = isOwner; // Hanya Owner yang bisa Edit
 
   const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || "");
 
@@ -310,13 +311,15 @@ export const StoreList = () => {
                               <Eye size={15} />
                             </button>
 
-                            <button
-                              onClick={() => navigate(`/stores/${store.id}/edit`)}
-                              className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-muted transition"
-                              title="Edit Toko"
-                            >
-                              <Edit size={15} />
-                            </button>
+                            {canUpdate && (
+                              <button
+                                onClick={() => navigate(`/stores/${store.id}/edit`)}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-muted transition"
+                                title="Edit Toko"
+                              >
+                                <Edit size={15} />
+                              </button>
+                            )}
 
                             {isOwner && (
                               <button

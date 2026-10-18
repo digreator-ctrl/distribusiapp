@@ -392,7 +392,6 @@ export const SalesProductDetail = () => {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Calendar size={14} className={activeTab === "exp" ? "text-amber-600" : ""} />
           <span>Rincian Tanggal Exp</span>
           <span
             className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
@@ -412,7 +411,6 @@ export const SalesProductDetail = () => {
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          <Store size={14} className={activeTab === "stores" ? "text-primary" : ""} />
           <span>Sebaran di Toko</span>
           <span
             className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${

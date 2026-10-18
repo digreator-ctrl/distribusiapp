@@ -17,6 +17,14 @@ export const StoreEdit = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const userRole = (localStorage.getItem("distribusi_role") || "admin").toLowerCase();
+  useEffect(() => {
+    if (userRole !== "owner") {
+      alert("Akses ditolak: Hanya Owner yang memiliki izin mengubah data toko (CRUD). Admin dan Sales hanya memiliki izin Create & Read (CR).");
+      navigate(userRole === "sales" ? "/sales/toko" : "/stores", { replace: true });
+    }
+  }, [userRole, navigate]);
+
   // Basic form states
   const [name, setName] = useState("");
   const [ownerName, setOwnerName] = useState("");
