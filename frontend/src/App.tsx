@@ -39,6 +39,8 @@ import { InventoryList } from "./pages/inventory/list";
 import { SalesLayout } from "./components/layout/SalesLayout";
 import { SalesDashboard } from "./pages/sales/dashboard";
 import { SalesStores } from "./pages/sales/stores";
+import { SalesStoreCreate } from "./pages/sales/store-create";
+import { SalesStorePicker } from "./pages/sales/store-picker";
 import { SalesStoreDetail } from "./pages/sales/store-detail";
 import { SalesVisitWizard } from "./pages/sales/visit-wizard";
 import { SalesHistory } from "./pages/sales/history";
@@ -222,6 +224,8 @@ function App() {
 
             {/* 2. 🏪 Toko (Mitra Konsinyasi & Wizard Kunjungan) */}
             <Route path="toko" element={<SalesStores />} />
+            <Route path="toko/baru" element={<SalesStoreCreate />} />
+            <Route path="toko/pilih-kunjungan" element={<SalesStorePicker />} />
             <Route path="toko/:storeId" element={<SalesStoreDetail />} />
             <Route path="toko/kunjungan/:storeId" element={<SalesVisitWizard />} />
             <Route path="visit-wizard/:storeId" element={<SalesVisitWizard />} />
