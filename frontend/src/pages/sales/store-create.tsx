@@ -42,9 +42,18 @@ export const SalesStoreCreate = () => {
   const [isLoadingVillages, setIsLoadingVillages] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
   const [addErrors, setAddErrors] = useState<{ [key: string]: string }>({});
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  // Auto-dismiss floating toast message
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => {
+        setToastMessage(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
 
   // Restore draft and picked location from Map Picker
   useEffect(() => {
@@ -308,7 +317,6 @@ export const SalesStoreCreate = () => {
     }
 
     setAddErrors({});
-    setFormError("");
     setIsSubmitting(true);
 
     try {
@@ -341,19 +349,17 @@ export const SalesStoreCreate = () => {
 
         setTimeout(() => {
           if (createdStore?.id) {
-            navigate(`/sales/toko/kunjungan/${createdStore.id}`, { replace: true });
+            navigate(`/sales/toko/kunjungan/${createdStore.id}?mode=perdana`, { replace: true });
           } else {
             navigate("/sales/toko", { replace: true });
           }
         }, 800);
       } else {
         const err = await res.json();
-        setFormError(err.error || "Gagal menambahkan toko.");
         setToastMessage({ text: err.error || "Gagal menambahkan toko.", type: "error" });
       }
     } catch (err) {
       console.error(err);
-      setFormError("Terjadi gangguan koneksi ke server.");
       setToastMessage({ text: "Terjadi gangguan koneksi ke server.", type: "error" });
     } finally {
       setIsSubmitting(false);
@@ -364,23 +370,29 @@ export const SalesStoreCreate = () => {
 
   return (
     <div className="space-y-4 pb-8">
-      {/* Toast Notification */}
+      {/* Floating Toast Notification (Posisi melayang agar tidak merubah layout & posisi kolom input) */}
       {toastMessage && (
-        <div
-          className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between shadow-md ${
-            toastMessage.type === "success"
-              ? "bg-emerald-500 text-white"
-              : "bg-red-500 text-white"
-          }`}
-        >
-          <span>{toastMessage.text}</span>
-          <button
-            type="button"
-            onClick={() => setToastMessage(null)}
-            className="p-1 rounded hover:bg-black/10"
+        <div className="fixed top-4 left-4 right-4 max-w-md mx-auto z-50 pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300">
+          <div
+            className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-2xl backdrop-blur-md border ${
+              toastMessage.type === "success"
+                ? "bg-emerald-600/95 text-white border-emerald-400/40 shadow-emerald-900/30"
+                : "bg-red-600/95 text-white border-red-400/40 shadow-red-900/30"
+            }`}
           >
-            <X size={14} />
-          </button>
+            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+              <AlertCircle size={18} className="shrink-0 text-white" />
+              <span className="leading-snug">{toastMessage.text}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="p-1.5 rounded-xl hover:bg-white/20 text-white transition shrink-0"
+              title="Tutup Notifikasi"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -413,13 +425,6 @@ export const SalesStoreCreate = () => {
         </button>
       </div>
 
-      {formError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold flex items-center gap-2">
-          <AlertCircle size={16} className="shrink-0" />
-          <span>{formError}</span>
-        </div>
-      )}
-
       {/* Form Tambah Toko */}
       <form id="add-store-form" onSubmit={handleSubmit} noValidate className="space-y-3.5 text-xs">
         <div>
@@ -440,12 +445,6 @@ export const SalesStoreCreate = () => {
                 : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
             }`}
           />
-          {addErrors.name && (
-            <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
-              <AlertCircle size={12} className="shrink-0" />
-              {addErrors.name}
-            </p>
-          )}
         </div>
 
         <div>
@@ -466,12 +465,6 @@ export const SalesStoreCreate = () => {
                 : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
             }`}
           />
-          {addErrors.owner && (
-            <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
-              <AlertCircle size={12} className="shrink-0" />
-              {addErrors.owner}
-            </p>
-          )}
         </div>
 
         <div>
@@ -496,12 +489,6 @@ export const SalesStoreCreate = () => {
                 : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
             }`}
           />
-          {addErrors.wa && (
-            <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
-              <AlertCircle size={12} className="shrink-0" />
-              {addErrors.wa}
-            </p>
-          )}
         </div>
 
         {/* Wilayah Dropdowns */}
@@ -515,7 +502,6 @@ export const SalesStoreCreate = () => {
             value={newProvince}
             onSelect={handleProvSelect}
             hasError={!!addErrors.province}
-            errorMessage={addErrors.province}
           />
 
           <SearchableSelect
@@ -530,7 +516,6 @@ export const SalesStoreCreate = () => {
             isLoading={isLoadingRegencies}
             onSelect={handleRegSelect}
             hasError={!!addErrors.city}
-            errorMessage={addErrors.city}
           />
         </div>
 
@@ -547,7 +532,6 @@ export const SalesStoreCreate = () => {
             isLoading={isLoadingDistricts}
             onSelect={handleDistSelect}
             hasError={!!addErrors.district}
-            errorMessage={addErrors.district}
           />
 
           <SearchableSelect
@@ -562,7 +546,6 @@ export const SalesStoreCreate = () => {
             isLoading={isLoadingVillages}
             onSelect={handleVillageSelect}
             hasError={!!addErrors.village}
-            errorMessage={addErrors.village}
           />
         </div>
 

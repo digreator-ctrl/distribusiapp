@@ -346,26 +346,71 @@ export const SalesStores = () => {
   // Metadata Kunjungan Bulanan per toko (Siklus minimal 1x per 30 hari)
   const getStoreVisitMeta = (s: any) => {
     if (!s.last_visit_date) {
+      // Toko belum pernah dikunjungi
+      let daysSinceCreated = 0;
+      if (s.created_at) {
+        const createdDate = new Date(s.created_at);
+        const createdMidnight = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+        const now = new Date();
+        const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        daysSinceCreated = Math.max(0, Math.round((nowMidnight.getTime() - createdMidnight.getTime()) / (1000 * 60 * 60 * 24)));
+      }
+      const isOverdue = daysSinceCreated > PERIOD_DAYS;
+      const daysOverdue = isOverdue ? daysSinceCreated - PERIOD_DAYS : 0;
+      const daysUntilDue = isOverdue ? 0 : Math.max(0, PERIOD_DAYS - daysSinceCreated);
+
       return {
         hasVisited: false,
         daysSinceLastVisit: null,
-        daysUntilDue: 0,
-        isOverdue: true,
+        daysUntilDue,
+        isOverdue,
+        daysOverdue,
         nextDueDate: null,
-        nextDueDateFormatted: "Segera",
+        nextDueDateFormatted: isOverdue ? `Terlambat ${daysOverdue} hari` : "Perdana",
         lastVisitFormatted: "Belum pernah",
+        status: isOverdue ? ("overdue" as const) : ("perdana" as const),
+        statusLabel: isOverdue ? `Terlambat ${daysOverdue} hari` : "Perdana",
+        countdownText: isOverdue ? `Terlambat ${daysOverdue} hari` : "Toko Baru",
       };
     }
 
     const lastVisit = new Date(s.last_visit_date);
-    const now = new Date();
     const lastVisitMidnight = new Date(lastVisit.getFullYear(), lastVisit.getMonth(), lastVisit.getDate());
+    const now = new Date();
     const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const diffMs = nowMidnight.getTime() - lastVisitMidnight.getTime();
     const daysSince = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
     const nextDueDate = new Date(lastVisitMidnight.getTime() + PERIOD_DAYS * 24 * 60 * 60 * 1000);
-    const isOverdue = daysSince >= PERIOD_DAYS;
-    const daysUntilDue = Math.max(0, PERIOD_DAYS - daysSince);
+    const isOverdue = daysSince > PERIOD_DAYS;
+    const daysOverdue = isOverdue ? daysSince - PERIOD_DAYS : 0;
+    const daysUntilDue = isOverdue ? 0 : Math.max(0, PERIOD_DAYS - daysSince);
+
+    // Ketentuan Pengguna Metode Periode:
+    // 21 - 30 hari -> Aman (Hijau)
+    // 11 - 20 hari -> Perhatian (Kuning)
+    // 1 - 10 hari -> Segera (Merah)
+    // Terlambat -> Terlambat X hari (Merah, terus bertambah jika tidak segera dikunjungi)
+    let status: "safe" | "warning" | "urgent" | "overdue" = "safe";
+    let statusLabel = "Aman";
+    let countdownText = "";
+
+    if (isOverdue) {
+      status = "overdue";
+      statusLabel = `Terlambat ${daysOverdue} hari`;
+      countdownText = `Terlambat ${daysOverdue} hari`;
+    } else if (daysUntilDue <= 10) {
+      status = "urgent";
+      statusLabel = "Segera";
+      countdownText = daysUntilDue === 0 ? "Jatuh tempo hari ini" : `Kurang ${daysUntilDue} hari`;
+    } else if (daysUntilDue <= 20) {
+      status = "warning";
+      statusLabel = "Perhatian";
+      countdownText = `Kurang ${daysUntilDue} hari`;
+    } else {
+      status = "safe";
+      statusLabel = "Aman";
+      countdownText = `Kurang ${daysUntilDue} hari`;
+    }
 
     const nextDueDateFormatted = nextDueDate.toLocaleDateString("id-ID", {
       day: "numeric",
@@ -383,10 +428,14 @@ export const SalesStores = () => {
       hasVisited: true,
       daysSinceLastVisit: daysSince,
       isOverdue,
+      daysOverdue,
       daysUntilDue,
       nextDueDate,
       nextDueDateFormatted,
       lastVisitFormatted,
+      status,
+      statusLabel,
+      countdownText,
     };
   };
 
@@ -398,16 +447,18 @@ export const SalesStores = () => {
         expiredDate: null,
         daysUntilExpired: null,
         formattedDate: "-",
-        urgency: "none" as const,
-        urgencyLabel: "Belum ada produk kedaluwarsa",
+        status: "none" as const,
+        statusLabel: "",
+        countdownText: "-",
       };
     }
 
     const expDate = new Date(s.nearest_expired_date);
+    const expDay = new Date(expDate.getFullYear(), expDate.getMonth(), expDate.getDate());
     const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const diffMs = expDate.getTime() - now.getTime();
-    const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffMs = expDay.getTime() - nowDay.getTime();
+    const days = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
     const formattedDate = expDate.toLocaleDateString("id-ID", {
       day: "numeric",
@@ -415,21 +466,31 @@ export const SalesStores = () => {
       year: "numeric",
     });
 
-    let urgency: "critical" | "warning" | "normal" = "normal";
-    let urgencyLabel = `${days} hari lagi`;
+    // Ketentuan Pengguna Metode Kedaluwarsa:
+    // > 61 hari -> Aman (Hijau)
+    // 31 sampai 60 hari -> Perhatian (Kuning)
+    // < 30 hari -> Segera (Merah)
+    let status: "safe" | "warning" | "urgent" = "safe";
+    let statusLabel = "Aman";
 
-    if (days <= 0) {
-      urgency = "critical";
-      urgencyLabel = days === 0 ? "Kedaluwarsa Hari Ini!" : `Lewat ${Math.abs(days)} hari!`;
-    } else if (days <= 14) {
-      urgency = "critical";
-      urgencyLabel = `${days} hari lagi (Kritis)`;
-    } else if (days <= 30) {
-      urgency = "warning";
-      urgencyLabel = `${days} hari lagi (Waspada)`;
+    if (days <= 30) {
+      status = "urgent";
+      statusLabel = "Segera";
+    } else if (days <= 60) {
+      status = "warning";
+      statusLabel = "Perhatian";
     } else {
-      urgency = "normal";
-      urgencyLabel = `${days} hari lagi`;
+      status = "safe";
+      statusLabel = "Aman";
+    }
+
+    let countdownText = "";
+    if (days < 0) {
+      countdownText = `Lewat ${Math.abs(days)} hari`;
+    } else if (days === 0) {
+      countdownText = "Kedaluwarsa hari ini";
+    } else {
+      countdownText = `Kurang ${days} hari`;
     }
 
     return {
@@ -437,8 +498,9 @@ export const SalesStores = () => {
       expiredDate: expDate,
       daysUntilExpired: days,
       formattedDate,
-      urgency,
-      urgencyLabel,
+      status,
+      statusLabel,
+      countdownText,
     };
   };
 
@@ -984,29 +1046,84 @@ export const SalesStores = () => {
                                   <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 border border-blue-200 dark:border-blue-800 text-[10px] font-bold rounded-md shrink-0">
                                     Perdana
                                   </span>
-                                ) : vMeta.isOverdue ? (
-                                  <span className="px-1.5 py-0.5 bg-red-500/10 text-red-600 border border-red-200 dark:border-red-800 text-[10px] font-bold rounded-md shrink-0">
-                                    Jatuh Tempo
+                                ) : vMeta.status === "overdue" ? (
+                                  <span className="px-1.5 py-0.5 bg-red-500/10 text-red-600 border border-red-300 dark:border-red-800 text-[10px] font-bold rounded-md shrink-0">
+                                    {vMeta.statusLabel}
                                   </span>
-                                ) : null
+                                ) : vMeta.status === "urgent" ? (
+                                  <span className="px-1.5 py-0.5 bg-red-500/10 text-red-600 border border-red-300 dark:border-red-800 text-[10px] font-bold rounded-md shrink-0">
+                                    Segera
+                                  </span>
+                                ) : vMeta.status === "warning" ? (
+                                  <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-700 border border-amber-300 dark:border-amber-800 text-[10px] font-bold rounded-md shrink-0">
+                                    Perhatian
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-700 border border-emerald-300 dark:border-emerald-800 text-[10px] font-bold rounded-md shrink-0">
+                                    Aman
+                                  </span>
+                                )
                               ) : (
-                                eMeta.urgency === "critical" ? (
-                                  <span className="px-1.5 py-0.5 bg-red-500/10 text-red-600 border border-red-200 dark:border-red-800 text-[10px] font-bold rounded-md shrink-0">
-                                    Kritis
-                                  </span>
-                                ) : eMeta.urgency === "warning" ? (
-                                  <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-700 border border-amber-200 dark:border-amber-800 text-[10px] font-bold rounded-md shrink-0">
-                                    Waspada
-                                  </span>
+                                eMeta.hasExpiry ? (
+                                  eMeta.status === "urgent" ? (
+                                    <span className="px-1.5 py-0.5 bg-red-500/10 text-red-600 border border-red-300 dark:border-red-800 text-[10px] font-bold rounded-md shrink-0">
+                                      Segera
+                                    </span>
+                                  ) : eMeta.status === "warning" ? (
+                                    <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-700 border border-amber-300 dark:border-amber-800 text-[10px] font-bold rounded-md shrink-0">
+                                      Perhatian
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-700 border border-emerald-300 dark:border-emerald-800 text-[10px] font-bold rounded-md shrink-0">
+                                      Aman
+                                    </span>
+                                  )
                                 ) : null
                               )}
                             </div>
                           </div>
 
-                          <ChevronRight
-                            size={16}
-                            className="text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0 mt-0.5"
-                          />
+                          {/* Pojok Kanan Atas: Hitungan Mundur Kurang Berapa Hari Menuju Kedaluwarsa */}
+                          <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                            {recomSortBy === "period" ? (
+                              vMeta.isOverdue ? (
+                                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md border bg-red-500/10 text-red-600 border-red-300 dark:border-red-800">
+                                  Terlambat {vMeta.daysOverdue} hari
+                                </span>
+                              ) : vMeta.hasVisited ? (
+                                <span
+                                  className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                                    vMeta.status === "urgent"
+                                      ? "bg-red-500/10 text-red-600 border-red-300 dark:border-red-800"
+                                      : vMeta.status === "warning"
+                                      ? "bg-amber-500/10 text-amber-700 border-amber-300 dark:border-amber-800"
+                                      : "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:border-emerald-800"
+                                  }`}
+                                >
+                                  {vMeta.countdownText}
+                                </span>
+                              ) : null
+                            ) : (
+                              eMeta.hasExpiry && eMeta.daysUntilExpired !== null ? (
+                                <span
+                                  className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                                    eMeta.status === "urgent"
+                                      ? "bg-red-500/10 text-red-600 border-red-300 dark:border-red-800"
+                                      : eMeta.status === "warning"
+                                      ? "bg-amber-500/10 text-amber-700 border-amber-300 dark:border-amber-800"
+                                      : "bg-emerald-500/10 text-emerald-700 border-emerald-300 dark:border-emerald-800"
+                                  }`}
+                                >
+                                  {eMeta.countdownText}
+                                </span>
+                              ) : null
+                            )}
+
+                            <ChevronRight
+                              size={16}
+                              className="text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0"
+                            />
+                          </div>
                         </div>
 
                         {/* Baris 2: Nama Produk - Varian - Jumlah Stok dibawah Nama Toko & Tanggal sejajar disebelah kanan */}
@@ -1023,10 +1140,12 @@ export const SalesStores = () => {
                             {recomSortBy === "period" ? (
                               <span
                                 className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border ${
-                                  !vMeta.hasVisited || vMeta.isOverdue
+                                  vMeta.isOverdue || vMeta.status === "urgent"
                                     ? "bg-red-500/10 text-red-600 border-red-200 dark:border-red-900/50"
-                                    : vMeta.daysUntilDue <= 7
+                                    : vMeta.status === "warning"
                                     ? "bg-amber-500/10 text-amber-700 border-amber-200 dark:border-amber-900/50"
+                                    : vMeta.status === "safe"
+                                    ? "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:border-emerald-900/50"
                                     : "bg-muted/70 text-muted-foreground border-border/60"
                                 }`}
                                 title={`Jadwal jatuh tempo kunjungan rutin (siklus 30 hari): ${vMeta.nextDueDateFormatted}`}
@@ -1037,11 +1156,11 @@ export const SalesStores = () => {
                             ) : eMeta.hasExpiry ? (
                               <span
                                 className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border ${
-                                  eMeta.urgency === "critical"
+                                  eMeta.status === "urgent"
                                     ? "bg-red-500/10 text-red-600 border-red-200 dark:border-red-900/50"
-                                    : eMeta.urgency === "warning"
+                                    : eMeta.status === "warning"
                                     ? "bg-amber-500/10 text-amber-700 border-amber-200 dark:border-amber-900/50"
-                                    : "bg-muted/70 text-muted-foreground border-border/60"
+                                    : "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:border-emerald-900/50"
                                 }`}
                               >
                                 <Hourglass size={11} className="shrink-0" />

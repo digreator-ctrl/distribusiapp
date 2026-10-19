@@ -928,6 +928,7 @@ app.get('/api/sales-inventory/:sales_id', async (c) => {
       p.id as product_id,
       p.name as product_name,
       p.category as product_category,
+      COALESCE(pv.override_sales_price, p.base_sales_price, 0) as price,
       SUM(COALESCE(sri.approved_quantity, sri.quantity)) as total_inbound
     FROM stock_request_items sri
     JOIN stock_requests sr ON sri.request_id = sr.id
@@ -937,7 +938,7 @@ app.get('/api/sales-inventory/:sales_id', async (c) => {
       AND sr.status = 'approved'
       AND (sr.target_type = 'sales' OR sr.target_type IS NULL)
       AND (sr.sales_id = ? OR (sr.type = 'recommendation' AND sr.sales_id IS NULL))
-    GROUP BY sri.variant_id, pv.name, pv.sku, p.id, p.name, p.category
+    GROUP BY sri.variant_id, pv.name, pv.sku, p.id, p.name, p.category, pv.override_sales_price, p.base_sales_price
   `).bind(tenant_id, sales_id).all()
 
   // 1b. Ambil detail per batch untuk setiap inbound item yang disetujui
@@ -1059,6 +1060,7 @@ app.get('/api/sales-inventory/:sales_id', async (c) => {
       product_id: item.product_id,
       product_name: item.product_name,
       product_category: item.product_category,
+      price: Number(item.price) || 0,
       total_inbound: totalIn,
       total_outbound: totalOut,
       current_holding: currentHolding,
