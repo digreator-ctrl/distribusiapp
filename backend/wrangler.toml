@@ -6,4 +6,4 @@ compatibility_date = "2024-03-20"
 [[d1_databases]]
 binding = "DB"
 database_name = "distribusiapp-db"
-database_id = "your-database-id-here"
+database_id = "d877cf3f-3fae-4a72-93b7-14aca263c9da"

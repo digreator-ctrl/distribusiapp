@@ -50,15 +50,14 @@ import { MobileReceivedStock } from "./pages/sales/received-stock";
 import { MobileAsset } from "./pages/sales/asset";
 import { LoginPage } from "./pages/login";
 
-// Endpoint Hono lokal (Port default wrangler dev biasanya 8787)
-const API_URL = "http://localhost:8787/api";
+import { API_BASE_URL } from "./config/api";
 
 function App() {
   return (
     <BrowserRouter>
       <Refine
         routerProvider={routerProvider as any}
-        dataProvider={dataProvider(API_URL)}
+        dataProvider={dataProvider(API_BASE_URL)}
         authProvider={authProvider}
         resources={[
           {

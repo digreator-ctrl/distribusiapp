@@ -243,3 +243,21 @@ CREATE TABLE IF NOT EXISTS visit_schedules (
     FOREIGN KEY(sales_id) REFERENCES users(id),
     FOREIGN KEY(store_id) REFERENCES stores(id)
 );
+
+-- Tabel Master Agen
+CREATE TABLE IF NOT EXISTS agents (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    contact TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('Aktif', 'Non-Aktif')),
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(tenant_id) REFERENCES tenants(id)
+);
+
+-- Initial Seed Data
+INSERT OR IGNORE INTO tenants (id, name) VALUES ('tenant-1', 'Tenant Default');
+INSERT OR IGNORE INTO users (id, tenant_id, username, password_hash, role, full_name)
+VALUES ('user-admin-default', 'tenant-1', 'admin', 'admin123', 'admin', 'Administrator Sistem');
+

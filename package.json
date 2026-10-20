@@ -13,7 +13,9 @@
     "dev:backend": "npm run dev --workspace=backend",
     "build": "npm run build --workspace=frontend && npm run build --workspace=backend",
     "build:frontend": "npm run build --workspace=frontend",
-    "build:backend": "npm run build --workspace=backend"
+    "build:backend": "npm run build --workspace=backend",
+    "deploy:backend": "npm run deploy --workspace=backend",
+    "deploy:frontend": "npm run build:frontend && npx wrangler pages deploy frontend/dist --project-name=distribusiapp"
   },
   "engines": {
     "node": ">=18.0.0"

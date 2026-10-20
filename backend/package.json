@@ -5,6 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "wrangler dev src/index.ts",
+    "deploy": "wrangler deploy src/index.ts",
+    "d1:init:local": "wrangler d1 execute distribusiapp-db --local --file=./schema.sql --yes",
+    "d1:init:remote": "wrangler d1 execute distribusiapp-db --remote --file=./schema.sql --yes",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
