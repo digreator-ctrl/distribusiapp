@@ -272,18 +272,13 @@ export const SalesStores = () => {
     return count;
   }, [filterProvince, filterCity, filterDistrict, filterDebt]);
 
-  // Data Toko yang Sudah Dikunjungi / Dititipi untuk Tab Agenda
+  // Data Toko yang Memiliki Stok Konsinyasi Aktif untuk Tab Agenda (dari titip stok awal maupun kunjungan rutin)
   const agendaStores = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     const list = stores.filter((s) => {
-      // Toko yang sudah pernah dikunjungi (ada last_visit_date / total_visits_count > 0)
-      // ATAU sudah dititipi stok konsinyasi (total_remaining_stock > 0)
-      const isTarget = Boolean(
-        s.last_visit_date ||
-        Number(s.total_visits_count) > 0 ||
-        Number(s.total_remaining_stock) > 0
-      );
-      if (!isTarget) return false;
+      // Pastikan toko memang memiliki stok aktif konsinyasi di toko (titip awal / kunjungan rutin)
+      const hasActiveStock = Number(s.total_remaining_stock) > 0;
+      if (!hasActiveStock) return false;
 
       if (!q) return true;
       return (
@@ -505,9 +500,14 @@ export const SalesStores = () => {
   };
 
   // Data Rekomendasi Kunjungan (Urutan By Kedaluwarsa & By Periode Bulanan)
+  // Hanya menampilkan toko yang memiliki stok konsinyasi aktif (titip stok awal maupun kunjungan rutin)
   const recomStores = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     const list = stores.filter((s) => {
+      // Pastikan toko memang memiliki stok aktif konsinyasi di toko
+      const hasActiveStock = Number(s.total_remaining_stock) > 0;
+      if (!hasActiveStock) return false;
+
       if (!q) return true;
       return (
         s.name?.toLowerCase().includes(q) ||
@@ -1004,11 +1004,11 @@ export const SalesStores = () => {
                   <div className="w-12 h-12 bg-muted text-muted-foreground rounded-full flex items-center justify-center mx-auto">
                     <Store size={22} />
                   </div>
-                  <p className="font-bold text-xs text-foreground">Tidak Ada Toko Ditemukan</p>
+                  <p className="font-bold text-xs text-foreground">Tidak Ada Toko dengan Stok Aktif</p>
                   <p className="text-[11px] text-muted-foreground">
                     {searchQuery
-                      ? "Coba gunakan kata kunci pencarian yang lain."
-                      : "Belum ada data mitra toko yang terdaftar."}
+                      ? "Tidak ditemukan toko dengan stok konsinyasi aktif yang sesuai dengan pencarian."
+                      : "Belum ada mitra toko yang memiliki stok titipan konsinyasi aktif."}
                   </p>
                 </div>
               ) : (
@@ -1222,11 +1222,11 @@ export const SalesStores = () => {
                   <div className="w-12 h-12 bg-muted/60 rounded-full flex items-center justify-center text-muted-foreground mx-auto">
                     <Store size={22} />
                   </div>
-                  <p className="font-bold text-xs text-foreground">Belum Ada Toko yang Dikunjungi/Dititipi</p>
+                  <p className="font-bold text-xs text-foreground">Tidak Ada Toko dengan Stok Aktif</p>
                   <p className="text-[11px] text-muted-foreground">
                     {searchQuery
-                      ? "Tidak ada toko yang cocok dengan pencarian Anda."
-                      : "Data toko yang telah dikunjungi atau dititipkan stok konsinyasi akan tercatat otomatis di sini."}
+                      ? "Tidak ada toko dengan stok konsinyasi aktif yang cocok dengan pencarian Anda."
+                      : "Mitra toko yang memiliki stok titipan konsinyasi (dari titip awal maupun kunjungan rutin) akan tercatat di sini."}
                   </p>
                 </div>
               ) : (
