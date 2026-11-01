@@ -104,6 +104,13 @@ CREATE TABLE IF NOT EXISTS stores (
     owner_name TEXT NOT NULL,
     latitude REAL,
     longitude REAL,
+    address TEXT,
+    wa_number TEXT,
+    province TEXT,
+    city TEXT,
+    district TEXT,
+    village TEXT,
+    status TEXT DEFAULT 'Aktif',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id)
 );
@@ -141,6 +148,8 @@ CREATE TABLE IF NOT EXISTS consignments (
     return_qty INTEGER DEFAULT 0,
     remaining_qty INTEGER DEFAULT 0,
     status TEXT NOT NULL CHECK(status IN ('active', 'completed')),
+    batch_id TEXT,
+    expired_date DATE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id),
