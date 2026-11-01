@@ -50,7 +50,7 @@ export const StockRequestShow = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const role = localStorage.getItem("distribusi_role") || "admin";
-  const isSales = role === "sales" || location.pathname.startsWith("/sales/");
+  const isSales = location.pathname.startsWith("/sales/");
 
   const handleBack = () => {
     if (isSales) {
@@ -574,9 +574,13 @@ export const StockRequestShow = () => {
                     <span className="font-semibold capitalize">{request.type}</span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground block text-xs">Tujuan</span>
+                    <span className="text-muted-foreground block text-xs">
+                      {request.type === 'request' ? 'Pemohon (Sales)' : 'Tujuan (Sales / Agen)'}
+                    </span>
                     <span className="font-semibold">
-                      {request.agen_name ? `Agen: ${request.agen_name}` : `Sales: ${request.sales_full_name || request.sales_username || 'Semua Sales'}`}
+                      {request.type === 'request'
+                        ? (request.sales_full_name ? `${request.sales_full_name} (${request.sales_username || 'sales'})` : 'Sales')
+                        : (request.agen_name ? `Agen: ${request.agen_name}` : (request.sales_full_name ? `Sales: ${request.sales_full_name} (${request.sales_username || ''})` : 'Semua Sales (Broadcast)'))}
                     </span>
                   </div>
                   <div>

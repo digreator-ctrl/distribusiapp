@@ -48,13 +48,16 @@ database_name = "distribusiapp-db"
 database_id = "xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" # <- Ganti dengan ID asli
 ```
 
-### C. Eksekusi Schema ke Cloudflare D1 Remote
+### C. Eksekusi Schema & Data Dummy ke Cloudflare D1 Remote
 Inisialisasi semua tabel dan data awal ke database D1 remote Cloudflare:
 ```bash
 # Dari folder backend:
 npm run d1:init:remote
+
+# (Opsional) Masukkan data dummy lengkap untuk uji coba / trial error:
+npm run d1:seed:remote
 ```
-*(Atau `npx wrangler d1 execute distribusiapp-db --remote --file=./schema.sql`)*
+*(Atau `npx wrangler d1 execute distribusiapp-db --remote --file=./seed.sql`)*
 
 ---
 
