@@ -12,8 +12,7 @@ import {
   Users, 
   ShieldCheck, 
   FolderTree,
-  LogOut,
-  Layers
+  LogOut
 } from "lucide-react";
 
 export const AppLayout = () => {
@@ -25,27 +24,27 @@ export const AppLayout = () => {
   const getMenuIcon = (name: string) => {
     switch (name) {
       case "dashboard":
-        return <LayoutDashboard size={16} className="shrink-0" />;
+        return <LayoutDashboard size={17} className="shrink-0" />;
       case "products":
-        return <Package size={16} className="shrink-0" />;
+        return <Package size={17} className="shrink-0" />;
       case "inbound_batches":
-        return <ArrowDownToLine size={16} className="shrink-0" />;
+        return <ArrowDownToLine size={17} className="shrink-0" />;
       case "inventory":
-        return <Warehouse size={16} className="shrink-0" />;
+        return <Warehouse size={17} className="shrink-0" />;
       case "stock-requests":
-        return <ClipboardCheck size={16} className="shrink-0" />;
+        return <ClipboardCheck size={17} className="shrink-0" />;
       case "suppliers":
-        return <Building2 size={16} className="shrink-0" />;
+        return <Building2 size={17} className="shrink-0" />;
       case "agents":
-        return <Briefcase size={16} className="shrink-0" />;
+        return <Briefcase size={17} className="shrink-0" />;
       case "stores":
-        return <Store size={16} className="shrink-0" />;
+        return <Store size={17} className="shrink-0" />;
       case "users":
-        return <Users size={16} className="shrink-0" />;
+        return <Users size={17} className="shrink-0" />;
       case "rbac":
-        return <ShieldCheck size={16} className="shrink-0" />;
+        return <ShieldCheck size={17} className="shrink-0" />;
       default:
-        return <FolderTree size={16} className="shrink-0" />;
+        return <FolderTree size={17} className="shrink-0" />;
     }
   };
 
@@ -87,17 +86,17 @@ export const AppLayout = () => {
             });
 
             return sortedGroups.map((group) => (
-              <div key={group} className="space-y-2">
-                {/* 1. NAMA KATEGORI: Seragam warnanya & mencolok perbedaannya dari menu */}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-slate-100 dark:bg-slate-800 dark:text-white shadow-2xs">
-                  <Layers size={13} className="text-indigo-400 shrink-0" />
-                  <h3 className="text-[11px] font-black uppercase tracking-wider">
+              <div key={group} className="space-y-1.5">
+                {/* 1. NAMA KATEGORI: Teks berwarna mencolok seragam, TANPA background block, font tidak lebih besar dari menu (text-[11px]) */}
+                <div className="flex items-center gap-2 px-1 pt-1 pb-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0" />
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
                     {group}
                   </h3>
                 </div>
 
-                {/* 2. NAMA MENU: Dibuat lebih menjorok ke dalam (ml-5 pl-3 dengan garis panduan cabang) */}
-                <div className="ml-5 pl-3 border-l-2 border-slate-300 dark:border-slate-700 space-y-1">
+                {/* 2. NAMA MENU: Menjorok ke dalam (ml-5 pl-3), ukuran font jelas & tidak lebih kecil dari kategori (text-sm / 14px) */}
+                <div className="ml-5 pl-3 border-l-2 border-border/70 space-y-1">
                   {grouped[group].map((item: any) => {
                     const itemRoute = item.route || "/";
                     const isActive = itemRoute === "/" 
@@ -108,13 +107,13 @@ export const AppLayout = () => {
                       <Link
                         key={item.key}
                         to={itemRoute}
-                        className={`group flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all duration-150 ${
+                        className={`group flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all duration-150 ${
                           isActive 
                             ? 'bg-primary text-primary-foreground font-bold shadow-xs' 
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground font-medium hover:translate-x-0.5'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-muted/80 hover:text-foreground font-semibold hover:translate-x-0.5'
                         }`}
                       >
-                        <span className={isActive ? "text-primary-foreground" : "text-muted-foreground/80 group-hover:text-primary transition-colors"}>
+                        <span className={isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary transition-colors"}>
                           {getMenuIcon(item.name)}
                         </span>
                         <span className="truncate">{item.label}</span>
