@@ -2,21 +2,27 @@
  * Konfigurasi Base URL API untuk Frontend
  * 
  * - Pada lokal dev (tanpa VITE_API_URL): otomatis menggunakan http://localhost:8787/api
- * - Pada production / Cloudflare Pages: set environment variable VITE_API_URL ke URL Cloudflare Worker Anda,
- *   misal: https://distribusiapp-backend.<subdomain>.workers.dev/api
+ * - Pada Cloudflare Pages: otomatis menggunakan proxy /api atau URL Cloudflare Worker yang ditentukan.
  */
 
 export const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || 'http://localhost:8787/api'
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname.endsWith('pages.dev')
+    ? '/api'
+    : 'http://localhost:8787/api')
 ).replace(/\/+$/, '');
 
 /**
  * Setup interceptor otomatis untuk fetch:
- * Jika VITE_API_URL diatur di environment, semua pemanggilan fetch()
- * yang mengarah ke http://localhost:8787/api otomatis dialihkan ke VITE_API_URL.
+ * Mengalihkan pemanggilan fetch() yang mengarah ke http://localhost:8787/api
+ * ke API_BASE_URL yang aktif.
  */
 export function setupApiInterceptor() {
-  const targetApi = import.meta.env.VITE_API_URL;
+  const targetApi =
+    import.meta.env.VITE_API_URL ||
+    (typeof window !== 'undefined' && window.location.hostname.endsWith('pages.dev')
+      ? '/api'
+      : '');
   if (!targetApi) return;
 
   const targetClean = targetApi.replace(/\/+$/, '');
@@ -29,11 +35,16 @@ export function setupApiInterceptor() {
       }
     } else if (input instanceof URL) {
       if (input.href.startsWith('http://localhost:8787/api')) {
-        input = new URL(input.href.replace('http://localhost:8787/api', targetClean));
+        if (targetClean.startsWith('/')) {
+          input = new URL(input.href.replace('http://localhost:8787/api', `${window.location.origin}${targetClean}`));
+        } else {
+          input = new URL(input.href.replace('http://localhost:8787/api', targetClean));
+        }
       }
     } else if (input instanceof Request) {
       if (input.url.startsWith('http://localhost:8787/api')) {
-        const newUrl = input.url.replace('http://localhost:8787/api', targetClean);
+        const replaceTarget = targetClean.startsWith('/') ? `${window.location.origin}${targetClean}` : targetClean;
+        const newUrl = input.url.replace('http://localhost:8787/api', replaceTarget);
         input = new Request(newUrl, input);
       }
     }

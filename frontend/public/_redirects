@@ -1,1 +1,3 @@
+/api/* https://distribusiapp-backend.digreator.workers.dev/api/:splat 200
 /* /index.html 200
+
