@@ -2,13 +2,13 @@
  * Konfigurasi Base URL API untuk Frontend
  * 
  * - Pada lokal dev (tanpa VITE_API_URL): otomatis menggunakan http://localhost:8787/api
- * - Pada Cloudflare Pages: otomatis menggunakan proxy /api atau URL Cloudflare Worker yang ditentukan.
+ * - Pada Cloudflare Pages: otomatis menggunakan Cloudflare Worker publik.
  */
 
 export const API_BASE_URL = (
   import.meta.env.VITE_API_URL ||
   (typeof window !== 'undefined' && window.location.hostname.endsWith('pages.dev')
-    ? '/api'
+    ? 'https://distribusiapp-backend.digreator.workers.dev/api'
     : 'http://localhost:8787/api')
 ).replace(/\/+$/, '');
 
@@ -21,7 +21,7 @@ export function setupApiInterceptor() {
   const targetApi =
     import.meta.env.VITE_API_URL ||
     (typeof window !== 'undefined' && window.location.hostname.endsWith('pages.dev')
-      ? '/api'
+      ? 'https://distribusiapp-backend.digreator.workers.dev/api'
       : '');
   if (!targetApi) return;
 
@@ -35,16 +35,11 @@ export function setupApiInterceptor() {
       }
     } else if (input instanceof URL) {
       if (input.href.startsWith('http://localhost:8787/api')) {
-        if (targetClean.startsWith('/')) {
-          input = new URL(input.href.replace('http://localhost:8787/api', `${window.location.origin}${targetClean}`));
-        } else {
-          input = new URL(input.href.replace('http://localhost:8787/api', targetClean));
-        }
+        input = new URL(input.href.replace('http://localhost:8787/api', targetClean));
       }
     } else if (input instanceof Request) {
       if (input.url.startsWith('http://localhost:8787/api')) {
-        const replaceTarget = targetClean.startsWith('/') ? `${window.location.origin}${targetClean}` : targetClean;
-        const newUrl = input.url.replace('http://localhost:8787/api', replaceTarget);
+        const newUrl = input.url.replace('http://localhost:8787/api', targetClean);
         input = new Request(newUrl, input);
       }
     }
