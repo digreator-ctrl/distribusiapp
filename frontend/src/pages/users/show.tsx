@@ -3,7 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { User as UserIcon, ArrowLeft, Shield, MapPin, Phone, Calendar, Edit3, Trash2 } from "lucide-react";
 import { ConfirmModal } from "../../components/ConfirmModal";
 
-const API_URL = "http://localhost:8787/api";
+import { API_BASE_URL } from "../../config/api";
+
+const API_URL = API_BASE_URL;
 
 export const UserShow = () => {
   const { id } = useParams<{ id: string }>();

@@ -38,7 +38,15 @@ export const DashboardPage = () => {
 
   const role = localStorage.getItem("distribusi_role") || "admin";
   const tenantName = localStorage.getItem("distribusi_tenant_name") || "Distribusi SaaS";
-  const userName = localStorage.getItem("distribusi_user_name") || "Owner";
+  const [userName, setUserName] = useState(() => localStorage.getItem("distribusi_user_name") || "Owner");
+
+  useEffect(() => {
+    const handleProfile = (e: any) => {
+      if (e?.detail?.name) setUserName(e?.detail?.name);
+    };
+    window.addEventListener("userProfileUpdated", handleProfile);
+    return () => window.removeEventListener("userProfileUpdated", handleProfile);
+  }, []);
 
   const fetchSummary = async () => {
     setLoading(true);

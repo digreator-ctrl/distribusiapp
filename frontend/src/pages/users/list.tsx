@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, X } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -40,7 +41,7 @@ export const UserList = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch("http://localhost:8787/api/users");
+        const res = await fetch(`${API_BASE_URL}/users`);
         if (res.ok) {
           const json = await res.json();
           setUsers(Array.isArray(json) ? json : []);

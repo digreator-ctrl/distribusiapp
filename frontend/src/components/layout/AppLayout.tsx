@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useLogout, useMenu } from "@refinedev/core";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { 
@@ -14,14 +15,64 @@ import {
   FolderTree,
   LogOut
 } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 export const AppLayout = () => {
   const { menuItems } = useMenu();
   const { mutate: logout } = useLogout();
   const location = useLocation();
-  const userRole = localStorage.getItem("distribusi_role") || "admin";
-  const userName = localStorage.getItem("distribusi_user_name") || (userRole === "owner" ? "Owner Usaha" : "Admin Sistem");
-  const tenantName = localStorage.getItem("distribusi_tenant_name") || "Distribusi SaaS";
+
+  const [userRole, setUserRole] = useState<string>(
+    () => localStorage.getItem("distribusi_role") || "admin"
+  );
+  const [userName, setUserName] = useState<string>(
+    () => localStorage.getItem("distribusi_user_name") || (userRole === "owner" ? "Owner Usaha" : "Admin Sistem")
+  );
+  const [tenantName, setTenantName] = useState<string>(
+    () => localStorage.getItem("distribusi_tenant_name") || "Distribusi SaaS"
+  );
+
+  // Sinkronisasi data user real-time dengan database
+  useEffect(() => {
+    const syncUserProfile = async () => {
+      const currentUserId = localStorage.getItem("distribusi_user_id");
+      if (!currentUserId) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/users/${currentUserId}`);
+        if (res.ok) {
+          const user = await res.json();
+          const latestName = user.full_name || user.username;
+          if (latestName) {
+            setUserName(latestName);
+            localStorage.setItem("distribusi_user_name", latestName);
+          }
+          if (user.role) {
+            setUserRole(user.role);
+            localStorage.setItem("distribusi_role", user.role);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal sinkronisasi data profil pengguna:", err);
+      }
+    };
+
+    syncUserProfile();
+
+    // Dengarkan event lokal jika pengguna mengedit profilnya
+    const handleProfileUpdated = (e: any) => {
+      const newName = e?.detail?.name || localStorage.getItem("distribusi_user_name");
+      const newRole = e?.detail?.role || localStorage.getItem("distribusi_role");
+      const newTenant = e?.detail?.tenant_name || localStorage.getItem("distribusi_tenant_name");
+
+      if (newName) setUserName(newName);
+      if (newRole) setUserRole(newRole);
+      if (newTenant) setTenantName(newTenant);
+    };
+
+    window.addEventListener("userProfileUpdated", handleProfileUpdated);
+    return () => window.removeEventListener("userProfileUpdated", handleProfileUpdated);
+  }, []);
 
   const getInitials = (name: string) => {
     const parts = name.trim().split(/\s+/);
@@ -67,7 +118,7 @@ export const AppLayout = () => {
           <h2 className="text-xl font-black text-primary tracking-tight">
             Distribusi<span className="text-muted-foreground font-medium">App</span>
           </h2>
-          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5 truncate">
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5 truncate" title={tenantName}>
             {tenantName} • {userRole === "owner" ? "Owner" : "Admin"}
           </p>
         </div>
@@ -97,7 +148,7 @@ export const AppLayout = () => {
 
             return sortedGroups.map((group) => (
               <div key={group} className="space-y-1.5">
-                {/* 1. NAMA KATEGORI: Teks berwarna mencolok seragam, TANPA background block, font tidak lebih besar dari menu (text-[11px]) */}
+                {/* 1. NAMA KATEGORI */}
                 <div className="flex items-center gap-2 px-1 pt-1 pb-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0" />
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
@@ -105,7 +156,7 @@ export const AppLayout = () => {
                   </h3>
                 </div>
 
-                {/* 2. NAMA MENU: Menjorok ke dalam (ml-5 pl-3), ukuran font jelas & tidak lebih kecil dari kategori (text-sm / 14px) */}
+                {/* 2. NAMA MENU */}
                 <div className="ml-5 pl-3 border-l-2 border-border/70 space-y-1">
                   {grouped[group].map((item: any) => {
                     const itemRoute = item.route || "/";
@@ -143,7 +194,7 @@ export const AppLayout = () => {
               {getInitials(userName)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-foreground truncate">
+              <p className="text-xs font-bold text-foreground truncate" title={userName}>
                 {userName}
               </p>
               <p className="text-[10px] text-muted-foreground capitalize truncate">

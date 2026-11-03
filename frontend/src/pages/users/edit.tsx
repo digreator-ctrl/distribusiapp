@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronRight, ChevronLeft, Save, Eye, EyeOff } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
-const API_URL = "http://localhost:8787/api";
+const API_URL = API_BASE_URL;
 
 // Toast Kustom
 const Toast = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {
@@ -121,6 +122,19 @@ export const UserEdit = () => {
       });
 
       if (!res.ok) throw new Error("Gagal menyimpan perubahan pengguna");
+
+      // Sinkronkan nama profil di sesi login jika yang diubah adalah akun pengguna aktif
+      const currentUserId = localStorage.getItem("distribusi_user_id");
+      if (id === currentUserId) {
+        const updatedName = formData.full_name.trim() || formData.username.trim();
+        localStorage.setItem("distribusi_user_name", updatedName);
+        localStorage.setItem("distribusi_role", formData.role);
+        window.dispatchEvent(
+          new CustomEvent("userProfileUpdated", {
+            detail: { name: updatedName, role: formData.role }
+          })
+        );
+      }
 
       navigate(`/users/${id}`, { state: { successMessage: `Pengguna ${formData.username} berhasil diperbarui.` } });
     } catch (err: any) {
