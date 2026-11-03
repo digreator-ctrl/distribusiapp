@@ -247,17 +247,15 @@ function App() {
             <Route path="asset" element={<MobileAsset />} />
             <Route path="profile" element={
               <div className="bg-card p-6 rounded-xl border text-center shadow-sm">
-                <div className="w-20 h-20 bg-primary/10 text-primary mx-auto rounded-full flex items-center justify-center text-2xl font-bold mb-4">S</div>
-                <h2 className="font-bold text-xl">Andi (Sales)</h2>
-                <p className="text-muted-foreground text-sm">Area: Jakarta Selatan</p>
-                <div className="mt-6 flex justify-center gap-4">
+                <div className="w-20 h-20 bg-primary/10 text-primary mx-auto rounded-full flex items-center justify-center text-2xl font-bold mb-4">
+                  {(localStorage.getItem("distribusi_user_name") || "S").charAt(0).toUpperCase()}
+                </div>
+                <h2 className="font-bold text-xl">{localStorage.getItem("distribusi_user_name") || "Sales Lapangan"}</h2>
+                <p className="text-muted-foreground text-sm">Mode Sales PWA</p>
+                <div className="mt-6 flex justify-center gap-6">
                   <div className="text-center">
-                    <p className="text-2xl font-black text-primary">12</p>
-                    <p className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">Kunjungan</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-black text-primary">100%</p>
-                    <p className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">Target</p>
+                    <p className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">Peran Akun</p>
+                    <p className="text-base font-bold text-primary uppercase">{localStorage.getItem("distribusi_role") || "Sales"}</p>
                   </div>
                 </div>
               </div>

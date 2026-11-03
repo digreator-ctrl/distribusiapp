@@ -346,6 +346,59 @@ app.delete('/api/agents/:id', async (c) => {
 })
 
 // ==========================================
+// AUTHENTICATION API
+// ==========================================
+app.post('/api/auth/login', async (c) => {
+  try {
+    const body = await c.req.json()
+    const username = (body.username || '').trim()
+    const password = (body.password || '').trim()
+
+    if (!username || !password) {
+      return c.json({ error: 'Username dan password wajib diisi' }, 400)
+    }
+
+    const tenant_id = 'tenant-1'
+    const user = await c.env.DB.prepare(
+      'SELECT id, tenant_id, username, password_hash, role, full_name, phone FROM users WHERE (username = ? OR phone = ?) AND tenant_id = ?'
+    ).bind(username, username, tenant_id).first<any>()
+
+    if (!user || user.password_hash !== password) {
+      return c.json({ error: 'Username atau password tidak sesuai' }, 401)
+    }
+
+    const token = `token_${user.id}_${Date.now()}`
+
+    return c.json({
+      token,
+      user: {
+        id: user.id,
+        tenant_id: user.tenant_id,
+        username: user.username,
+        full_name: user.full_name || user.username,
+        role: user.role,
+        phone: user.phone,
+      },
+    })
+  } catch (err: any) {
+    return c.json({ error: 'Terjadi kesalahan pada server: ' + err.message }, 500)
+  }
+})
+
+app.get('/api/auth/me', async (c) => {
+  const userId = c.req.query('userId')
+  if (!userId) return c.json({ error: 'User ID is required' }, 400)
+
+  const tenant_id = 'tenant-1'
+  const user = await c.env.DB.prepare(
+    'SELECT id, tenant_id, username, role, full_name, phone FROM users WHERE id = ? AND tenant_id = ?'
+  ).bind(userId, tenant_id).first<any>()
+
+  if (!user) return c.json({ error: 'Pengguna tidak ditemukan' }, 404)
+  return c.json(user)
+})
+
+// ==========================================
 // USERS API
 // ==========================================
 app.get('/api/users', async (c) => {

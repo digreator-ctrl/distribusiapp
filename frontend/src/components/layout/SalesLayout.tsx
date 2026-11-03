@@ -104,8 +104,15 @@ export const SalesLayout = () => {
               )}
             </div>
 
-            {/* Quick Switcher Dropdown in Header */}
-            {salesUsers.length > 1 ? (
+            {/* Header Identity */}
+            {localStorage.getItem("distribusi_role") === "sales" ? (
+              <div className="flex items-center gap-1.5">
+                <UserCheck size={14} className="text-white/80 shrink-0" />
+                <h1 className="text-sm font-bold text-white tracking-tight truncate">
+                  {currentSalesName}
+                </h1>
+              </div>
+            ) : salesUsers.length > 1 ? (
               <div className="flex items-center gap-1">
                 <UserCheck size={14} className="text-white/80 shrink-0" />
                 <select

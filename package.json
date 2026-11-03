@@ -15,7 +15,9 @@
     "build:frontend": "npm run build --workspace=frontend",
     "build:backend": "npm run build --workspace=backend",
     "deploy:backend": "npm run deploy --workspace=backend",
-    "deploy:frontend": "npm run build:frontend && npx wrangler pages deploy frontend/dist --project-name=distribusiapp"
+    "deploy:frontend": "npm run build:frontend && npx wrangler pages deploy frontend/dist --project-name=distribusiapp",
+    "db:clean:local": "npm run d1:clean:local --workspace=backend",
+    "db:clean:remote": "npm run d1:clean:remote --workspace=backend"
   },
   "engines": {
     "node": ">=18.0.0"

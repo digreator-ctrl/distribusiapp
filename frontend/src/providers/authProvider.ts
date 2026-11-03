@@ -1,26 +1,52 @@
 import type { AuthProvider } from "@refinedev/core";
+import { API_BASE_URL } from "../config/api";
 
 export const authProvider: AuthProvider = {
   login: async ({ username, password }) => {
-    if (username === "admin" && password === "admin") {
-      localStorage.setItem("distribusi_token", "dummy_token");
-      localStorage.setItem("distribusi_role", "admin");
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return {
+          success: false,
+          error: {
+            name: "Login Error",
+            message: data.error || "Username atau password tidak sesuai",
+          },
+        };
+      }
+
+      localStorage.setItem("distribusi_token", data.token);
+      localStorage.setItem("distribusi_role", data.user.role);
+      localStorage.setItem("distribusi_user_id", data.user.id);
+      localStorage.setItem("distribusi_user_name", data.user.full_name || data.user.username);
+
+      const targetUrl = data.user.role === "sales" ? "/sales" : "/";
       return {
         success: true,
-        redirectTo: "/",
+        redirectTo: targetUrl,
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: {
+          name: "Connection Error",
+          message: "Gagal terhubung ke server backend. Periksa koneksi internet Anda.",
+        },
       };
     }
-    return {
-      success: false,
-      error: {
-        name: "Login Error",
-        message: "Kredensial tidak valid",
-      },
-    };
   },
   logout: async () => {
     localStorage.removeItem("distribusi_token");
     localStorage.removeItem("distribusi_role");
+    localStorage.removeItem("distribusi_user_id");
+    localStorage.removeItem("distribusi_user_name");
     return {
       success: true,
       redirectTo: "/login",
@@ -45,11 +71,15 @@ export const authProvider: AuthProvider = {
   },
   getIdentity: async () => {
     const token = localStorage.getItem("distribusi_token");
+    const name = localStorage.getItem("distribusi_user_name") || "Pengguna";
+    const role = localStorage.getItem("distribusi_role") || "user";
+    const id = localStorage.getItem("distribusi_user_id") || "1";
     if (token) {
       return {
-        id: 1,
-        name: "Admin Distribusi",
-        avatar: "https://i.pravatar.cc/150?u=admin",
+        id,
+        name,
+        role,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4f46e5&color=fff`,
       };
     }
     return null;
