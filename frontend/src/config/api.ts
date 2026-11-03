@@ -14,8 +14,8 @@ export const API_BASE_URL = (
 
 /**
  * Setup interceptor otomatis untuk fetch:
- * Mengalihkan pemanggilan fetch() yang mengarah ke http://localhost:8787/api
- * ke API_BASE_URL yang aktif.
+ * 1. Mengalihkan pemanggilan fetch() yang mengarah ke http://localhost:8787/api ke API_BASE_URL yang aktif.
+ * 2. Menginjeksi header x-tenant-id dan Authorization secara otomatis untuk SaaS Multi-tenant.
  */
 export function setupApiInterceptor() {
   const targetApi =
@@ -23,26 +23,44 @@ export function setupApiInterceptor() {
     (typeof window !== 'undefined' && window.location.hostname.endsWith('pages.dev')
       ? 'https://distribusiapp-backend.digreator.workers.dev/api'
       : '');
-  if (!targetApi) return;
-
-  const targetClean = targetApi.replace(/\/+$/, '');
+  const targetClean = targetApi ? targetApi.replace(/\/+$/, '') : '';
   const originalFetch = window.fetch;
 
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
-    if (typeof input === 'string') {
-      if (input.startsWith('http://localhost:8787/api')) {
-        input = input.replace('http://localhost:8787/api', targetClean);
+    let reqInit: RequestInit = init ? { ...init } : {};
+
+    // Auto-attach x-tenant-id and Authorization for SaaS Multi-tenant
+    if (typeof window !== 'undefined') {
+      const tenantId = localStorage.getItem('distribusi_tenant_id');
+      const token = localStorage.getItem('distribusi_token');
+
+      const headers = new Headers(reqInit.headers || (input instanceof Request ? input.headers : {}));
+      if (tenantId && !headers.has('x-tenant-id')) {
+        headers.set('x-tenant-id', tenantId);
       }
-    } else if (input instanceof URL) {
-      if (input.href.startsWith('http://localhost:8787/api')) {
-        input = new URL(input.href.replace('http://localhost:8787/api', targetClean));
+      if (token && !headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${token}`);
       }
-    } else if (input instanceof Request) {
-      if (input.url.startsWith('http://localhost:8787/api')) {
-        const newUrl = input.url.replace('http://localhost:8787/api', targetClean);
-        input = new Request(newUrl, input);
+      reqInit.headers = headers;
+    }
+
+    if (targetClean) {
+      if (typeof input === 'string') {
+        if (input.startsWith('http://localhost:8787/api')) {
+          input = input.replace('http://localhost:8787/api', targetClean);
+        }
+      } else if (input instanceof URL) {
+        if (input.href.startsWith('http://localhost:8787/api')) {
+          input = new URL(input.href.replace('http://localhost:8787/api', targetClean));
+        }
+      } else if (input instanceof Request) {
+        if (input.url.startsWith('http://localhost:8787/api')) {
+          const newUrl = input.url.replace('http://localhost:8787/api', targetClean);
+          input = new Request(newUrl, { ...input, headers: reqInit.headers });
+        }
       }
     }
-    return originalFetch(input, init);
+
+    return originalFetch(input, reqInit);
   };
 }

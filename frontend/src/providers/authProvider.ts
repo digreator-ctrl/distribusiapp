@@ -26,6 +26,8 @@ export const authProvider: AuthProvider = {
       localStorage.setItem("distribusi_role", data.user.role);
       localStorage.setItem("distribusi_user_id", data.user.id);
       localStorage.setItem("distribusi_user_name", data.user.full_name || data.user.username);
+      localStorage.setItem("distribusi_tenant_id", data.user.tenant_id);
+      localStorage.setItem("distribusi_tenant_name", data.user.tenant_name || "");
 
       const targetUrl = data.user.role === "sales" ? "/sales" : "/";
       return {
@@ -42,11 +44,54 @@ export const authProvider: AuthProvider = {
       };
     }
   },
+  register: async ({ company_name, full_name, username, phone, password }) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ company_name, full_name, username, phone, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return {
+          success: false,
+          error: {
+            name: "Register Error",
+            message: data.error || "Pendaftaran usaha gagal",
+          },
+        };
+      }
+
+      localStorage.setItem("distribusi_token", data.token);
+      localStorage.setItem("distribusi_role", data.user.role);
+      localStorage.setItem("distribusi_user_id", data.user.id);
+      localStorage.setItem("distribusi_user_name", data.user.full_name || data.user.username);
+      localStorage.setItem("distribusi_tenant_id", data.user.tenant_id);
+      localStorage.setItem("distribusi_tenant_name", data.user.tenant_name || "");
+
+      return {
+        success: true,
+        redirectTo: "/",
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        error: {
+          name: "Connection Error",
+          message: "Gagal terhubung ke server backend. Periksa koneksi internet Anda.",
+        },
+      };
+    }
+  },
   logout: async () => {
     localStorage.removeItem("distribusi_token");
     localStorage.removeItem("distribusi_role");
     localStorage.removeItem("distribusi_user_id");
     localStorage.removeItem("distribusi_user_name");
+    localStorage.removeItem("distribusi_tenant_id");
+    localStorage.removeItem("distribusi_tenant_name");
     return {
       success: true,
       redirectTo: "/login",

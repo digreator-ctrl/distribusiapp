@@ -16,7 +16,13 @@ app.onError((err, c) => {
 app.use('*', cors({
   origin: '*', // Pada produksi sebaiknya disesuaikan dengan URL frontend
   exposeHeaders: ['x-total-count'], // Header ini dibutuhkan oleh dataProvider Refine untuk pagination
+  allowHeaders: ['Content-Type', 'Authorization', 'x-tenant-id'],
 }))
+
+// Helper untuk multi-tenant SaaS: mengambil tenant_id dari header, query, atau default
+const getTenantId = (c: any) => {
+  return c.req.header('x-tenant-id') || c.req.query('tenant_id') || 'tenant-1'
+}
 
 app.get('/', (c) => c.text('Distribusi App API is running!'))
 
@@ -52,7 +58,7 @@ app.get('/api/_migrate', async (c) => {
 // ==========================================
 
 app.get('/api/products', async (c) => {
-  const tenant_id = 'tenant-1' 
+  const tenant_id = getTenantId(c) 
   
   const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM products WHERE tenant_id = ?').bind(tenant_id).first()
   const totalCount = countResult ? (countResult.count as number) : 0
@@ -166,7 +172,7 @@ app.get('/api/products/:id', async (c) => {
 app.post('/api/products', async (c) => {
   const body = await c.req.json()
   const id = crypto.randomUUID()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   // Insert Produk Induk
   await c.env.DB.prepare(
@@ -216,7 +222,7 @@ app.delete('/api/products/:id', async (c) => {
 // INBOUND BATCHES API
 // ==========================================
 app.get('/api/inbound_batches', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM inbound_batches WHERE tenant_id = ?').bind(tenant_id).first()
   const totalCount = countResult ? (countResult.count as number) : 0
   
@@ -237,7 +243,7 @@ app.get('/api/inbound_batches', async (c) => {
 app.post('/api/inbound_batches', async (c) => {
   const body = await c.req.json()
   const id = crypto.randomUUID()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   try {
     await c.env.DB.prepare(
@@ -273,7 +279,7 @@ app.get('/api/inbound_batches/:id', async (c) => {
 // AGENTS API
 // ==========================================
 app.get('/api/agents', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM agents WHERE tenant_id = ?').bind(tenant_id).first()
   const totalCount = countResult ? (countResult.count as number) : 0
   
@@ -286,7 +292,7 @@ app.get('/api/agents', async (c) => {
 app.post('/api/agents', async (c) => {
   const body = await c.req.json()
   const id = crypto.randomUUID()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   try {
     await c.env.DB.prepare(
@@ -346,22 +352,98 @@ app.delete('/api/agents/:id', async (c) => {
 })
 
 // ==========================================
-// AUTHENTICATION API
+// AUTHENTICATION API (SaaS Multi-tenant)
 // ==========================================
+app.post('/api/auth/register', async (c) => {
+  try {
+    const body = await c.req.json()
+    const company_name = (body.company_name || '').trim()
+    const full_name = (body.full_name || '').trim()
+    const username = (body.username || '').trim().toLowerCase()
+    const phone = (body.phone || '').trim()
+    const password = (body.password || '').trim()
+
+    if (!company_name) {
+      return c.json({ error: 'Nama usaha / perusahaan wajib diisi' }, 400)
+    }
+    if (!full_name) {
+      return c.json({ error: 'Nama lengkap pemilik wajib diisi' }, 400)
+    }
+    if (!username) {
+      return c.json({ error: 'Username akun wajib diisi' }, 400)
+    }
+    if (!password || password.length < 5) {
+      return c.json({ error: 'Password minimal 5 karakter' }, 400)
+    }
+
+    // 1. Cek apakah username sudah terdaftar
+    const existing = await c.env.DB.prepare(
+      'SELECT id FROM users WHERE username = ?'
+    ).bind(username).first()
+
+    if (existing) {
+      return c.json({ error: 'Username sudah digunakan, silakan pilih username lain' }, 400)
+    }
+
+    // 2. Buat Tenant baru untuk bisnis ini
+    const tenantId = 'tenant_' + crypto.randomUUID().slice(0, 8)
+    await c.env.DB.prepare(
+      'INSERT INTO tenants (id, name) VALUES (?, ?)'
+    ).bind(tenantId, company_name).run()
+
+    // 3. Buat Pengguna Pertama otomatis sebagai OWNER
+    const userId = 'user_' + crypto.randomUUID().slice(0, 8)
+    await c.env.DB.prepare(`
+      INSERT INTO users (
+        id, tenant_id, username, password_hash, role, full_name, phone
+      ) VALUES (?, ?, ?, ?, 'owner', ?, ?)
+    `).bind(
+      userId,
+      tenantId,
+      username,
+      password,
+      full_name,
+      phone || null
+    ).run()
+
+    const token = `token_${userId}_${Date.now()}`
+
+    return c.json({
+      success: true,
+      message: 'Registrasi usaha berhasil! Anda otomatis menjadi Owner.',
+      token,
+      user: {
+        id: userId,
+        tenant_id: tenantId,
+        tenant_name: company_name,
+        username,
+        full_name,
+        role: 'owner',
+        phone,
+      },
+    }, 201)
+  } catch (err: any) {
+    return c.json({ error: 'Gagal mendaftar: ' + err.message }, 500)
+  }
+})
+
 app.post('/api/auth/login', async (c) => {
   try {
     const body = await c.req.json()
-    const username = (body.username || '').trim()
+    const username = (body.username || '').trim().toLowerCase()
     const password = (body.password || '').trim()
 
     if (!username || !password) {
       return c.json({ error: 'Username dan password wajib diisi' }, 400)
     }
 
-    const tenant_id = 'tenant-1'
-    const user = await c.env.DB.prepare(
-      'SELECT id, tenant_id, username, password_hash, role, full_name, phone FROM users WHERE (username = ? OR phone = ?) AND tenant_id = ?'
-    ).bind(username, username, tenant_id).first<any>()
+    // Cari pengguna di seluruh tenant (username bersifat unik)
+    const user = await c.env.DB.prepare(`
+      SELECT u.id, u.tenant_id, u.username, u.password_hash, u.role, u.full_name, u.phone, t.name as tenant_name
+      FROM users u
+      LEFT JOIN tenants t ON u.tenant_id = t.id
+      WHERE (LOWER(u.username) = ? OR u.phone = ?)
+    `).bind(username, username).first<any>()
 
     if (!user || user.password_hash !== password) {
       return c.json({ error: 'Username atau password tidak sesuai' }, 401)
@@ -374,6 +456,7 @@ app.post('/api/auth/login', async (c) => {
       user: {
         id: user.id,
         tenant_id: user.tenant_id,
+        tenant_name: user.tenant_name || 'Bisnis Anda',
         username: user.username,
         full_name: user.full_name || user.username,
         role: user.role,
@@ -389,7 +472,7 @@ app.get('/api/auth/me', async (c) => {
   const userId = c.req.query('userId')
   if (!userId) return c.json({ error: 'User ID is required' }, 400)
 
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const user = await c.env.DB.prepare(
     'SELECT id, tenant_id, username, role, full_name, phone FROM users WHERE id = ? AND tenant_id = ?'
   ).bind(userId, tenant_id).first<any>()
@@ -402,7 +485,7 @@ app.get('/api/auth/me', async (c) => {
 // USERS API
 // ==========================================
 app.get('/api/users', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM users WHERE tenant_id = ?').bind(tenant_id).first()
   const totalCount = countResult ? (countResult.count as number) : 0
   
@@ -415,7 +498,7 @@ app.get('/api/users', async (c) => {
 app.post('/api/users', async (c) => {
   const body = await c.req.json()
   const id = crypto.randomUUID()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   try {
     // Basic password hashing logic isn't strictly necessary for a mockup, but we store it anyway
@@ -437,7 +520,7 @@ app.post('/api/users', async (c) => {
 
 app.get('/api/users/:id', async (c) => {
   const { id } = c.req.param()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   const user = await c.env.DB.prepare(
     'SELECT id, username, role, nik, full_name, place_of_birth, date_of_birth, gender, address, phone, created_at FROM users WHERE id = ? AND tenant_id = ?'
@@ -449,7 +532,7 @@ app.get('/api/users/:id', async (c) => {
 
 app.put('/api/users/:id', async (c) => {
   const { id } = c.req.param()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const body = await c.req.json()
   
   try {
@@ -478,7 +561,7 @@ app.put('/api/users/:id', async (c) => {
 
 app.delete('/api/users/:id', async (c) => {
   const { id } = c.req.param()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   try {
     await c.env.DB.prepare('DELETE FROM users WHERE id = ? AND tenant_id = ?').bind(id, tenant_id).run()
@@ -492,7 +575,7 @@ app.delete('/api/users/:id', async (c) => {
 // SUPPLIERS API
 // ==========================================
 app.get('/api/suppliers', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const countResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM suppliers WHERE tenant_id = ?').bind(tenant_id).first()
   const totalCount = countResult ? (countResult.count as number) : 0
   
@@ -524,7 +607,7 @@ app.get('/api/suppliers/:id', async (c) => {
 app.post('/api/suppliers', async (c) => {
   const body = await c.req.json()
   const id = crypto.randomUUID()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   await c.env.DB.prepare(
     'INSERT INTO suppliers (id, tenant_id, name, contact_person, phone, address) VALUES (?, ?, ?, ?, ?, ?)'
@@ -566,7 +649,7 @@ app.delete('/api/suppliers/:id', async (c) => {
 // type = 'recommendation' -> Admin merekomendasikan stok ke Sales
 // ==========================================
 app.get('/api/stock-requests', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const type = c.req.query('type')
   const status = c.req.query('status')
   const sales_id = c.req.query('sales_id')
@@ -633,7 +716,7 @@ app.get('/api/stock-requests/:id', async (c) => {
 
 app.post('/api/stock-requests', async (c) => {
   const body = await c.req.json()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const id = crypto.randomUUID()
 
   if (!['request', 'recommendation'].includes(body.type)) {
@@ -853,7 +936,7 @@ app.delete('/api/stock-requests/:id', async (c) => {
 })
 
 app.get('/api/inventory', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   try {
     const { results } = await c.env.DB.prepare(`
       SELECT 
@@ -887,7 +970,7 @@ app.get('/api/inventory', async (c) => {
 // CONSIGNMENTS API (Stok Keluar Sales ke Toko)
 // ==========================================
 app.get('/api/consignments', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const sales_id = c.req.query('sales_id')
   const where = ['c.tenant_id = ?']
   const params: any[] = [tenant_id]
@@ -921,7 +1004,7 @@ app.get('/api/consignments', async (c) => {
 })
 
 app.post('/api/consignments', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const body = await c.req.json()
   const sales_id = body.sales_id
   const store_id = body.store_id
@@ -970,7 +1053,7 @@ app.delete('/api/consignments/:id', async (c) => {
 // ==========================================
 app.get('/api/sales-inventory/:sales_id', async (c) => {
   const sales_id = c.req.param('sales_id')
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
 
   // 1. Ambil semua item stok masuk yang disetujui untuk sales ini
   const { results: inboundItems } = await c.env.DB.prepare(`
@@ -1128,7 +1211,7 @@ app.get('/api/sales-inventory/:sales_id', async (c) => {
 // STORES API (Extended for Sales PWA)
 // ==========================================
 app.get('/api/stores', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   try {
     // Pastikan kolom wilayah dan status tersedia di tabel stores
@@ -1196,7 +1279,7 @@ app.get('/api/stores', async (c) => {
 app.post('/api/stores', async (c) => {
   const body = await c.req.json()
   const id = crypto.randomUUID()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   try {
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN province TEXT').run() } catch (e) {}
@@ -1383,7 +1466,7 @@ app.delete('/api/stores/:id', async (c) => {
 // VISITS API (Kunjungan Toko - Core Flow)
 // ==========================================
 app.get('/api/visits', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const sales_id = c.req.query('sales_id')
   const store_id = c.req.query('store_id')
   const date = c.req.query('date') // format: YYYY-MM-DD
@@ -1436,7 +1519,7 @@ app.get('/api/visits/:id', async (c) => {
 app.post('/api/visits', async (c) => {
   const body = await c.req.json()
   const id = crypto.randomUUID()
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   try {
     // 1. Simpan data kunjungan utama
@@ -1537,7 +1620,7 @@ app.post('/api/visits', async (c) => {
 // VISIT SCHEDULES API (Jadwal Kunjungan Toko)
 // ==========================================
 app.get('/api/visit-schedules', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const sales_id = c.req.query('sales_id')
   const date = c.req.query('date')
 
@@ -1579,7 +1662,7 @@ app.get('/api/visit-schedules', async (c) => {
 })
 
 app.post('/api/visit-schedules', async (c) => {
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const body = await c.req.json()
   const id = crypto.randomUUID()
 
@@ -1657,7 +1740,7 @@ app.delete('/api/visit-schedules/:id', async (c) => {
 // ==========================================
 app.get('/api/sales-dashboard/:sales_id', async (c) => {
   const sales_id = c.req.param('sales_id')
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   const today = new Date().toISOString().split('T')[0]
   
   try {
@@ -1736,7 +1819,7 @@ app.get('/api/sales-dashboard/:sales_id', async (c) => {
 // ==========================================
 app.get('/api/store-visits/:store_id', async (c) => {
   const store_id = c.req.param('store_id')
-  const tenant_id = 'tenant-1'
+  const tenant_id = getTenantId(c)
   
   const { results } = await c.env.DB.prepare(`
     SELECT v.*, u.full_name as sales_name,

@@ -57,8 +57,8 @@ export const AppLayout = () => {
           <h2 className="text-xl font-black text-primary tracking-tight">
             Distribusi<span className="text-muted-foreground font-medium">App</span>
           </h2>
-          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
-            Panel {userRole === "owner" ? "Owner / Eksekutif" : "Admin Gudang"}
+          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5 truncate">
+            {localStorage.getItem("distribusi_tenant_name") || "Distribusi SaaS"} • {userRole === "owner" ? "Owner" : "Admin"}
           </p>
         </div>
 

@@ -35,3 +35,4 @@ INSERT OR REPLACE INTO users (
 ) VALUES 
 ('user-admin-default', 'tenant-1', 'admin', 'admin123', 'admin', 'Administrator Sistem', '081234567800', 'Kantor Pusat'),
 ('user-owner-1', 'tenant-1', 'owner', 'owner123', 'owner', 'Owner Usaha', '081234567801', 'Kantor Pusat');
+
