@@ -49,6 +49,7 @@ import { MobileFieldActivity } from "./pages/sales/field-activity";
 import { MobileReceivedStock } from "./pages/sales/received-stock";
 import { MobileAsset } from "./pages/sales/asset";
 import { LoginPage } from "./pages/login";
+import { DashboardPage } from "./pages/dashboard";
 
 import { API_BASE_URL } from "./config/api";
 
@@ -141,41 +142,7 @@ function App() {
               </Authenticated>
             }
           >
-            <Route index element={
-              <div className="bg-card p-8 rounded-2xl border shadow-sm">
-                <h1 className="text-3xl font-bold tracking-tight">
-                  Dashboard {localStorage.getItem("distribusi_role") === "owner" ? "Owner" : "Admin Gudang"}
-                </h1>
-                <p className="text-muted-foreground mt-2">Selamat datang di Sistem Manajemen Distribusi dan Konsinyasi.</p>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                  {/* Khusus Owner */}
-                  {localStorage.getItem("distribusi_role") === "owner" && (
-                    <div className="p-6 rounded-xl bg-purple-500/5 border border-purple-500/20 md:col-span-3">
-                      <h3 className="text-purple-600 font-semibold mb-1">Ringkasan Keuangan (Bulan Ini)</h3>
-                      <div className="flex justify-between items-end mt-2">
-                        <p className="text-4xl font-black text-purple-700">Rp 145.500.000</p>
-                        <p className="text-xs font-semibold bg-purple-100 text-purple-700 px-2 py-1 rounded-full border border-purple-200">Hak Akses: Eksekutif / Owner</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Operational Data (Admin & Owner) */}
-                  <div className="p-6 rounded-xl bg-primary/5 border border-primary/20">
-                    <h3 className="text-primary font-semibold mb-1">Total Produk Aktif</h3>
-                    <p className="text-4xl font-black">24</p>
-                  </div>
-                  <div className="p-6 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                    <h3 className="text-blue-600 font-semibold mb-1">Stok Masuk (Hari Ini)</h3>
-                    <p className="text-4xl font-black text-blue-700">1.250 <span className="text-sm font-normal">pcs</span></p>
-                  </div>
-                  <div className="p-6 rounded-xl bg-green-500/5 border border-green-500/20">
-                    <h3 className="text-green-600 font-semibold mb-1">Pengiriman Berjalan</h3>
-                    <p className="text-4xl font-black text-green-700">8 <span className="text-sm font-normal">rute</span></p>
-                  </div>
-                </div>
-              </div>
-            } />
+            <Route index element={<DashboardPage />} />
             <Route path="/products" element={<ProductList />} />
             <Route path="/products/create" element={<ProductCreate />} />
             <Route path="/products/:id" element={<ProductShow />} />

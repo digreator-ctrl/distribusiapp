@@ -20,6 +20,16 @@ export const AppLayout = () => {
   const { mutate: logout } = useLogout();
   const location = useLocation();
   const userRole = localStorage.getItem("distribusi_role") || "admin";
+  const userName = localStorage.getItem("distribusi_user_name") || (userRole === "owner" ? "Owner Usaha" : "Admin Sistem");
+  const tenantName = localStorage.getItem("distribusi_tenant_name") || "Distribusi SaaS";
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase() || (userRole === "owner" ? "OW" : "AD");
+  };
 
   const getMenuIcon = (name: string) => {
     switch (name) {
@@ -58,7 +68,7 @@ export const AppLayout = () => {
             Distribusi<span className="text-muted-foreground font-medium">App</span>
           </h2>
           <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5 truncate">
-            {localStorage.getItem("distribusi_tenant_name") || "Distribusi SaaS"} • {userRole === "owner" ? "Owner" : "Admin"}
+            {tenantName} • {userRole === "owner" ? "Owner" : "Admin"}
           </p>
         </div>
 
@@ -130,11 +140,11 @@ export const AppLayout = () => {
         <div className="p-3.5 border-t border-border/50 bg-muted/10 space-y-2">
           <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-card border border-border/60 shadow-2xs">
             <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
-              {userRole === "owner" ? "OW" : "AD"}
+              {getInitials(userName)}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-foreground truncate">
-                {userRole === "owner" ? "Budi Hartono" : "Admin Sistem"}
+                {userName}
               </p>
               <p className="text-[10px] text-muted-foreground capitalize truncate">
                 Role: <span className="font-semibold text-primary">{userRole}</span>

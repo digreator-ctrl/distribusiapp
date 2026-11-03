@@ -1835,5 +1835,68 @@ app.get('/api/store-visits/:store_id', async (c) => {
   return c.json(results || [])
 })
 
+
+// ==========================================
+// DASHBOARD EXECUTIVE SUMMARY (Owner & Admin)
+// ==========================================
+app.get('/api/dashboard-summary', async (c) => {
+  const tenant_id = getTenantId(c)
+  const today = new Date().toISOString().split('T')[0]
+  const currentMonth = today.slice(0, 7)
+
+  try {
+    // 1. Total Produk Aktif
+    const productsCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM products WHERE tenant_id = ? AND is_active = 1
+    `).bind(tenant_id).first()
+
+    // 2. Stok Masuk Hari Ini
+    const inboundToday = await c.env.DB.prepare(`
+      SELECT COALESCE(SUM(quantity), 0) as total_qty 
+      FROM inbound_batches 
+      WHERE tenant_id = ? AND DATE(created_at) = ?
+    `).bind(tenant_id, today).first()
+
+    // 3. Pengiriman / Permintaan Stok Berjalan (pending / approved)
+    const activeDeliveries = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count 
+      FROM stock_requests 
+      WHERE tenant_id = ? AND status IN ('pending', 'approved')
+    `).bind(tenant_id).first()
+
+    // 4. Ringkasan Keuangan (Total Penjualan Konsinyasi / Visit Bulan Ini)
+    const financialSummary = await c.env.DB.prepare(`
+      SELECT COALESCE(SUM(payment_received), 0) as total_revenue
+      FROM visits
+      WHERE tenant_id = ? AND strftime('%Y-%m', visit_date) = ?
+    `).bind(tenant_id, currentMonth).first()
+
+    // 5. Total Mitra Toko Aktif
+    const storesCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM stores WHERE tenant_id = ? AND status = 'Aktif'
+    `).bind(tenant_id).first()
+
+    // 6. Total Tim Sales
+    const salesCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND role = 'sales'
+    `).bind(tenant_id).first()
+
+    return c.json({
+      success: true,
+      data: {
+        total_products: Number(productsCount?.count || 0),
+        inbound_today_qty: Number(inboundToday?.total_qty || 0),
+        active_deliveries: Number(activeDeliveries?.count || 0),
+        monthly_revenue: Number(financialSummary?.total_revenue || 0),
+        total_stores: Number(storesCount?.count || 0),
+        total_sales: Number(salesCount?.count || 0),
+      }
+    })
+  } catch (error: any) {
+    console.error('Dashboard summary error:', error)
+    return c.json({ error: error.message }, 500)
+  }
+})
+
 export default app
 

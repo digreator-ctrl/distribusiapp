@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { useLogout } from "@refinedev/core";
 import { LogOut, Home, Store, Package, Clock, UserCheck } from "lucide-react";
 import { FastActionButton } from "./FastActionButton";
+import { API_BASE_URL } from "../../config/api";
 
 export const SalesLayout = () => {
   const { pathname } = useLocation();
@@ -19,7 +20,7 @@ export const SalesLayout = () => {
   const fetchPendingCount = async (salesId: string) => {
     if (!salesId) return;
     try {
-      const res = await fetch(`http://localhost:8787/api/stock-requests?type=recommendation&status=pending&target_type=sales&sales_id=${salesId}`);
+      const res = await fetch(`${API_BASE_URL}/stock-requests?type=recommendation&status=pending&target_type=sales&sales_id=${salesId}`);
       if (res.ok) {
         const data = await res.json();
         setPendingCount(Array.isArray(data) ? data.length : 0);
@@ -32,7 +33,7 @@ export const SalesLayout = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch("http://localhost:8787/api/users");
+        const res = await fetch(`${API_BASE_URL}/users`);
         if (res.ok) {
           const all = await res.json();
           const sales = all.filter((u: any) => u.role === "sales");

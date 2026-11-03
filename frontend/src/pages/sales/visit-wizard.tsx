@@ -207,7 +207,7 @@ export const SalesVisitWizard = () => {
       });
 
       const payload = {
-        tenant_id: "tenant-1",
+        tenant_id: localStorage.getItem("distribusi_tenant_id") || "tenant-1",
         sales_id: activeSalesId,
         store_id: selectedStoreId,
         visit_date: new Date().toISOString(),
