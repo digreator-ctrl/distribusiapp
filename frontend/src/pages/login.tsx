@@ -140,37 +140,10 @@ export const LoginPage = () => {
               Distribusi<span className="text-primary">App</span>
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 font-medium">
-              SaaS Multi-tenant Distribusi & Konsinyasi
+              {mode === "login"
+                ? "SaaS Multi-tenant Distribusi & Konsinyasi"
+                : "Pendaftaran Usaha Baru (Owner)"}
             </p>
-          </div>
-
-          {/* Mode Switcher Tabs */}
-          <div className="flex p-1 bg-muted/60 rounded-xl mb-6 border border-border/50">
-            <button
-              type="button"
-              onClick={() => toggleMode("login")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-                mode === "login"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Masuk
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleMode("register")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                mode === "register"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span>Daftar Usaha Baru</span>
-              <span className="text-[9px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-extrabold rounded">
-                Owner
-              </span>
-            </button>
           </div>
 
           {/* Success Alert */}
