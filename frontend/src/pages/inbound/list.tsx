@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
-import { useList } from "@refinedev/core";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, X } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -35,14 +35,28 @@ export const InboundList = () => {
     }
   }, [location, navigate]);
 
-  const listResult = useList({
-    resource: "inbound_batches",
-  }) as any;
-  
-  const data = listResult.data || listResult.query?.data;
-  const isLoading = listResult.isLoading ?? listResult.query?.isLoading;
+  const [batches, setBatches] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const batches = data?.data ?? [];
+  const fetchBatches = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/inbound_batches`);
+      if (res.ok) {
+        const json = await res.json();
+        setBatches(Array.isArray(json) ? json : []);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil data stok masuk:", err);
+      setBatches([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBatches();
+  }, [fetchBatches]);
 
   // Filter & Sort States
   const [searchQuery, setSearchQuery] = useState("");
@@ -156,7 +170,7 @@ export const InboundList = () => {
       </div>
       
       {isLoading ? (
-        <div className="py-10 text-center text-muted-foreground animate-pulse">Memuat data dari API Hono...</div>
+        <div className="py-10 text-center text-muted-foreground animate-pulse">Memuat data stok masuk...</div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border/50">
           <table className="w-full text-sm text-left">

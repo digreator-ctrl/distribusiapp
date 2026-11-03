@@ -1,5 +1,5 @@
 import { Refine, Authenticated } from "@refinedev/core";
-import dataProvider from "@refinedev/simple-rest";
+import dataProvider, { axiosInstance } from "@refinedev/simple-rest";
 import { BrowserRouter, Route, Routes, Outlet, Navigate } from "react-router-dom";
 import routerProvider, { CatchAllNavigate, NavigateToResource } from "@refinedev/react-router-v6";
 
@@ -58,7 +58,7 @@ function App() {
     <BrowserRouter>
       <Refine
         routerProvider={routerProvider as any}
-        dataProvider={dataProvider(API_BASE_URL)}
+        dataProvider={dataProvider(API_BASE_URL, axiosInstance)}
         authProvider={authProvider}
         resources={[
           {

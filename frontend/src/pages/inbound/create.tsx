@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { AlertCircle, X } from "lucide-react";
 import { useInvalidate } from "@refinedev/core";
 
-const API_URL = "http://localhost:8787/api";
+import { API_BASE_URL } from "../../config/api";
+const API_URL = API_BASE_URL;
 
 export const InboundCreate = () => {
   const navigate = useNavigate();

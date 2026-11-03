@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-const API_URL = "http://localhost:8787/api";
+import { API_BASE_URL } from "../../config/api";
+const API_URL = API_BASE_URL;
 
 // Toast Kustom
 const Toast = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {

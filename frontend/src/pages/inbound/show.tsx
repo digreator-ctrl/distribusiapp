@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:8787/api";
+import { API_BASE_URL } from "../../config/api";
+const API_URL = API_BASE_URL;
 
 export const InboundShow = () => {
   const { id } = useParams();
