@@ -22,6 +22,10 @@ export const LoginPage = () => {
   // Form Login state
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loginErrors, setLoginErrors] = useState<{
+    username?: boolean;
+    password?: boolean;
+  }>({});
 
   // Form Register state
   const [companyName, setCompanyName] = useState("");
@@ -30,6 +34,14 @@ export const LoginPage = () => {
   const [phone, setPhone] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [regErrors, setRegErrors] = useState<{
+    companyName?: boolean;
+    fullName?: boolean;
+    regUsername?: boolean;
+    phone?: boolean;
+    regPassword?: boolean;
+    confirmPassword?: boolean;
+  }>({});
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,8 +50,13 @@ export const LoginPage = () => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      setErrorMessage("Silakan masukkan username dan password Anda.");
+
+    const errors: { username?: boolean; password?: boolean } = {};
+    if (!username.trim()) errors.username = true;
+    if (!password.trim()) errors.password = true;
+
+    if (Object.keys(errors).length > 0) {
+      setLoginErrors(errors);
       return;
     }
 
@@ -67,24 +84,36 @@ export const LoginPage = () => {
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!companyName.trim()) {
-      setErrorMessage("Silakan masukkan nama usaha atau brand Anda.");
+    const errors: {
+      companyName?: boolean;
+      fullName?: boolean;
+      regUsername?: boolean;
+      phone?: boolean;
+      regPassword?: boolean;
+      confirmPassword?: boolean;
+    } = {};
+
+    if (!companyName.trim()) errors.companyName = true;
+    if (!fullName.trim()) errors.fullName = true;
+    if (!regUsername.trim()) errors.regUsername = true;
+    if (!phone.trim()) errors.phone = true;
+    if (!regPassword.trim()) errors.regPassword = true;
+    if (!confirmPassword.trim()) errors.confirmPassword = true;
+
+    if (Object.keys(errors).length > 0) {
+      setRegErrors(errors);
       return;
     }
-    if (!fullName.trim()) {
-      setErrorMessage("Silakan masukkan nama lengkap pemilik usaha.");
-      return;
-    }
-    if (!regUsername.trim()) {
-      setErrorMessage("Silakan masukkan username untuk akun Anda.");
-      return;
-    }
-    if (!regPassword || regPassword.length < 5) {
+
+    if (regPassword.length < 5) {
       setErrorMessage("Password minimal harus 5 karakter.");
+      setRegErrors((prev) => ({ ...prev, regPassword: true }));
       return;
     }
+
     if (regPassword !== confirmPassword) {
-      setErrorMessage("Konfirmasi password tidak cocok.");
+      setErrorMessage("Konfirmasi password tidak cocok dengan password.");
+      setRegErrors((prev) => ({ ...prev, confirmPassword: true }));
       return;
     }
 
@@ -124,6 +153,8 @@ export const LoginPage = () => {
     setMode(newMode);
     setErrorMessage("");
     setSuccessMessage("");
+    setLoginErrors({});
+    setRegErrors({});
   };
 
   return (
@@ -162,59 +193,116 @@ export const LoginPage = () => {
             </div>
           )}
 
+          {/* ========================================= */}
           {/* MODE: LOGIN */}
+          {/* ========================================= */}
           {mode === "login" ? (
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <form onSubmit={handleLoginSubmit} noValidate className="space-y-4">
+              {/* Username Input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground block">
                   Username / No. Handphone
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
+                  <div
+                    className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none transition-colors ${
+                      loginErrors.username ? "text-red-500" : "text-muted-foreground"
+                    }`}
+                  >
                     <User className="w-4 h-4" />
                   </div>
                   <input
                     type="text"
-                    required
                     autoComplete="username"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Masukkan username atau nomor HP"
+                    onFocus={() => {
+                      setLoginErrors((prev) => ({ ...prev, username: false }));
+                      setErrorMessage("");
+                    }}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      if (loginErrors.username) {
+                        setLoginErrors((prev) => ({ ...prev, username: false }));
+                      }
+                    }}
+                    placeholder={
+                      loginErrors.username ? "Kolom ini wajib diisi!" : "Masukkan username atau nomor HP"
+                    }
                     disabled={isLoading}
-                    className="w-full pl-10 pr-4 py-2.5 bg-background border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
+                    className={`w-full pl-10 pr-28 py-2.5 rounded-xl text-sm font-medium outline-none transition-all disabled:opacity-50 ${
+                      loginErrors.username
+                        ? "bg-red-50/40 dark:bg-red-950/20 border-2 border-red-500 text-red-900 dark:text-red-200 placeholder:text-red-500 placeholder:font-semibold focus:ring-2 focus:ring-red-400"
+                        : "bg-background border border-border text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary focus:border-transparent"
+                    }`}
                   />
+                  {loginErrors.username && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="text-[11px] font-bold text-red-600 bg-red-100 dark:bg-red-900/60 px-2 py-0.5 rounded-md flex items-center gap-1 animate-in fade-in">
+                        <AlertCircle className="w-3 h-3 text-red-600 shrink-0" />
+                        Wajib diisi
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* Password Input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground block">
                   Password
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-muted-foreground">
+                  <div
+                    className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none transition-colors ${
+                      loginErrors.password ? "text-red-500" : "text-muted-foreground"
+                    }`}
+                  >
                     <Lock className="w-4 h-4" />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    required
                     autoComplete="current-password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Masukkan password Anda"
+                    onFocus={() => {
+                      setLoginErrors((prev) => ({ ...prev, password: false }));
+                      setErrorMessage("");
+                    }}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (loginErrors.password) {
+                        setLoginErrors((prev) => ({ ...prev, password: false }));
+                      }
+                    }}
+                    placeholder={
+                      loginErrors.password ? "Password wajib diisi!" : "Masukkan password Anda"
+                    }
                     disabled={isLoading}
-                    className="w-full pl-10 pr-10 py-2.5 bg-background border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
+                    className={`w-full pl-10 ${loginErrors.password ? "pr-32" : "pr-10"} py-2.5 rounded-xl text-sm font-medium outline-none transition-all disabled:opacity-50 ${
+                      loginErrors.password
+                        ? "bg-red-50/40 dark:bg-red-950/20 border-2 border-red-500 text-red-900 dark:text-red-200 placeholder:text-red-500 placeholder:font-semibold focus:ring-2 focus:ring-red-400"
+                        : "bg-background border border-border text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary focus:border-transparent"
+                    }`}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    tabIndex={-1}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+                    {loginErrors.password && (
+                      <span className="text-[11px] font-bold text-red-600 bg-red-100 dark:bg-red-900/60 px-2 py-0.5 rounded-md flex items-center gap-1 animate-in fade-in">
+                        <AlertCircle className="w-3 h-3 text-red-600 shrink-0" />
+                        Wajib diisi
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                      className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
+              {/* Submit Button */}
               <div className="pt-2">
                 <button
                   type="submit"
@@ -232,6 +320,7 @@ export const LoginPage = () => {
                 </button>
               </div>
 
+              {/* Bottom Toggle Link */}
               <div className="mt-6 pt-5 border-t border-border/60 text-center">
                 <p className="text-xs text-muted-foreground">
                   Belum memiliki akun usaha?{" "}
@@ -247,150 +336,307 @@ export const LoginPage = () => {
               </div>
             </form>
           ) : (
-            /* MODE: REGISTER (SaaS Owner) */
-            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+            /* ========================================= */
+            /* MODE: REGISTER (SaaS Owner - Berjajar Kebawah) */
+            /* ========================================= */
+            <form onSubmit={handleRegisterSubmit} noValidate className="space-y-3.5">
               <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-emerald-900 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-300 text-[11px] leading-relaxed flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Pendaftaran Usaha Baru:</strong> Anda otomatis didaftarkan sebagai <strong>Owner (Pemilik)</strong> dengan hak akses penuh mengelola produk, gudang, staf admin, dan sales.
+                  <strong>Pendaftaran Usaha Baru:</strong> Anda otomatis didaftarkan sebagai{" "}
+                  <strong>Owner (Pemilik)</strong> dengan hak akses penuh mengelola produk, gudang, staf admin, dan sales.
                 </span>
               </div>
 
-              {/* Nama Usaha */}
+              {/* 1. Nama Usaha / Perusahaan */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-foreground block">
                   Nama Usaha / Perusahaan
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div
+                    className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors ${
+                      regErrors.companyName ? "text-red-500" : "text-muted-foreground"
+                    }`}
+                  >
                     <Building2 className="w-3.5 h-3.5" />
                   </div>
                   <input
                     type="text"
-                    required
                     value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="cth. CV Berkah Snack Nusantara"
+                    onFocus={() => {
+                      setRegErrors((prev) => ({ ...prev, companyName: false }));
+                      setErrorMessage("");
+                    }}
+                    onChange={(e) => {
+                      setCompanyName(e.target.value);
+                      if (regErrors.companyName) {
+                        setRegErrors((prev) => ({ ...prev, companyName: false }));
+                      }
+                    }}
+                    placeholder={
+                      regErrors.companyName ? "Nama usaha wajib diisi!" : "cth. CV Berkah Snack Nusantara"
+                    }
                     disabled={isLoading}
-                    className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+                    className={`w-full pl-9 ${regErrors.companyName ? "pr-24" : "pr-3"} py-2 rounded-xl text-xs font-medium outline-none transition-all disabled:opacity-50 ${
+                      regErrors.companyName
+                        ? "bg-red-50/40 border-2 border-red-500 text-red-900 placeholder:text-red-500 placeholder:font-semibold focus:ring-2 focus:ring-red-400"
+                        : "bg-background border border-border text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    }`}
                   />
+                  {regErrors.companyName && (
+                    <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                      <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
+                        Wajib diisi
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Nama Lengkap Pemilik */}
+              {/* 2. Nama Lengkap Pemilik */}
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-foreground block">
                   Nama Lengkap Pemilik (Owner)
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <div
+                    className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors ${
+                      regErrors.fullName ? "text-red-500" : "text-muted-foreground"
+                    }`}
+                  >
                     <User className="w-3.5 h-3.5" />
                   </div>
                   <input
                     type="text"
-                    required
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="cth. Budi Hartono"
+                    onFocus={() => {
+                      setRegErrors((prev) => ({ ...prev, fullName: false }));
+                      setErrorMessage("");
+                    }}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      if (regErrors.fullName) {
+                        setRegErrors((prev) => ({ ...prev, fullName: false }));
+                      }
+                    }}
+                    placeholder={
+                      regErrors.fullName ? "Nama lengkap wajib diisi!" : "cth. Budi Hartono"
+                    }
                     disabled={isLoading}
-                    className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
+                    className={`w-full pl-9 ${regErrors.fullName ? "pr-24" : "pr-3"} py-2 rounded-xl text-xs font-medium outline-none transition-all disabled:opacity-50 ${
+                      regErrors.fullName
+                        ? "bg-red-50/40 border-2 border-red-500 text-red-900 placeholder:text-red-500 placeholder:font-semibold focus:ring-2 focus:ring-red-400"
+                        : "bg-background border border-border text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    }`}
                   />
+                  {regErrors.fullName && (
+                    <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                      <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
+                        Wajib diisi
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Grid: Username & Phone */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-foreground block">
-                    Username
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                      <AtSign className="w-3.5 h-3.5" />
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      value={regUsername}
-                      onChange={(e) => setRegUsername(e.target.value)}
-                      placeholder="budi_owner"
-                      disabled={isLoading}
-                      className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
-                    />
+              {/* 3. Username Pemilik (Berjajar ke bawah) */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-foreground block">
+                  Username Akun
+                </label>
+                <div className="relative">
+                  <div
+                    className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors ${
+                      regErrors.regUsername ? "text-red-500" : "text-muted-foreground"
+                    }`}
+                  >
+                    <AtSign className="w-3.5 h-3.5" />
                   </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-foreground block">
-                    Nomor WhatsApp / HP
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                      <Phone className="w-3.5 h-3.5" />
+                  <input
+                    type="text"
+                    value={regUsername}
+                    onFocus={() => {
+                      setRegErrors((prev) => ({ ...prev, regUsername: false }));
+                      setErrorMessage("");
+                    }}
+                    onChange={(e) => {
+                      setRegUsername(e.target.value);
+                      if (regErrors.regUsername) {
+                        setRegErrors((prev) => ({ ...prev, regUsername: false }));
+                      }
+                    }}
+                    placeholder={
+                      regErrors.regUsername ? "Username wajib diisi!" : "cth. budi_owner"
+                    }
+                    disabled={isLoading}
+                    className={`w-full pl-9 ${regErrors.regUsername ? "pr-24" : "pr-3"} py-2 rounded-xl text-xs font-medium outline-none transition-all disabled:opacity-50 ${
+                      regErrors.regUsername
+                        ? "bg-red-50/40 border-2 border-red-500 text-red-900 placeholder:text-red-500 placeholder:font-semibold focus:ring-2 focus:ring-red-400"
+                        : "bg-background border border-border text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    }`}
+                  />
+                  {regErrors.regUsername && (
+                    <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                      <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
+                        Wajib diisi
+                      </span>
                     </div>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="08123456789"
-                      disabled={isLoading}
-                      className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
-                    />
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Grid: Password & Confirm */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-foreground block">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                      <Lock className="w-3.5 h-3.5" />
+              {/* 4. Nomor WhatsApp / HP (HANYA ANGKA & Berjajar ke bawah) */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-foreground block">
+                  Nomor WhatsApp / HP (Hanya Angka)
+                </label>
+                <div className="relative">
+                  <div
+                    className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors ${
+                      regErrors.phone ? "text-red-500" : "text-muted-foreground"
+                    }`}
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={phone}
+                    onFocus={() => {
+                      setRegErrors((prev) => ({ ...prev, phone: false }));
+                      setErrorMessage("");
+                    }}
+                    onChange={(e) => {
+                      // Filter ketat: hanya izinkan karakter digit angka (0-9)
+                      const numericOnly = e.target.value.replace(/\D/g, "");
+                      setPhone(numericOnly);
+                      if (regErrors.phone) {
+                        setRegErrors((prev) => ({ ...prev, phone: false }));
+                      }
+                    }}
+                    placeholder={
+                      regErrors.phone ? "Nomor HP wajib diisi!" : "cth. 081234567890"
+                    }
+                    disabled={isLoading}
+                    className={`w-full pl-9 ${regErrors.phone ? "pr-24" : "pr-3"} py-2 rounded-xl text-xs font-medium outline-none transition-all disabled:opacity-50 ${
+                      regErrors.phone
+                        ? "bg-red-50/40 border-2 border-red-500 text-red-900 placeholder:text-red-500 placeholder:font-semibold focus:ring-2 focus:ring-red-400"
+                        : "bg-background border border-border text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    }`}
+                  />
+                  {regErrors.phone && (
+                    <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                      <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
+                        Wajib diisi
+                      </span>
                     </div>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="Min. 5 karakter"
-                      disabled={isLoading}
-                      className="w-full pl-9 pr-8 py-2 bg-background border border-border rounded-xl text-xs font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
-                    />
+                  )}
+                </div>
+              </div>
+
+              {/* 5. Password (Berjajar ke bawah) */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-foreground block">
+                  Password
+                </label>
+                <div className="relative">
+                  <div
+                    className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors ${
+                      regErrors.regPassword ? "text-red-500" : "text-muted-foreground"
+                    }`}
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={regPassword}
+                    onFocus={() => {
+                      setRegErrors((prev) => ({ ...prev, regPassword: false }));
+                      setErrorMessage("");
+                    }}
+                    onChange={(e) => {
+                      setRegPassword(e.target.value);
+                      if (regErrors.regPassword) {
+                        setRegErrors((prev) => ({ ...prev, regPassword: false }));
+                      }
+                    }}
+                    placeholder={
+                      regErrors.regPassword ? "Password wajib diisi!" : "Minimal 5 karakter"
+                    }
+                    disabled={isLoading}
+                    className={`w-full pl-9 ${regErrors.regPassword ? "pr-28" : "pr-8"} py-2 rounded-xl text-xs font-medium outline-none transition-all disabled:opacity-50 ${
+                      regErrors.regPassword
+                        ? "bg-red-50/40 border-2 border-red-500 text-red-900 placeholder:text-red-500 placeholder:font-semibold focus:ring-2 focus:ring-red-400"
+                        : "bg-background border border-border text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    }`}
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1.5">
+                    {regErrors.regPassword && (
+                      <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
+                        Wajib diisi
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex={-1}
-                      className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-muted-foreground hover:text-foreground cursor-pointer"
+                      className="text-muted-foreground hover:text-foreground cursor-pointer p-0.5"
                     >
                       {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
+              </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-foreground block">
-                    Konfirmasi Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    </div>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Ulangi password"
-                      disabled={isLoading}
-                      className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-xs font-medium text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all disabled:opacity-50"
-                    />
+              {/* 6. Konfirmasi Password (Berjajar ke bawah) */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-foreground block">
+                  Konfirmasi Password
+                </label>
+                <div className="relative">
+                  <div
+                    className={`absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors ${
+                      regErrors.confirmPassword ? "text-red-500" : "text-muted-foreground"
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
                   </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onFocus={() => {
+                      setRegErrors((prev) => ({ ...prev, confirmPassword: false }));
+                      setErrorMessage("");
+                    }}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      if (regErrors.confirmPassword) {
+                        setRegErrors((prev) => ({ ...prev, confirmPassword: false }));
+                      }
+                    }}
+                    placeholder={
+                      regErrors.confirmPassword ? "Konfirmasi password wajib diisi!" : "Ulangi password di atas"
+                    }
+                    disabled={isLoading}
+                    className={`w-full pl-9 ${regErrors.confirmPassword ? "pr-24" : "pr-3"} py-2 rounded-xl text-xs font-medium outline-none transition-all disabled:opacity-50 ${
+                      regErrors.confirmPassword
+                        ? "bg-red-50/40 border-2 border-red-500 text-red-900 placeholder:text-red-500 placeholder:font-semibold focus:ring-2 focus:ring-red-400"
+                        : "bg-background border border-border text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    }`}
+                  />
+                  {regErrors.confirmPassword && (
+                    <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                      <span className="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
+                        Wajib diisi
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* Submit Button */}
               <div className="pt-2">
                 <button
                   type="submit"
@@ -408,6 +654,7 @@ export const LoginPage = () => {
                 </button>
               </div>
 
+              {/* Bottom Toggle Link */}
               <div className="mt-5 pt-4 border-t border-border/60 text-center">
                 <p className="text-xs text-muted-foreground">
                   Sudah memiliki akun?{" "}
