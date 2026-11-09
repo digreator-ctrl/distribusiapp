@@ -113,13 +113,16 @@ export const InboundCreate = () => {
   const availableVariants = selectedProduct?.variants || [];
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm">
-      <div className="flex justify-between items-center mb-6 border-b pb-4">
+    <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b pb-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Catat Stok Masuk</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Tambahkan stok baru ke dalam gudang utama per varian produk.</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Catat Stok Masuk</h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Tambahkan stok baru ke dalam gudang utama per varian produk.</p>
         </div>
-        <button onClick={() => navigate("/inbound_batches")} className="px-4 py-2 border rounded-md font-medium shadow-sm hover:bg-muted transition">
+        <button 
+          onClick={() => navigate("/inbound_batches")} 
+          className="w-full sm:w-auto px-4 py-2 border rounded-xl font-medium shadow-xs hover:bg-muted transition text-center text-sm"
+        >
           Kembali
         </button>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, X } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -39,7 +40,7 @@ export const AgentList = () => {
   useEffect(() => {
     const fetchAgents = async () => {
       try {
-        const res = await fetch("http://localhost:8787/api/agents");
+        const res = await fetch(`${API_BASE_URL}/agents`);
         if (res.ok) {
           const json = await res.json();
           setAgents(Array.isArray(json) ? json : []);
@@ -56,15 +57,15 @@ export const AgentList = () => {
   return (
     <>
       {successMsg && <Toast message={successMsg} onClose={() => setSuccessMsg("")} />}
-      <div className="bg-card p-8 rounded-2xl border shadow-sm">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Manajemen Agen</h1>
-            <p className="text-muted-foreground mt-1">Kelola data agen untuk distribusi.</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Manajemen Agen</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Kelola data agen untuk distribusi.</p>
           </div>
           <button 
             onClick={() => navigate("/agents/create")}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium shadow hover:opacity-90 transition"
+            className="w-full sm:w-auto px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-xs hover:opacity-90 transition text-center shrink-0 text-sm"
           >
             + Tambah Agen
           </button>

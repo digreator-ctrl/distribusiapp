@@ -4,6 +4,7 @@ import {
   Store, Plus, Search, MapPin, Phone,
   CheckCircle2, X, Trash2, Edit, Eye, Filter
 } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -50,7 +51,7 @@ export const StoreList = () => {
   const fetchStores = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("http://localhost:8787/api/stores");
+      const res = await fetch(`${API_BASE_URL}/stores`);
       if (res.ok) {
         const json = await res.json();
         setStores(Array.isArray(json) ? json : []);
@@ -77,7 +78,7 @@ export const StoreList = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:8787/api/stores/${storeId}`, {
+      const res = await fetch(`${API_BASE_URL}/stores/${storeId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -131,19 +132,19 @@ export const StoreList = () => {
 
       <div className="space-y-6">
         {/* Header & Action Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-6 rounded-2xl border shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 sm:p-6 rounded-2xl border shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Store className="text-primary w-6 h-6" />
               Mitra Toko
             </h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
               Kelola data toko ritel mitra konsinyasi dan distribusi.
             </p>
           </div>
           <button
             onClick={() => navigate("/stores/create")}
-            className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm shadow hover:opacity-90 transition flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm shadow hover:opacity-90 transition flex items-center justify-center gap-2"
           >
             <Plus size={16} />
             <span>Tambah Mitra Toko</span>
@@ -151,31 +152,31 @@ export const StoreList = () => {
         </div>
 
         {/* Metrics Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-card p-5 rounded-2xl border shadow-xs space-y-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="bg-card p-4 sm:p-5 rounded-2xl border shadow-xs space-y-1">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Mitra Toko</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black text-foreground">{stores.length}</span>
+              <span className="text-2xl sm:text-3xl font-black text-foreground">{stores.length}</span>
               <span className="text-xs text-emerald-600 font-bold">({totalActiveStores} Aktif)</span>
             </div>
           </div>
 
-          <div className="bg-card p-5 rounded-2xl border shadow-xs space-y-1">
+          <div className="bg-card p-4 sm:p-5 rounded-2xl border shadow-xs space-y-1">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Stok di Toko</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black text-foreground">{totalStockInStores}</span>
+              <span className="text-2xl sm:text-3xl font-black text-foreground">{totalStockInStores}</span>
               <span className="text-xs text-muted-foreground font-semibold">pcs</span>
             </div>
           </div>
 
-          <div className="bg-card p-5 rounded-2xl border shadow-xs space-y-1">
+          <div className="bg-card p-4 sm:p-5 rounded-2xl border shadow-xs space-y-1 sm:col-span-2 md:col-span-1">
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Piutang Toko</span>
-            <p className="text-2xl font-black text-amber-600">{formatRupiah(totalDebtStores)}</p>
+            <p className="text-xl sm:text-2xl font-black text-amber-600">{formatRupiah(totalDebtStores)}</p>
           </div>
         </div>
 
         {/* Table & Filter Container */}
-        <div className="bg-card rounded-2xl border shadow-sm p-6 space-y-4">
+        <div className="bg-card rounded-2xl border shadow-sm p-4 sm:p-6 space-y-4">
           {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
             <div className="relative w-full sm:w-72">

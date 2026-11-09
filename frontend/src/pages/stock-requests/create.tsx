@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Plus, Trash2, Package, CheckCircle2, XCircle, FileText } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 // Komponen Floating Toast Notification
 const Toast = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {
@@ -68,7 +69,7 @@ export const StockRequestCreate = () => {
     const fetchData = async () => {
       try {
         // Fetch variants
-        const resProd = await fetch("http://localhost:8787/api/products");
+        const resProd = await fetch(`${API_BASE_URL}/products`);
         if (resProd.ok) {
           const products = await resProd.json();
           let allVariants: any[] = [];
@@ -81,20 +82,20 @@ export const StockRequestCreate = () => {
         }
 
         // Fetch batches (inbound)
-        const resBatches = await fetch("http://localhost:8787/api/inbound_batches");
+        const resBatches = await fetch(`${API_BASE_URL}/inbound_batches`);
         if (resBatches.ok) {
           setBatches(await resBatches.json());
         }
 
         // Fetch targets if admin
         if (!isSales) {
-          const resUsers = await fetch("http://localhost:8787/api/users");
+          const resUsers = await fetch(`${API_BASE_URL}/users`);
           if (resUsers.ok) {
             const data = await resUsers.json();
             setUsers(data.filter((u: any) => u.role === "sales"));
           }
           
-          const resAgents = await fetch("http://localhost:8787/api/agents");
+          const resAgents = await fetch(`${API_BASE_URL}/agents`);
           if (resAgents.ok) {
             setAgents(await resAgents.json());
           }
@@ -196,7 +197,7 @@ export const StockRequestCreate = () => {
     try {
       const validItems = items.map(i => ({ ...i, quantity: Number(i.quantity) }));
       
-      const res = await fetch("http://localhost:8787/api/stock-requests", {
+      const res = await fetch(`${API_BASE_URL}/stock-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

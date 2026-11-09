@@ -5,6 +5,7 @@ import {
   Users, Store, UserCheck, ChevronRight, LayoutGrid, List, 
   Search, ArrowRight, Clock, ShieldCheck
 } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 export const StockRequestList = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export const StockRequestList = () => {
     setIsLoading(true);
     try {
       // Pada sisi Owner/Admin, muat seluruh data tanpa dibatasi oleh sales_id tertentu
-      const res = await fetch("http://localhost:8787/api/stock-requests");
+      const res = await fetch(`${API_BASE_URL}/stock-requests`);
       if (res.ok) {
         const json = await res.json();
         setRequests(Array.isArray(json) ? json : []);

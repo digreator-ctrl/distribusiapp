@@ -90,13 +90,16 @@ export const SupplierCreate = () => {
     <>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="bg-card p-8 rounded-2xl border shadow-sm">
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
+      <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b pb-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Tambah Supplier</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Tambahkan data mitra pembuat produk atau penyuplai.</p>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Tambah Supplier</h1>
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Tambahkan data mitra pembuat produk atau penyuplai.</p>
           </div>
-          <button onClick={() => navigate("/suppliers")} className="px-4 py-2 border rounded-md font-medium shadow-sm hover:bg-muted transition">
+          <button 
+            onClick={() => navigate("/suppliers")} 
+            className="w-full sm:w-auto px-4 py-2 border rounded-xl font-medium shadow-xs hover:bg-muted transition text-center text-sm"
+          >
             Kembali
           </button>
         </div>

@@ -176,20 +176,20 @@ export const ProductCreate = () => {
   };
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm">
+    <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       
-      <div className="flex justify-between items-center mb-6 border-b pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b pb-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tambah Produk Baru</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Masukkan informasi dasar produk beserta varian (jika ada).</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Tambah Produk Baru</h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Masukkan informasi dasar produk beserta varian (jika ada).</p>
         </div>
         <button 
           onClick={() => {
             if (returnTo) navigate(returnTo);
             else navigate("/products");
           }}
-          className="px-4 py-2 border rounded-md font-medium shadow-sm hover:bg-muted transition"
+          className="w-full sm:w-auto px-4 py-2 border rounded-xl font-medium shadow-xs hover:bg-muted transition text-center text-sm"
         >
           Kembali
         </button>

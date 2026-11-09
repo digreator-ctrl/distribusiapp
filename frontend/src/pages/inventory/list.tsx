@@ -105,32 +105,32 @@ export const InventoryList = () => {
   const totalPhysicalStock = filteredAndSortedItems.reduce((acc, curr) => acc + (Number(curr.total_stock) || 0), 0);
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Stok Gudang</h1>
-          <p className="text-muted-foreground mt-1">Pantau ketersediaan stok riil produk dan varian yang tersimpan di gudang utama.</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Stok Gudang</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Pantau ketersediaan stok riil produk dan varian yang tersimpan di gudang utama.</p>
         </div>
-        <div className="text-right text-sm text-muted-foreground">
+        <div className="text-left sm:text-right text-xs sm:text-sm text-muted-foreground bg-muted/40 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-border/60">
           <p>Total Item: <span className="font-semibold text-foreground">{filteredAndSortedItems.length}</span></p>
           <p>Total Stok: <span className="font-semibold text-foreground">{totalPhysicalStock.toLocaleString("id-ID")} pcs</span></p>
         </div>
       </div>
 
       {/* Control Bar: Search, Filters, Sort */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex gap-3 mb-6">
         <input 
           type="text"
           placeholder="Cari produk / SKU..."
           value={searchTerm}
           onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="p-2 border rounded-md flex-1 focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl lg:flex-1 focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         />
         
         <select 
           value={filterCategory}
           onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-          className="p-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         >
           <option value="ALL">Semua Kategori</option>
           {categories.filter(c => c !== "ALL").map(c => (
@@ -141,7 +141,7 @@ export const InventoryList = () => {
         <select 
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
-          className="p-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         >
           <option value="name_asc">Nama (A - Z)</option>
           <option value="name_desc">Nama (Z - A)</option>
@@ -224,25 +224,25 @@ export const InventoryList = () => {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
-              <div>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-xs sm:text-sm text-muted-foreground mt-3 pt-2">
+              <div className="text-center sm:text-left">
                 Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredAndSortedItems.length)} dari {filteredAndSortedItems.length} item
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-3 py-1.5 border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
                 >
                   Sebelumnya
                 </button>
                 <div className="flex items-center px-2 font-medium">
-                  Halaman {currentPage} dari {totalPages}
+                  {currentPage} / {totalPages}
                 </div>
                 <button 
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-3 py-1.5 border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
                 >
                   Selanjutnya
                 </button>

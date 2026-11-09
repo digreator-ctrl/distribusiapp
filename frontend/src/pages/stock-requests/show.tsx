@@ -5,6 +5,7 @@ import {
   FileText, User, AlertCircle 
 } from "lucide-react";
 import { ConfirmModal } from "../../components/ConfirmModal";
+import { API_BASE_URL } from "../../config/api";
 
 // Komponen Web Toast Floating Notification
 const Toast = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {
@@ -75,7 +76,7 @@ export const StockRequestShow = () => {
 
   const fetchRequest = async () => {
     try {
-      const res = await fetch(`http://localhost:8787/api/stock-requests/${id}`);
+      const res = await fetch(`${API_BASE_URL}/stock-requests/${id}`);
       if (res.ok) {
         const data = await res.json();
         // Inisialisasi approved_quantity kosong ("") jika status masih pending dan butuh respons pengguna,
@@ -203,7 +204,7 @@ export const StockRequestShow = () => {
             approved_quantity: 0
           }));
 
-      const res = await fetch(`http://localhost:8787/api/stock-requests/${id}/respond`, {
+      const res = await fetch(`${API_BASE_URL}/stock-requests/${id}/respond`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -236,7 +237,7 @@ export const StockRequestShow = () => {
 
   const handleDelete = async () => {
     try {
-      const res = await fetch(`http://localhost:8787/api/stock-requests/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE_URL}/stock-requests/${id}`, { method: "DELETE" });
       if (res.ok) {
         if (isSales) {
           const targetSubTab = searchParams.get("subTab") || "request";

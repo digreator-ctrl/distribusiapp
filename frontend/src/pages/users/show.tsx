@@ -65,36 +65,38 @@ export const UserShow = () => {
   }
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm">
-      <div className="flex items-center gap-4 mb-8 pb-6 border-b border-border/50">
-        <button 
-          onClick={() => navigate("/users")}
-          className="p-2 -ml-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <UserIcon className="w-8 h-8" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{user.full_name || user.username}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-muted-foreground font-medium">@{user.username}</span>
-            <span className="text-muted-foreground text-xs">•</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-              user.role === 'owner' ? 'bg-amber-100 text-amber-800' :
-              user.role === 'admin' ? 'bg-emerald-100 text-emerald-800' :
-              'bg-sky-100 text-sky-800'
-            }`}>
-              {user.role}
-            </span>
+    <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-border/50">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button 
+            onClick={() => navigate("/users")}
+            className="p-2 -ml-2 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <UserIcon className="w-6 h-6 sm:w-8 sm:h-8" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{user.full_name || user.username}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-muted-foreground font-medium text-xs sm:text-sm">@{user.username}</span>
+              <span className="text-muted-foreground text-xs">•</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                user.role === 'owner' ? 'bg-amber-100 text-amber-800' :
+                user.role === 'admin' ? 'bg-emerald-100 text-emerald-800' :
+                'bg-sky-100 text-sky-800'
+              }`}>
+                {user.role}
+              </span>
+            </div>
           </div>
         </div>
         
-        <div className="ml-auto flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
           <button 
             onClick={() => navigate(`/users/${id}/edit`)}
-            className="px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2 text-sm"
+            className="px-3.5 sm:px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-xl font-bold shadow-xs transition-colors flex items-center gap-2 text-xs sm:text-sm"
           >
             <Edit3 className="w-4 h-4" /> Edit Pengguna
           </button>
@@ -103,7 +105,7 @@ export const UserShow = () => {
             <button 
               onClick={() => setShowConfirm(true)}
               disabled={isDeleting}
-              className="px-4 py-2 bg-red-100 text-red-600 hover:bg-red-600 hover:text-white rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2 text-sm disabled:opacity-50"
+              className="px-3.5 sm:px-4 py-2 bg-red-100 text-red-600 hover:bg-red-600 hover:text-white rounded-xl font-bold shadow-xs transition-colors flex items-center gap-2 text-xs sm:text-sm disabled:opacity-50"
             >
               <Trash2 className="w-4 h-4" /> {isDeleting ? "Menghapus..." : "Hapus"}
             </button>

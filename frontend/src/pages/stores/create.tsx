@@ -4,6 +4,7 @@ import {
   Store, ArrowLeft, Check, AlertCircle, CheckCircle2, X,
   MapPin, ExternalLink
 } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 import {
   PROVINCES_DATA,
   fetchRegencies,
@@ -416,7 +417,7 @@ export const StoreCreate = () => {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("http://localhost:8787/api/stores", {
+      const res = await fetch(`${API_BASE_URL}/stores`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -488,7 +489,7 @@ export const StoreCreate = () => {
         </div>
 
         {/* Form Container */}
-        <div className="bg-card border border-border rounded-2xl shadow-sm p-6 space-y-6">
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-6 lg:p-8 space-y-6">
           <div>
             <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
               <Store className="text-primary w-6 h-6" />

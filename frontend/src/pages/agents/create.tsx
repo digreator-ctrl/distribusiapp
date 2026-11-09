@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Save, CheckCircle2, XCircle } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 // Komponen Notifikasi Float Kustom
 const Toast = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {
@@ -60,7 +61,7 @@ export const AgentCreate = () => {
     setIsSubmitting(true);
     
     try {
-      const res = await fetch("http://localhost:8787/api/agents", {
+      const res = await fetch(`${API_BASE_URL}/agents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -79,16 +80,16 @@ export const AgentCreate = () => {
   return (
     <>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <div className="bg-card p-8 rounded-2xl border shadow-sm">
-        <div className="flex justify-between items-center mb-6 pb-4 border-b">
+      <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Tambah Agen Baru</h1>
-            <p className="text-muted-foreground mt-1 text-sm">Formulir pendaftaran agen distribusi.</p>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Tambah Agen Baru</h1>
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Formulir pendaftaran agen distribusi.</p>
           </div>
           <button 
             type="button" 
             onClick={() => navigate("/agents")}
-            className="px-4 py-2 border rounded-md font-medium shadow-sm hover:bg-muted transition"
+            className="w-full sm:w-auto px-4 py-2 border rounded-xl font-medium shadow-xs hover:bg-muted transition text-center text-sm"
           >
             Batal
           </button>

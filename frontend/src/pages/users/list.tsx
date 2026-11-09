@@ -58,15 +58,15 @@ export const UserList = () => {
   return (
     <>
       {successMsg && <Toast message={successMsg} onClose={() => setSuccessMsg("")} />}
-      <div className="bg-card p-8 rounded-2xl border shadow-sm">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Manajemen Pengguna</h1>
-            <p className="text-muted-foreground mt-1">Kelola data karyawan (Admin & Sales) untuk sistem ini.</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Manajemen Pengguna</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Kelola data karyawan (Admin & Sales) untuk sistem ini.</p>
           </div>
           <button 
             onClick={() => navigate("/users/create")}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium shadow hover:opacity-90 transition"
+            className="w-full sm:w-auto px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-xs hover:opacity-90 transition text-center shrink-0 text-sm"
           >
             + Tambah Pengguna
           </button>

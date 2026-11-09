@@ -89,10 +89,10 @@ export const DashboardPage = () => {
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="bg-card p-6 md:p-8 rounded-2xl border shadow-xs relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-xs relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                 <Building2 size={12} />
                 {tenantName}
@@ -102,15 +102,15 @@ export const DashboardPage = () => {
                 {role === "owner" ? "Owner Usaha" : "Admin Gudang"}
               </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-foreground">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-foreground">
               Dashboard {role === "owner" ? "Owner" : "Admin Gudang"}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Selamat datang, <strong className="text-foreground font-semibold">{userName}</strong>! Pantau performa rantai pasok dan distribusi secara real-time.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <button
               onClick={fetchSummary}
               disabled={loading}
@@ -137,10 +137,10 @@ export const DashboardPage = () => {
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         {/* Ringkasan Keuangan (Khusus Owner) */}
         {role === "owner" && (
-          <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/25 md:col-span-3 shadow-xs">
+          <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/25 sm:col-span-2 lg:col-span-3 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold">
@@ -156,7 +156,7 @@ export const DashboardPage = () => {
             </div>
             
             <div className="mt-4 flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-              <p className="text-3xl md:text-4xl font-black text-purple-700 dark:text-purple-300 tracking-tight">
+              <p className="text-2xl sm:text-3xl md:text-4xl font-black text-purple-700 dark:text-purple-300 tracking-tight">
                 {loading ? "Rp ..." : formatRupiah(data.monthly_revenue)}
               </p>
               <p className="text-xs text-muted-foreground">
@@ -253,22 +253,22 @@ export const DashboardPage = () => {
 
       {/* Panduan Langkah Awal untuk Usaha Baru (Jika belum ada data produk & toko) */}
       {isBrandNewBusiness && !loading && (
-        <div className="mt-8 bg-card border border-primary/20 rounded-2xl p-6 md:p-8 shadow-xs">
+        <div className="mt-8 bg-card border border-primary/20 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-xs">
           <div className="flex items-start gap-3 mb-6">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary mt-1">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary mt-1 shrink-0">
               <CheckCircle2 size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">
+              <h2 className="text-base sm:text-lg font-bold text-foreground">
                 Mulai Mengatur Usaha Anda: {tenantName}
               </h2>
-              <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                 Akun usaha Anda masih bersih dan siap digunakan. Ikuti langkah-langkah berikut untuk memulai operasional:
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Step 1: Produk */}
             <div className="p-4 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors flex flex-col justify-between">
               <div>

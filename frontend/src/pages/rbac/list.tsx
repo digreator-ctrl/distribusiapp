@@ -13,16 +13,16 @@ export const RbacList = () => {
   }, []);
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+    <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Manajemen RBAC &amp; Hak Akses</h1>
-          <p className="text-muted-foreground mt-1">Daftar role pengguna. Klik salah satu role untuk melihat dan mengatur hak aksesnya.</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Manajemen RBAC &amp; Hak Akses</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Daftar role pengguna. Klik salah satu role untuk melihat dan mengatur hak aksesnya.</p>
         </div>
         <button
           id="btn-add-role"
           onClick={() => navigate("/rbac/create")}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium shadow hover:opacity-90 transition flex items-center gap-2 shrink-0"
+          className="w-full sm:w-auto px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-xs hover:opacity-90 transition flex items-center justify-center gap-2 shrink-0 text-sm"
         >
           <Plus className="w-4 h-4" /> Tambah Role
         </button>

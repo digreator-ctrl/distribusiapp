@@ -95,20 +95,20 @@ export const RbacShow = () => {
           <div>
             <button
               onClick={() => navigate("/rbac")}
-              className="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-bold hover:bg-muted transition mb-3 shadow-sm"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 border rounded-xl text-xs sm:text-sm font-bold hover:bg-muted transition mb-3 shadow-xs"
             >
               ← Kembali ke Daftar Role
             </button>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{role.name}</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">{role.name}</h1>
               <span className={`text-xs px-3 py-1 rounded-full font-bold border uppercase ${COLOR_CLASSES[role.color] || COLOR_CLASSES.purple}`}>
                 {role.status}
               </span>
             </div>
-            <p className="text-muted-foreground mt-1">Detail role dan hak akses CRUD per modul aplikasi.</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Detail role dan hak akses CRUD per modul aplikasi.</p>
           </div>
 
-          <div className="flex gap-2 shrink-0 mt-2 md:mt-0">
+          <div className="flex flex-wrap gap-2 shrink-0 mt-2 md:mt-0">
             {locked ? (
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold border bg-muted text-muted-foreground">
                 <Lock className="w-3.5 h-3.5" /> Role sistem (terkunci)

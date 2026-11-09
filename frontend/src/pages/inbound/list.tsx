@@ -118,34 +118,34 @@ export const InboundList = () => {
   return (
     <>
       {successMsg && <Toast message={successMsg} onClose={() => setSuccessMsg("")} />}
-      <div className="bg-card p-8 rounded-2xl border shadow-sm">
-      <div className="flex justify-between items-center mb-6">
+      <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Stok Masuk (Inbound)</h1>
-          <p className="text-muted-foreground mt-1">Pencatatan batch produk masuk dari internal atau rekanan.</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Stok Masuk (Inbound)</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Pencatatan batch produk masuk dari internal atau rekanan.</p>
         </div>
         <button 
           onClick={() => navigate("/inbound_batches/create")}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium shadow hover:opacity-90 transition shrink-0"
+          className="w-full sm:w-auto px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-xs hover:opacity-90 transition shrink-0 text-center text-sm"
         >
           + Catat Stok Masuk
         </button>
       </div>
 
       {/* Control Bar: Search, Filters, Sort */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex gap-3 mb-6">
         <input 
           type="text"
           placeholder="Cari produk atau supplier..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="p-2 border rounded-md flex-1 focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl lg:flex-1 focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         />
         
         <select 
           value={filterSupplier}
           onChange={(e) => setFilterSupplier(e.target.value)}
-          className="p-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         >
           <option value="ALL">Semua Supplier</option>
           {uniqueSuppliers.filter(s => s !== "ALL").map(s => (
@@ -156,7 +156,7 @@ export const InboundList = () => {
         <select 
           value={sortOption}
           onChange={(e) => setSortOption(e.target.value)}
-          className="p-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         >
           <option value="date_desc">Tanggal Masuk (Terbaru)</option>
           <option value="date_asc">Tanggal Masuk (Terlama)</option>

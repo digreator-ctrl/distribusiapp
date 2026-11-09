@@ -110,34 +110,34 @@ export const ProductList = () => {
   );
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Katalog Produk</h1>
-          <p className="text-muted-foreground mt-1">Kelola data master produk, varian, dan harga. Klik baris untuk melihat detail.</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Katalog Produk</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">Kelola data master produk, varian, dan harga. Klik baris untuk melihat detail.</p>
         </div>
         <button 
           onClick={() => navigate("/products/create")}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium shadow hover:opacity-90 transition"
+          className="w-full sm:w-auto px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-xs hover:opacity-90 transition text-center shrink-0 text-sm"
         >
           + Tambah Produk
         </button>
       </div>
 
       {/* Control Bar: Search, Filters, Sort */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex gap-3 mb-6">
         <input 
           type="text"
           placeholder="Cari produk, kategori, atau merk..."
           value={searchQuery}
           onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-          className="p-2 border rounded-md flex-1 focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl lg:flex-1 focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         />
         
         <select 
           value={filterCategory}
           onChange={(e) => { setFilterCategory(e.target.value); setCurrentPage(1); }}
-          className="p-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         >
           <option value="ALL">Semua Kategori</option>
           {categories.filter(c => c !== "ALL").map(c => (
@@ -148,7 +148,7 @@ export const ProductList = () => {
         <select 
           value={filterBrand}
           onChange={(e) => { setFilterBrand(e.target.value); setCurrentPage(1); }}
-          className="p-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         >
           <option value="ALL">Semua Merk</option>
           {brands.filter(b => b !== "ALL").map(b => (
@@ -159,7 +159,7 @@ export const ProductList = () => {
         <select 
           value={sortOption}
           onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
-          className="p-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
         >
           <option value="name_asc">Nama (A-Z)</option>
           <option value="name_desc">Nama (Z-A)</option>
@@ -242,25 +242,25 @@ export const ProductList = () => {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
-              <div>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-xs sm:text-sm text-muted-foreground mt-3 pt-2">
+              <div className="text-center sm:text-left">
                 Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredAndSortedProducts.length)} dari {filteredAndSortedProducts.length} produk
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-3 py-1.5 border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
                 >
                   Sebelumnya
                 </button>
                 <div className="flex items-center px-2 font-medium">
-                  Halaman {currentPage} dari {totalPages}
+                  {currentPage} / {totalPages}
                 </div>
                 <button 
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 border rounded hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="px-3 py-1.5 border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
                 >
                   Selanjutnya
                 </button>

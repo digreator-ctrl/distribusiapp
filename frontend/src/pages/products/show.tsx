@@ -125,13 +125,13 @@ export const ProductShow = () => {
 
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-card p-6 rounded-2xl border shadow-sm">
+        <div className="bg-card p-4 sm:p-6 rounded-2xl border shadow-sm">
         <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
           <div>
-            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-bold hover:bg-muted transition mb-3 shadow-sm">
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-3.5 py-1.5 border rounded-xl text-xs sm:text-sm font-bold hover:bg-muted transition mb-3 shadow-xs">
               <span>←</span> Kembali
             </button>
-            <h1 className="text-2xl font-black tracking-tight">{product.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">{product.name}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               {product.category && <span className="text-xs bg-muted border px-3 py-1 rounded-full text-muted-foreground font-medium">{product.category}</span>}
               {product.brand && <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-bold">{product.brand}</span>}
@@ -154,15 +154,15 @@ export const ProductShow = () => {
             </div>
             <p className="text-xs text-muted-foreground mt-3 font-mono">ID: {product.id}</p>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <button onClick={toggleStatus} className={`px-4 py-2 rounded-lg text-xs font-bold border transition ${product.is_active ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}>
+          <div className="flex flex-wrap gap-2 shrink-0">
+            <button onClick={toggleStatus} className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold border transition ${product.is_active ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}`}>
               {product.is_active ? "Nonaktifkan" : "Aktifkan"}
             </button>
-            <button onClick={() => navigate(`/products/${id}/edit`)} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow hover:bg-primary/90 transition">
+            <button onClick={() => navigate(`/products/${id}/edit`)} className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold shadow hover:bg-primary/90 transition">
               Edit Produk
             </button>
             {userRole === "owner" && (
-              <button onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold shadow hover:bg-red-700 transition">
+              <button onClick={() => setShowDeleteConfirm(true)} className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold shadow hover:bg-red-700 transition">
                 Hapus
               </button>
             )}

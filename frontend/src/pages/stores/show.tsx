@@ -4,6 +4,7 @@ import {
   ArrowLeft, Edit, Trash2, Phone, Compass,
   AlertCircle, User, MapPin
 } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 
 export const StoreShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +28,7 @@ export const StoreShow = () => {
       if (!store) {
         setIsLoading(true);
       }
-      const res = await fetch(`http://localhost:8787/api/stores/${id}`);
+      const res = await fetch(`${API_BASE_URL}/stores/${id}`);
       if (res.ok) {
         const data = await res.json();
         setStore(data);
@@ -61,7 +62,7 @@ export const StoreShow = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:8787/api/stores/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/stores/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -133,7 +134,7 @@ export const StoreShow = () => {
   return (
     <div className="space-y-6">
       {/* Top Header & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-6 rounded-2xl border shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 sm:p-6 rounded-2xl border shadow-sm">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/stores")}

@@ -4,6 +4,7 @@ import {
   Store, ArrowLeft, Check, AlertCircle,
   MapPin, ExternalLink, Loader2
 } from "lucide-react";
+import { API_BASE_URL } from "../../config/api";
 import {
   PROVINCES_DATA,
   fetchRegencies,
@@ -63,7 +64,7 @@ export const StoreEdit = () => {
       if (!id) return;
       try {
         setIsLoading(true);
-        const res = await fetch(`http://localhost:8787/api/stores/${id}`);
+        const res = await fetch(`${API_BASE_URL}/stores/${id}`);
         if (res.ok) {
           const data = await res.json();
           setName(data.name || "");
@@ -337,7 +338,7 @@ export const StoreEdit = () => {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`http://localhost:8787/api/stores/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/stores/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -393,7 +394,7 @@ export const StoreEdit = () => {
         </button>
       </div>
 
-      <div className="bg-card p-8 rounded-2xl border shadow-sm space-y-6">
+      <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Store className="text-primary w-6 h-6" />

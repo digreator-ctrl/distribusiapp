@@ -186,17 +186,17 @@ export const ProductEdit = () => {
   if (isLoading) return <div className="py-20 text-center text-muted-foreground animate-pulse">Memuat data produk untuk diedit...</div>;
 
   return (
-    <div className="bg-card p-8 rounded-2xl border shadow-sm max-w-3xl mx-auto">
+    <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm max-w-3xl mx-auto">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex justify-between items-center mb-6 border-b pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b pb-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Produk</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Perbarui informasi produk <strong>{formData.name}</strong>.</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Edit Produk</h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">Perbarui informasi produk <strong>{formData.name}</strong>.</p>
         </div>
         <button
           onClick={() => navigate(`/products/${id}`)}
-          className="px-5 py-2.5 border rounded-xl font-bold text-sm shadow-sm hover:bg-muted transition"
+          className="w-full sm:w-auto px-4 py-2 border rounded-xl font-bold text-sm shadow-xs hover:bg-muted transition text-center"
         >
           ← Kembali ke Detail
         </button>

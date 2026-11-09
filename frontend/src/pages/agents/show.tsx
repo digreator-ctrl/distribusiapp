@@ -125,24 +125,24 @@ export const AgentShow = () => {
           <div>
             <button 
               onClick={() => navigate("/agents")} 
-              className="inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-bold hover:bg-muted transition mb-3 shadow-sm"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 border rounded-xl text-xs sm:text-sm font-bold hover:bg-muted transition mb-3 shadow-xs"
             >
               <ArrowLeft className="w-4 h-4" /> Kembali ke Daftar Agen
             </button>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{agent.name}</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">{agent.name}</h1>
               <span className={`text-xs px-3 py-1 rounded-full font-bold border ${
                 agent.status === "Aktif" ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'
               }`}>
                 ● {agent.status}
               </span>
             </div>
-            <p className="text-muted-foreground mt-1">Informasi profil agen mitra bisnis dan riwayat alokasi distribusi stok.</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Informasi profil agen mitra bisnis dan riwayat alokasi distribusi stok.</p>
           </div>
-          <div className="flex gap-2 shrink-0 mt-2 md:mt-0">
+          <div className="flex flex-wrap gap-2 shrink-0 mt-2 md:mt-0">
             <button 
               onClick={toggleStatus} 
-              className={`px-4 py-2 rounded-lg text-xs font-bold border transition ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold border transition ${
                 agent.status === "Aktif" ? 'text-orange-600 hover:bg-orange-50' : 'text-emerald-700 hover:bg-emerald-50'
               }`}
             >
@@ -150,14 +150,14 @@ export const AgentShow = () => {
             </button>
             <button 
               onClick={() => navigate(`/agents/${id}/edit`)} 
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold shadow hover:bg-primary/90 transition flex items-center gap-1.5"
+              className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold shadow hover:bg-primary/90 transition flex items-center gap-1.5"
             >
               <Edit3 className="w-3.5 h-3.5" /> Edit
             </button>
             {userRole === "owner" && (
               <button 
                 onClick={() => setShowDeleteConfirm(true)} 
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold shadow hover:bg-red-700 transition flex items-center gap-1.5"
+                className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold shadow hover:bg-red-700 transition flex items-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Hapus
               </button>
@@ -166,7 +166,7 @@ export const AgentShow = () => {
         </div>
 
         {/* 1. Informasi Utama */}
-        <div className="bg-card p-6 rounded-2xl border shadow-sm space-y-4">
+        <div className="bg-card p-4 sm:p-6 rounded-2xl border shadow-sm space-y-4">
           <h2 className="text-lg font-bold border-b pb-2 flex items-center justify-between">
             <span>Informasi Utama</span>
             <span className="text-xs font-mono font-normal text-muted-foreground">ID: {agent.id}</span>
