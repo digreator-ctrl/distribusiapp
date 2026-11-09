@@ -224,140 +224,190 @@ export const DashboardPage = () => {
         </div>
       </div>
 
-      {/* 4. Ringkasan Operasional (2 Kolom di Mobile, 3 di Tablet, 5 di Desktop) */}
-      <div className="space-y-1.5">
-        <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground px-1">
+      {/* 4. Ringkasan Operasional (Mobile: 2 Kolom Kompak; Desktop/Tablet: Per Card 1 Baris Penuh) */}
+      <div className="space-y-1.5 sm:space-y-2">
+        <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-muted-foreground px-1">
           Ringkasan Operasional
         </span>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-1 gap-2.5 sm:gap-3 lg:gap-3.5">
           {/* Card 1: Produk Aktif */}
           <Link
             to="/products"
-            className="p-3 sm:p-4 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-primary/50 transition-all active:scale-[0.98] flex flex-col justify-between group"
+            className="p-3 sm:p-4 lg:p-5 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-primary/50 hover:bg-muted/10 transition-all active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between group"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate mr-1">
-                Katalog Produk
-              </span>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                <Package size={15} />
+            {/* Mobile Top Header / Desktop Left Block */}
+            <div className="flex items-center justify-between sm:justify-start sm:gap-4">
+              <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors order-2 sm:order-1">
+                <Package className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </div>
+              <div className="order-1 sm:order-2 min-w-0">
+                <span className="text-[11px] sm:text-sm font-bold text-muted-foreground sm:text-foreground uppercase sm:normal-case tracking-wider sm:tracking-normal truncate block">
+                  Katalog Produk
+                </span>
+                <p className="text-xs text-muted-foreground hidden sm:block mt-0.5">
+                  Item aktif dalam database katalog penjualan usaha
+                </p>
               </div>
             </div>
-            <div className="mt-2 sm:mt-3">
-              <p className="text-lg sm:text-2xl font-black text-foreground tracking-tight">
-                {loading ? "..." : formatNumber(data.total_products)}
-              </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5">
-                Item aktif
-              </p>
+
+            {/* Mobile Bottom / Desktop Right Metric */}
+            <div className="mt-2 sm:mt-0 flex items-baseline sm:items-center justify-between sm:justify-end gap-3">
+              <div className="text-left sm:text-right">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-black text-foreground tracking-tight">
+                  {loading ? "..." : formatNumber(data.total_products)}
+                  <span className="text-[10px] sm:text-xs lg:text-sm font-normal text-muted-foreground ml-1">item</span>
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate sm:hidden mt-0.5">
+                  Item aktif
+                </p>
+              </div>
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl border border-border/70 group-hover:border-primary/40 group-hover:bg-primary/10 group-hover:text-primary transition-all shrink-0">
+                <span>Detail</span>
+                <ChevronRight size={14} />
+              </span>
             </div>
           </Link>
 
           {/* Card 2: Stok Masuk Hari Ini */}
           <Link
             to="/inbound_batches"
-            className="p-3 sm:p-4 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-blue-500/50 transition-all active:scale-[0.98] flex flex-col justify-between group"
+            className="p-3 sm:p-4 lg:p-5 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-blue-500/50 hover:bg-muted/10 transition-all active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between group"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate mr-1">
-                Stok Masuk
-              </span>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                <ArrowDownToLine size={15} />
+            <div className="flex items-center justify-between sm:justify-start sm:gap-4">
+              <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors order-2 sm:order-1">
+                <ArrowDownToLine className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </div>
+              <div className="order-1 sm:order-2 min-w-0">
+                <span className="text-[11px] sm:text-sm font-bold text-muted-foreground sm:text-foreground uppercase sm:normal-case tracking-wider sm:tracking-normal truncate block">
+                  Stok Masuk (Hari Ini)
+                </span>
+                <p className="text-xs text-muted-foreground hidden sm:block mt-0.5">
+                  Total unit barang yang dicatat masuk ke gudang hari ini
+                </p>
               </div>
             </div>
-            <div className="mt-2 sm:mt-3">
-              <p className="text-lg sm:text-2xl font-black text-blue-600 tracking-tight">
-                {loading ? "..." : formatNumber(data.inbound_today_qty)}
-                <span className="text-[10px] sm:text-xs font-normal text-muted-foreground ml-0.5">pcs</span>
-              </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5">
-                Masuk hari ini
-              </p>
+
+            <div className="mt-2 sm:mt-0 flex items-baseline sm:items-center justify-between sm:justify-end gap-3">
+              <div className="text-left sm:text-right">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-black text-blue-600 tracking-tight">
+                  {loading ? "..." : formatNumber(data.inbound_today_qty)}
+                  <span className="text-[10px] sm:text-xs lg:text-sm font-normal text-muted-foreground ml-1">pcs</span>
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate sm:hidden mt-0.5">
+                  Masuk hari ini
+                </p>
+              </div>
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl border border-border/70 group-hover:border-blue-500/40 group-hover:bg-blue-500/10 group-hover:text-blue-600 transition-all shrink-0">
+                <span>Detail</span>
+                <ChevronRight size={14} />
+              </span>
             </div>
           </Link>
 
           {/* Card 3: Distribusi & Approval */}
           <Link
             to="/stock-requests"
-            className="p-3 sm:p-4 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-emerald-500/50 transition-all active:scale-[0.98] flex flex-col justify-between group"
+            className="p-3 sm:p-4 lg:p-5 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-emerald-500/50 hover:bg-muted/10 transition-all active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between group"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate mr-1">
-                Distribusi
-              </span>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                <Truck size={15} />
+            <div className="flex items-center justify-between sm:justify-start sm:gap-4">
+              <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors order-2 sm:order-1">
+                <Truck className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </div>
+              <div className="order-1 sm:order-2 min-w-0">
+                <span className="text-[11px] sm:text-sm font-bold text-muted-foreground sm:text-foreground uppercase sm:normal-case tracking-wider sm:tracking-normal truncate block">
+                  Permintaan & Distribusi
+                </span>
+                <p className="text-xs text-muted-foreground hidden sm:block mt-0.5">
+                  Tugas pengiriman stok berjalan dan pengajuan menunggu persetujuan
+                </p>
               </div>
             </div>
-            <div className="mt-2 sm:mt-3">
-              <p className="text-lg sm:text-2xl font-black text-emerald-600 tracking-tight">
-                {loading ? "..." : formatNumber(data.active_deliveries)}
-                <span className="text-[10px] sm:text-xs font-normal text-muted-foreground ml-0.5">tugas</span>
-              </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5">
-                Pending & jalan
-              </p>
+
+            <div className="mt-2 sm:mt-0 flex items-baseline sm:items-center justify-between sm:justify-end gap-3">
+              <div className="text-left sm:text-right">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-black text-emerald-600 tracking-tight">
+                  {loading ? "..." : formatNumber(data.active_deliveries)}
+                  <span className="text-[10px] sm:text-xs lg:text-sm font-normal text-muted-foreground ml-1">tugas</span>
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate sm:hidden mt-0.5">
+                  Pending & jalan
+                </p>
+              </div>
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl border border-border/70 group-hover:border-emerald-500/40 group-hover:bg-emerald-500/10 group-hover:text-emerald-600 transition-all shrink-0">
+                <span>Detail</span>
+                <ChevronRight size={14} />
+              </span>
             </div>
           </Link>
 
           {/* Card 4: Mitra Toko */}
           <Link
             to="/stores"
-            className="p-3 sm:p-4 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-amber-500/50 transition-all active:scale-[0.98] flex flex-col justify-between group"
+            className="p-3 sm:p-4 lg:p-5 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-amber-500/50 hover:bg-muted/10 transition-all active:scale-[0.99] flex flex-col sm:flex-row sm:items-center justify-between group"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider truncate mr-1">
-                Mitra Toko
-              </span>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                <Store size={15} />
+            <div className="flex items-center justify-between sm:justify-start sm:gap-4">
+              <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors order-2 sm:order-1">
+                <Store className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </div>
+              <div className="order-1 sm:order-2 min-w-0">
+                <span className="text-[11px] sm:text-sm font-bold text-muted-foreground sm:text-foreground uppercase sm:normal-case tracking-wider sm:tracking-normal truncate block">
+                  Mitra Toko Terdaftar
+                </span>
+                <p className="text-xs text-muted-foreground hidden sm:block mt-0.5">
+                  Jaringan toko dan warung ritel aktif mitra konsinyasi distribusi
+                </p>
               </div>
             </div>
-            <div className="mt-2 sm:mt-3">
-              <p className="text-lg sm:text-2xl font-black text-foreground tracking-tight">
-                {loading ? "..." : formatNumber(data.total_stores)}
-                <span className="text-[10px] sm:text-xs font-normal text-muted-foreground ml-0.5">toko</span>
-              </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5">
-                Konsinyasi
-              </p>
+
+            <div className="mt-2 sm:mt-0 flex items-baseline sm:items-center justify-between sm:justify-end gap-3">
+              <div className="text-left sm:text-right">
+                <p className="text-lg sm:text-2xl lg:text-3xl font-black text-foreground tracking-tight">
+                  {loading ? "..." : formatNumber(data.total_stores)}
+                  <span className="text-[10px] sm:text-xs lg:text-sm font-normal text-muted-foreground ml-1">toko</span>
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate sm:hidden mt-0.5">
+                  Konsinyasi
+                </p>
+              </div>
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl border border-border/70 group-hover:border-amber-500/40 group-hover:bg-amber-500/10 group-hover:text-amber-600 transition-all shrink-0">
+                <span>Detail</span>
+                <ChevronRight size={14} />
+              </span>
             </div>
           </Link>
 
-          {/* Card 5: Tim Sales (Pada mobile col-span-2 agar simetris & hemat tempat) */}
+          {/* Card 5: Tim Sales Lapangan */}
           <Link
             to="/users"
-            className="col-span-2 sm:col-span-1 p-3 sm:p-4 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-indigo-500/50 transition-all active:scale-[0.98] flex sm:flex-col items-center sm:items-stretch justify-between group"
+            className="col-span-2 sm:col-span-1 p-3 sm:p-4 lg:p-5 rounded-2xl bg-card border border-border/80 shadow-2xs hover:border-indigo-500/50 hover:bg-muted/10 transition-all active:scale-[0.99] flex flex-row items-center justify-between group"
           >
-            <div className="flex items-center justify-between sm:w-full">
-              <div className="flex items-center gap-2 sm:gap-0">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0 sm:hidden group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                  <Users size={15} />
-                </div>
-                <div>
-                  <span className="text-[11px] sm:text-xs font-bold text-muted-foreground uppercase tracking-wider block">
-                    Tim Sales Lapangan
-                  </span>
-                  <span className="text-[10px] text-muted-foreground sm:hidden">
-                    Sales aktif bertugas
-                  </span>
-                </div>
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <div className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                <Users className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
               </div>
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500/10 text-indigo-600 hidden sm:flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                <Users size={15} />
+              <div className="min-w-0">
+                <span className="text-[11px] sm:text-sm font-bold text-muted-foreground sm:text-foreground uppercase sm:normal-case tracking-wider sm:tracking-normal truncate block">
+                  Tim Sales Lapangan
+                </span>
+                <p className="text-xs text-muted-foreground hidden sm:block mt-0.5">
+                  Tenaga sales dan armada lapangan yang aktif bertugas
+                </p>
+                <span className="text-[10px] text-muted-foreground sm:hidden truncate block">
+                  Sales aktif bertugas
+                </span>
               </div>
             </div>
 
-            <div className="mt-0 sm:mt-3 text-right sm:text-left flex items-center sm:block gap-2">
-              <p className="text-lg sm:text-2xl font-black text-foreground tracking-tight">
+            <div className="text-right flex items-center gap-2 sm:gap-3 shrink-0">
+              <p className="text-lg sm:text-2xl lg:text-3xl font-black text-foreground tracking-tight">
                 {loading ? "..." : formatNumber(data.total_sales)}
-                <span className="text-[10px] sm:text-xs font-normal text-muted-foreground ml-0.5">orang</span>
+                <span className="text-[10px] sm:text-xs lg:text-sm font-normal text-muted-foreground ml-1">orang</span>
               </p>
-              <p className="text-[10px] sm:text-[11px] text-muted-foreground truncate mt-0.5 hidden sm:block">
-                Bertugas
-              </p>
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl border border-border/70 group-hover:border-indigo-500/40 group-hover:bg-indigo-500/10 group-hover:text-indigo-600 transition-all shrink-0">
+                <span>Detail</span>
+                <ChevronRight size={14} />
+              </span>
               <ChevronRight size={15} className="text-muted-foreground sm:hidden" />
             </div>
           </Link>
