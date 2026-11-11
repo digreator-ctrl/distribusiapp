@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 // ============================================================
@@ -142,6 +143,8 @@ export const ProductCreate = () => {
 
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
+      cache.invalidate("products_list");
+      cache.invalidate("inventory_list");
       setToast({ message: "Data produk beserta variannya telah tersimpan ke dalam sistem.", type: "success" });
       
       // Tunggu sebentar agar user bisa melihat toast, lalu redirect

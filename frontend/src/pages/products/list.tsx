@@ -16,12 +16,15 @@ import {
 } from "lucide-react";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 export const ProductList = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Client-side cache untuk perpindahan halaman instan tanpa jeda loading
+  const cachedProducts = cache.get<any[]>("products_list");
+  const [products, setProducts] = useState<any[]>(() => cachedProducts || []);
+  const [isLoading, setIsLoading] = useState(!cachedProducts);
   const [error, setError] = useState("");
 
   // States for Filter, Search, Sort & Pagination
@@ -33,25 +36,29 @@ export const ProductList = () => {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const itemsPerPage = 10;
 
-  const fetchProducts = useCallback(async () => {
-    setIsLoading(true);
+  const fetchProducts = useCallback(async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
     setError("");
     try {
       const res = await fetch(`${API_URL}/products`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setProducts(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setProducts(list);
+      cache.set("products_list", list);
     } catch (err: any) {
-      setError(`Gagal memuat data: ${err.message}. Pastikan backend sedang berjalan.`);
-      setProducts([]);
+      if (!cachedProducts) {
+        setError(`Gagal memuat data: ${err.message}. Pastikan backend sedang berjalan.`);
+        setProducts([]);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [cachedProducts]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    fetchProducts(Boolean(cachedProducts));
+  }, [fetchProducts, cachedProducts]);
 
   // Derived unique categories and brands for filter dropdowns
   const categories = useMemo(() => {
@@ -352,7 +359,7 @@ export const ProductList = () => {
       ) : error ? (
         <div className="py-10 text-center">
           <p className="text-red-500 font-semibold mb-3 text-sm">{error}</p>
-          <button onClick={fetchProducts} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold">
+          <button onClick={() => fetchProducts(false)} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-semibold">
             Coba Lagi
           </button>
         </div>

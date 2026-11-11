@@ -14,13 +14,16 @@ import {
   Warehouse
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 const API_URL = API_BASE_URL;
 
 export const InventoryList = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Client-side cache untuk perpindahan halaman instan tanpa jeda loading
+  const cachedInventory = cache.get<any[]>("inventory_list");
+  const [items, setItems] = useState<any[]>(() => cachedInventory || []);
+  const [isLoading, setIsLoading] = useState(!cachedInventory);
 
   // States: Search, Filter, Sort, Pagination
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,13 +33,15 @@ export const InventoryList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const fetchInventory = useCallback(async () => {
-    setIsLoading(true);
+  const fetchInventory = useCallback(async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/inventory`);
       if (res.ok) {
         const json = await res.json();
-        setItems(Array.isArray(json) ? json : []);
+        const data = Array.isArray(json) ? json : [];
+        setItems(data);
+        cache.set("inventory_list", data);
       }
     } catch (err) {
       console.error("Gagal mengambil data stok gudang:", err);
@@ -46,8 +51,8 @@ export const InventoryList = () => {
   }, []);
 
   useEffect(() => {
-    fetchInventory();
-  }, [fetchInventory]);
+    fetchInventory(Boolean(cachedInventory));
+  }, [fetchInventory, cachedInventory]);
 
   // Derived filter options
   const categories = useMemo(() => {

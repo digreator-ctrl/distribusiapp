@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 // Toast Kustom
@@ -158,6 +159,8 @@ export const ProductEdit = () => {
       });
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
 
+      cache.invalidate("products_list");
+      cache.invalidate("inventory_list");
       setToast({ message: "Data produk berhasil diperbarui.", type: "success" });
       setTimeout(() => navigate(-1), 1500);
     } catch (err: any) {

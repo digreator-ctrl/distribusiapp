@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, X } from "lucide-react";
 import { useInvalidate } from "@refinedev/core";
+import { cache } from "../../utils/cache";
 
 import { API_BASE_URL } from "../../config/api";
 const API_URL = API_BASE_URL;
@@ -89,6 +90,8 @@ export const InboundCreate = () => {
         resource: "inventory",
         invalidates: ["list"],
       });
+      cache.invalidate("inbound_batches_list");
+      cache.invalidate("inventory_list");
       
       navigate("/inbound_batches", { state: { successMessage: "Berhasil mencatat stok masuk!" } });
     } catch (err) {

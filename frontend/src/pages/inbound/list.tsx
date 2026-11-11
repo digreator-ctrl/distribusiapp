@@ -4,8 +4,7 @@ import {
   useEffect,
   useMemo,
   useCallback } from "react";
-import { useNavigate,
-  useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { 
   CheckCircle2,
   X,
@@ -17,12 +16,10 @@ import {
   Building2,
   Warehouse,
   Calendar,
-  Clock,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown
+  Clock
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -56,28 +53,32 @@ export const InboundList = () => {
     }
   }, [location, navigate]);
 
-  const [batches, setBatches] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Client-side cache untuk perpindahan halaman instan tanpa jeda loading
+  const cachedBatches = cache.get<any[]>("inbound_batches_list");
+  const [batches, setBatches] = useState<any[]>(() => cachedBatches || []);
+  const [isLoading, setIsLoading] = useState(!cachedBatches);
 
-  const fetchBatches = useCallback(async () => {
-    setIsLoading(true);
+  const fetchBatches = useCallback(async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/inbound_batches`);
       if (res.ok) {
         const json = await res.json();
-        setBatches(Array.isArray(json) ? json : []);
+        const data = Array.isArray(json) ? json : [];
+        setBatches(data);
+        cache.set("inbound_batches_list", data);
       }
     } catch (err) {
       console.error("Gagal mengambil data stok masuk:", err);
-      setBatches([]);
+      if (!cachedBatches) setBatches([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [cachedBatches]);
 
   useEffect(() => {
-    fetchBatches();
-  }, [fetchBatches]);
+    fetchBatches(Boolean(cachedBatches));
+  }, [fetchBatches, cachedBatches]);
 
   // Filter, Search, Sort, Pagination States
   const [searchQuery, setSearchQuery] = useState("");
@@ -170,42 +171,6 @@ export const InboundList = () => {
 
     return result;
   }, [batches, searchQuery, filterSupplier, filterVariant, sortOption]);
-
-  // Handler klik header kolom tabel untuk sorting cepat
-  const handleSortClick = (column: "date" | "product" | "variant" | "supplier" | "qty" | "exp") => {
-    setCurrentPage(1);
-    switch (column) {
-      case "date":
-        setSortOption(prev => prev === "date_desc" ? "date_asc" : "date_desc");
-        break;
-      case "product":
-        setSortOption(prev => prev === "product_asc" ? "product_desc" : "product_asc");
-        break;
-      case "variant":
-        setSortOption(prev => prev === "variant_asc" ? "variant_desc" : "variant_asc");
-        break;
-      case "supplier":
-        setSortOption(prev => prev === "supplier_asc" ? "supplier_desc" : "supplier_asc");
-        break;
-      case "qty":
-        setSortOption(prev => prev === "qty_desc" ? "qty_asc" : "qty_desc");
-        break;
-      case "exp":
-        setSortOption(prev => prev === "exp_asc" ? "exp_desc" : "exp_asc");
-        break;
-    }
-  };
-
-  const renderSortIcon = (column: "date" | "product" | "variant" | "supplier" | "qty" | "exp") => {
-    const isCurrent = sortOption.startsWith(column);
-    if (!isCurrent) {
-      return <ArrowUpDown size={13} className="text-muted-foreground/35 group-hover:text-foreground transition-colors shrink-0" />;
-    }
-    if (sortOption.endsWith("_asc")) {
-      return <ArrowUp size={13} className="text-primary font-bold shrink-0" />;
-    }
-    return <ArrowDown size={13} className="text-primary font-bold shrink-0" />;
-  };
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -484,7 +449,7 @@ export const InboundList = () => {
           <div className="py-10 text-center text-muted-foreground animate-pulse text-sm">Memuat data stok masuk...</div>
         ) : (
           <div className="flex flex-col gap-4">
-            {/* A. TAMPILAN KHUSUS MOBILE: KARTU LIST STOK MASUK */}
+            {/* A. TAMPILAN KHUSUS MOBILE: KARTU LIST STOK MASUK (KLIK MASUK KE DETAIL) */}
             <div className="sm:hidden space-y-2.5">
               {paginatedBatches.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground border border-dashed rounded-2xl bg-muted/10">
@@ -516,7 +481,7 @@ export const InboundList = () => {
                       {/* Baris 2: Varian jika ada */}
                       {batch.variant_name && (
                         <p className="text-xs text-muted-foreground mb-1.5 font-medium">
-                          Varian: <span className="text-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">{batch.variant_name}</span>
+                          Varian: <span className="text-foreground">{batch.variant_name}</span>
                         </p>
                       )}
 
@@ -551,71 +516,17 @@ export const InboundList = () => {
               )}
             </div>
 
-            {/* B. TAMPILAN DESKTOP & TABLET: TABEL DENGAN KOLOM VARIAN TERPISAH & SORTING */}
+            {/* B. TAMPILAN DESKTOP & TABLET: TABEL DATA (TANPA ICON SORT DI HEADER, VARIAN POLOS, TIDAK PERLU KLIK KE DETAIL) */}
             <div className="hidden sm:block overflow-x-auto rounded-xl border border-border/50">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                   <tr>
-                    <th 
-                      onClick={() => handleSortClick("date")}
-                      className="px-6 py-4 font-semibold cursor-pointer select-none hover:text-foreground group transition-colors"
-                      title="Klik untuk mengurutkan berdasarkan Tanggal Masuk"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span>Tanggal Stok Masuk</span>
-                        {renderSortIcon("date")}
-                      </div>
-                    </th>
-                    <th 
-                      onClick={() => handleSortClick("product")}
-                      className="px-6 py-4 font-semibold cursor-pointer select-none hover:text-foreground group transition-colors"
-                      title="Klik untuk mengurutkan berdasarkan Produk"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span>Produk</span>
-                        {renderSortIcon("product")}
-                      </div>
-                    </th>
-                    <th 
-                      onClick={() => handleSortClick("variant")}
-                      className="px-6 py-4 font-semibold cursor-pointer select-none hover:text-foreground group transition-colors"
-                      title="Klik untuk mengurutkan berdasarkan Varian"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span>Varian</span>
-                        {renderSortIcon("variant")}
-                      </div>
-                    </th>
-                    <th 
-                      onClick={() => handleSortClick("supplier")}
-                      className="px-6 py-4 font-semibold cursor-pointer select-none hover:text-foreground group transition-colors"
-                      title="Klik untuk mengurutkan berdasarkan Supplier"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span>Supplier</span>
-                        {renderSortIcon("supplier")}
-                      </div>
-                    </th>
-                    <th 
-                      onClick={() => handleSortClick("qty")}
-                      className="px-6 py-4 font-semibold text-right cursor-pointer select-none hover:text-foreground group transition-colors"
-                      title="Klik untuk mengurutkan berdasarkan Jumlah"
-                    >
-                      <div className="flex items-center justify-end gap-1.5">
-                        <span>Jumlah</span>
-                        {renderSortIcon("qty")}
-                      </div>
-                    </th>
-                    <th 
-                      onClick={() => handleSortClick("exp")}
-                      className="px-6 py-4 font-semibold text-destructive cursor-pointer select-none hover:text-destructive/80 group transition-colors"
-                      title="Klik untuk mengurutkan berdasarkan Kedaluwarsa"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span>Kedaluwarsa</span>
-                        {renderSortIcon("exp")}
-                      </div>
-                    </th>
+                    <th className="px-6 py-4 font-semibold">Tanggal Stok Masuk</th>
+                    <th className="px-6 py-4 font-semibold">Produk</th>
+                    <th className="px-6 py-4 font-semibold">Varian</th>
+                    <th className="px-6 py-4 font-semibold">Supplier</th>
+                    <th className="px-6 py-4 font-semibold text-right">Jumlah</th>
+                    <th className="px-6 py-4 font-semibold text-destructive">Kedaluwarsa</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -629,18 +540,15 @@ export const InboundList = () => {
                     paginatedBatches.map((batch: any) => (
                       <tr 
                         key={batch.id} 
-                        onClick={() => navigate(`/inbound_batches/${batch.id}`)}
-                        className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
+                        className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors"
                       >
                         <td className="px-6 py-4 font-medium whitespace-nowrap">{formatDate(batch.production_date)}</td>
                         <td className="px-6 py-4 font-semibold text-foreground">
                           {batch.product_name || batch.product_id}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 font-medium text-foreground">
                           {batch.variant_name ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-                              {batch.variant_name}
-                            </span>
+                            <span>{batch.variant_name}</span>
                           ) : (
                             <span className="text-muted-foreground text-xs italic">-</span>
                           )}
