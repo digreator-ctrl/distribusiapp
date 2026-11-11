@@ -97,23 +97,23 @@ export const SearchableSelect = ({
       <div className="flex items-center justify-between">
         <label
           htmlFor={id}
-          className={`font-bold text-[11px] block transition ${
+          className={`font-bold text-[11px] sm:text-xs block transition ${
             hasError ? "text-red-600 font-extrabold" : "text-foreground"
           }`}
         >
           {label} {required && <span className="text-red-500">*</span>}
         </label>
         {isLoading && (
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-normal">
-            <Loader2 size={10} className="animate-spin text-primary" /> Memuat...
+          <span className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1 font-normal">
+            <Loader2 size={11} className="animate-spin text-primary" /> Memuat...
           </span>
         )}
       </div>
 
       {/* Input Box yang bisa diketik langsung */}
       <div className="relative">
-        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-          <Search size={13} />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+          <Search size={14} />
         </div>
 
         <input
@@ -128,7 +128,7 @@ export const SearchableSelect = ({
           }}
           placeholder={disabled ? disabledPlaceholder : placeholder}
           autoComplete="off"
-          className={`w-full rounded-xl pl-8 pr-14 py-2 text-xs text-foreground transition focus:outline-none disabled:opacity-50 disabled:bg-muted/30 ${
+          className={`w-full rounded-xl pl-9 pr-14 py-2 sm:py-2.5 text-xs sm:text-sm text-foreground transition focus:outline-none disabled:opacity-50 disabled:bg-muted/30 ${
             hasError
               ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200 placeholder:text-red-300"
               : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
@@ -144,7 +144,7 @@ export const SearchableSelect = ({
               className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition"
               title="Hapus pilihan"
             >
-              <X size={12} />
+              <X size={13} />
             </button>
           )}
           <button
@@ -158,14 +158,14 @@ export const SearchableSelect = ({
             }}
             className="p-1 text-muted-foreground hover:text-foreground transition disabled:opacity-40"
           >
-            <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+            <ChevronDown size={15} className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
           </button>
         </div>
       </div>
 
       {/* Dropdown Hasil Pencarian Float */}
       {isOpen && !disabled && (
-        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border shadow-2xl rounded-xl max-h-52 overflow-y-auto text-xs divide-y divide-border/40 animate-in fade-in slide-in-from-top-1">
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border shadow-2xl rounded-xl max-h-56 overflow-y-auto text-xs sm:text-sm divide-y divide-border/40 animate-in fade-in slide-in-from-top-1">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((opt) => {
               const isSelected = opt.name === value || opt.id === value;
@@ -174,7 +174,7 @@ export const SearchableSelect = ({
                   key={opt.id}
                   type="button"
                   onClick={() => handleSelectOption(opt)}
-                  className={`w-full text-left px-3 py-2 flex items-center justify-between transition hover:bg-muted/80 ${
+                  className={`w-full text-left px-3.5 py-2 sm:py-2.5 flex items-center justify-between transition hover:bg-muted/80 ${
                     isSelected ? "bg-primary/10 text-primary font-bold" : "text-foreground font-medium"
                   }`}
                 >
@@ -184,7 +184,7 @@ export const SearchableSelect = ({
               );
             })
           ) : (
-            <div className="px-3 py-3 text-center text-muted-foreground text-[11px]">
+            <div className="px-3.5 py-3 text-center text-muted-foreground text-[11px] sm:text-xs">
               {searchQuery ? `Tidak ada hasil untuk "${searchQuery}"` : "Belum ada opsi"}
             </div>
           )}
@@ -193,8 +193,8 @@ export const SearchableSelect = ({
 
       {/* Pesan Error */}
       {hasError && errorMessage && (
-        <p className="text-[10px] text-red-500 font-semibold mt-0.5 flex items-center gap-1">
-          <AlertCircle size={11} className="shrink-0" />
+        <p className="text-[10px] sm:text-[11px] text-red-500 font-semibold mt-0.5 flex items-center gap-1">
+          <AlertCircle size={12} className="shrink-0" />
           <span>{errorMessage}</span>
         </p>
       )}

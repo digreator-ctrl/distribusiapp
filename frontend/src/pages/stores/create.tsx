@@ -15,7 +15,7 @@ import {
 } from "../../lib/wilayah";
 import { SearchableSelect } from "../../components/SearchableSelect";
 
-// Komponen Floating Toast Notification Kustom (Bukan Bawaan Browser)
+// Komponen Floating Toast Notification Kustom
 const Toast = ({
   message,
   type,
@@ -33,19 +33,21 @@ const Toast = ({
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none w-full max-w-md px-4 animate-in fade-in slide-in-from-top-4">
       <div
-        className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-2xl border text-xs backdrop-blur-md transition-all ${type === "success"
+        className={`pointer-events-auto flex items-start gap-3 p-4 rounded-2xl shadow-2xl border text-xs sm:text-sm backdrop-blur-md transition-all ${
+          type === "success"
             ? "bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-500/10"
             : "bg-red-50/95 border-red-200 text-red-900 shadow-red-500/10"
-          }`}
+        }`}
       >
         <div
-          className={`p-2 rounded-xl shrink-0 ${type === "success" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
-            }`}
+          className={`p-2 rounded-xl shrink-0 ${
+            type === "success" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+          }`}
         >
-          {type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {type === "success" ? <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> : <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
         </div>
         <div className="flex-1 pt-0.5">
-          <p className="font-bold text-sm">{type === "success" ? "Berhasil!" : "Wajib Terisi!"}</p>
+          <p className="font-bold text-sm sm:text-base">{type === "success" ? "Berhasil!" : "Wajib Terisi!"}</p>
           <p className="mt-0.5 opacity-90 leading-relaxed font-medium">{message}</p>
         </div>
         <button
@@ -53,7 +55,7 @@ const Toast = ({
           onClick={onClose}
           className="p-1 rounded-lg opacity-60 hover:opacity-100 hover:bg-black/5 transition"
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </div>
     </div>
@@ -207,8 +209,6 @@ export const StoreCreate = () => {
     resetForm();
     navigate("/stores");
   };
-
-
 
   // WA input handler: hanya angka, maks 15 digit
   const handleWaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -475,39 +475,42 @@ export const StoreCreate = () => {
         />
       )}
 
-      <div className="max-w-3xl mx-auto space-y-6">
+      {/* Main Container: Luas & Proporsional di Desktop/Tablet (max-w-5xl), Responsif Penuh di Mobile */}
+      <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8">
         {/* Top Header */}
         <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={handleCancel}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-muted-foreground hover:text-foreground transition"
           >
-            <ArrowLeft size={16} />
-            Kembali ke Daftar Toko
+            <ArrowLeft size={16} className="sm:w-5 sm:h-5" />
+            <span>Kembali ke Daftar Toko</span>
           </button>
         </div>
 
         {/* Form Container */}
-        <div className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-6 lg:p-8 space-y-6">
-          <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Store className="text-primary w-6 h-6" />
-              Tambah Mitra Toko Baru
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-7 lg:p-9 space-y-6 sm:space-y-8">
+          <div className="border-b border-border/60 pb-4 sm:pb-5">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2.5">
+              <Store className="text-primary w-6 h-6 sm:w-7 sm:h-7 shrink-0" />
+              <span>Tambah Mitra Toko Baru</span>
             </h1>
-            <p className="text-muted-foreground text-xs mt-1">
-              Lengkapi formulir di bawah ini untuk mendaftarkan mitra toko ritel baru.
+            <p className="text-muted-foreground text-xs sm:text-sm mt-1 sm:mt-1.5">
+              Lengkapi formulir di bawah ini untuk mendaftarkan mitra toko ritel baru ke dalam sistem distribusi.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} noValidate className="space-y-4 text-xs">
-            {/* Baris 1: Nama Toko & PIC */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} noValidate className="space-y-6 text-xs sm:text-sm">
+            {/* Bagian 1: Data Utama Toko (Nama, Pemilik/PIC, WhatsApp) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+              {/* Nama Toko */}
               <div>
                 <label
                   htmlFor="field-name"
-                  className={`font-bold block mb-1 transition ${errors.name ? "text-red-600 font-extrabold" : "text-foreground"
-                    }`}
+                  className={`font-bold block mb-1 sm:mb-1.5 transition text-xs sm:text-sm ${
+                    errors.name ? "text-red-600 font-extrabold" : "text-foreground"
+                  }`}
                 >
                   Nama Toko <span className="text-red-500">*</span>
                 </label>
@@ -520,24 +523,27 @@ export const StoreCreate = () => {
                     setName(e.target.value);
                     if (errors.name) setErrors((prev) => ({ ...prev, name: "" }));
                   }}
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-foreground transition focus:outline-none ${errors.name
+                  className={`w-full rounded-xl px-3.5 py-2.5 sm:py-2.5 text-foreground text-xs sm:text-sm transition focus:outline-none ${
+                    errors.name
                       ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200 placeholder:text-red-300"
                       : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
-                    }`}
+                  }`}
                 />
                 {errors.name && (
-                  <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} className="shrink-0" />
+                  <p className="text-[11px] sm:text-xs text-red-500 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle size={13} className="shrink-0" />
                     {errors.name}
                   </p>
                 )}
               </div>
 
+              {/* Nama Pemilik / PIC Toko */}
               <div>
                 <label
                   htmlFor="field-ownerName"
-                  className={`font-bold block mb-1 transition ${errors.ownerName ? "text-red-600 font-extrabold" : "text-foreground"
-                    }`}
+                  className={`font-bold block mb-1 sm:mb-1.5 transition text-xs sm:text-sm ${
+                    errors.ownerName ? "text-red-600 font-extrabold" : "text-foreground"
+                  }`}
                 >
                   Nama Pemilik / PIC Toko <span className="text-red-500">*</span>
                 </label>
@@ -550,76 +556,82 @@ export const StoreCreate = () => {
                     setOwnerName(e.target.value);
                     if (errors.ownerName) setErrors((prev) => ({ ...prev, ownerName: "" }));
                   }}
-                  className={`w-full rounded-xl px-3.5 py-2.5 text-foreground transition focus:outline-none ${errors.ownerName
+                  className={`w-full rounded-xl px-3.5 py-2.5 sm:py-2.5 text-foreground text-xs sm:text-sm transition focus:outline-none ${
+                    errors.ownerName
                       ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200 placeholder:text-red-300"
                       : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
-                    }`}
+                  }`}
                 />
                 {errors.ownerName && (
-                  <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} className="shrink-0" />
+                  <p className="text-[11px] sm:text-xs text-red-500 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle size={13} className="shrink-0" />
                     {errors.ownerName}
                   </p>
                 )}
               </div>
-            </div>
 
-            {/* Baris 2: Nomor WhatsApp */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label
-                  htmlFor="field-waNumber"
-                  className={`font-bold transition ${errors.waNumber ? "text-red-600 font-extrabold" : "text-foreground"
+              {/* Nomor WhatsApp Toko */}
+              <div className="sm:col-span-2 lg:col-span-1">
+                <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                  <label
+                    htmlFor="field-waNumber"
+                    className={`font-bold text-xs sm:text-sm transition ${
+                      errors.waNumber ? "text-red-600 font-extrabold" : "text-foreground"
                     }`}
-                >
-                  Nomor WhatsApp Toko <span className="text-red-500">*</span>
-                </label>
-                <span
-                  className={`text-[10px] font-semibold ${waNumber.length >= 11 && waNumber.length <= 15
-                      ? "text-emerald-600"
-                      : waNumber.length > 0
+                  >
+                    Nomor WhatsApp Toko <span className="text-red-500">*</span>
+                  </label>
+                  <span
+                    className={`text-[10px] sm:text-[11px] font-semibold ${
+                      waNumber.length >= 11 && waNumber.length <= 15
+                        ? "text-emerald-600"
+                        : waNumber.length > 0
                         ? "text-amber-600"
                         : "text-muted-foreground"
                     }`}
-                >
-                  {waNumber.length} / 15 digit (min. 11)
-                </span>
-              </div>
-              <input
-                id="field-waNumber"
-                type="text"
-                placeholder="Hanya angka, contoh: 081234567890"
-                value={waNumber}
-                onChange={handleWaChange}
-                className={`w-full rounded-xl px-3.5 py-2.5 text-foreground font-mono text-xs transition focus:outline-none ${errors.waNumber
-                    ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200 placeholder:text-red-300"
-                    : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
+                  >
+                    {waNumber.length} / 15 digit (min. 11)
+                  </span>
+                </div>
+                <input
+                  id="field-waNumber"
+                  type="text"
+                  placeholder="Hanya angka, contoh: 081234567890"
+                  value={waNumber}
+                  onChange={handleWaChange}
+                  className={`w-full rounded-xl px-3.5 py-2.5 sm:py-2.5 text-foreground font-mono text-xs sm:text-sm transition focus:outline-none ${
+                    errors.waNumber
+                      ? "bg-red-50/60 border-2 border-red-500 ring-2 ring-red-200 placeholder:text-red-300"
+                      : "bg-background border border-border focus:ring-2 focus:ring-primary/20"
                   }`}
-              />
-              {errors.waNumber ? (
-                <p className="text-[11px] text-red-500 font-semibold mt-1 flex items-center gap-1">
-                  <AlertCircle size={12} className="shrink-0" />
-                  {errors.waNumber}
-                </p>
-              ) : (
-                waNumber.length > 0 &&
-                waNumber.length < 11 && (
-                  <p className="text-[10px] text-amber-600 mt-1">
-                    Nomor WhatsApp minimal 11 digit angka.
+                />
+                {errors.waNumber ? (
+                  <p className="text-[11px] sm:text-xs text-red-500 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle size={13} className="shrink-0" />
+                    {errors.waNumber}
                   </p>
-                )
-              )}
+                ) : (
+                  waNumber.length > 0 &&
+                  waNumber.length < 11 && (
+                    <p className="text-[10px] sm:text-[11px] text-amber-600 mt-1 font-medium">
+                      Nomor WhatsApp minimal 11 digit angka.
+                    </p>
+                  )
+                )}
+              </div>
             </div>
 
-            {/* Wilayah Hierarkis: Sekarang Input-able (Searchable Combobox) */}
-            <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-3.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <MapPin size={13} className="text-primary" />
-                <span>Hierarki Wilayah Toko (Bisa Diketik untuk Mencari Cepat)</span>
-              </span>
+            {/* Bagian 2: Wilayah Hierarkis (Searchable Combobox) - 1 Kolom Mobile, 2 Kolom Tablet & Desktop */}
+            <div className="p-4 sm:p-6 bg-muted/20 rounded-2xl border border-border/60 space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <MapPin size={15} className="text-primary" />
+                  <span>Hierarki Wilayah Toko (Bisa Diketik untuk Pencarian Cepat)</span>
+                </span>
+              </div>
 
-              {/* Susunan Wilayah Menurun ke Bawah */}
-              <div className="flex flex-col gap-3.5">
+              {/* Grid Wilayah: 1 Kolom di Mobile, 2 Kolom di Tablet & Desktop */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 {/* Searchable Input Provinsi */}
                 <SearchableSelect
                   id="field-province"
@@ -683,92 +695,105 @@ export const StoreCreate = () => {
               </div>
             </div>
 
-            {/* Baris 3: Alamat / Patokan */}
-            <div>
-              <label className="font-bold text-foreground block mb-1">
-                Alamat / Patokan <span className="text-muted-foreground font-normal">(Opsional)</span>
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Contoh: Jl. Merdeka No. 45, samping gapura RW 03, seberang masjid"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-
-            {/* Baris 4: Titik Google Maps - Buka Halaman Baru Peta Interaktif */}
-            <div className="p-4 bg-muted/20 rounded-2xl border border-border/60 space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <MapPin size={13} className="text-primary" />
-                  <span>Titik Lokasi Google Maps</span>
-                </label>
-                {latitude !== null && longitude !== null && (
-                  <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    Koordinat: {latitude.toFixed(5)}, {longitude.toFixed(5)}
-                  </span>
-                )}
+            {/* Bagian 3: Alamat Lengkap & Titik Google Maps - 1 Kolom Mobile, 2 Kolom Desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Kolom Kiri: Alamat / Patokan */}
+              <div className="p-4 sm:p-6 bg-muted/20 rounded-2xl border border-border/60 flex flex-col justify-between space-y-3">
+                <div>
+                  <label className="font-bold text-foreground text-xs sm:text-sm block mb-1">
+                    Alamat Lengkap / Patokan <span className="text-muted-foreground font-normal text-[11px] sm:text-xs">(Opsional)</span>
+                  </label>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mb-3 leading-relaxed">
+                    Nama jalan, nomor bangunan, RT/RW, atau patokan lokasi toko (contoh: seberang masjid, samping pos ronda).
+                  </p>
+                  <textarea
+                    rows={5}
+                    placeholder="Contoh: Jl. Merdeka No. 45, samping gapura RW 03, seberang masjid Al-Ikhlas"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 sm:py-3 text-foreground text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none leading-relaxed"
+                  />
+                </div>
               </div>
 
-              {/* Button Memanjang Penuh (Full Width): Pilih pada Peta (Buka Halaman Baru) */}
-              <button
-                type="button"
-                onClick={handleOpenMapPicker}
-                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.99] transition shadow-xs flex items-center justify-center gap-2"
-                title="Buka Halaman Peta Lengkap untuk memilih titik lokasi secara presisi"
-              >
-                <MapPin size={15} />
-                <span>Pilih pada Peta</span>
-              </button>
+              {/* Kolom Kanan: Titik Google Maps */}
+              <div className="p-4 sm:p-6 bg-muted/20 rounded-2xl border border-border/60 flex flex-col justify-between space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <MapPin size={14} className="text-primary" />
+                      <span>Titik Lokasi Google Maps</span>
+                    </label>
+                    {latitude !== null && longitude !== null && (
+                      <span className="text-[10px] sm:text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mb-3 leading-relaxed">
+                    Pilih titik koordinat di peta agar tim sales dapat bernavigasi langsung ke lokasi toko saat kunjungan.
+                  </p>
 
-              {/* Kolom di Bawah Button: Memanjang untuk Link Hasil Klik Lokasi dari Peta */}
-              <div className="space-y-1">
-                <input
-                  type="text"
-                  placeholder="Link hasil klik lokasi dari peta (atau tempel link Google Maps di sini)"
-                  value={gmapsInput}
-                  onChange={(e) => handleGmapsChange(e.target.value)}
-                  className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs font-mono"
-                />
-
-                <div className="flex justify-end text-[11px] px-0.5">
+                  {/* Tombol Pilih pada Peta */}
                   <button
                     type="button"
-                    onClick={() => {
-                      const searchTarget = [address, villageName, districtName, cityName, provinceName]
-                        .filter(Boolean)
-                        .join(", ");
-                      const url = gmapsInput || (searchTarget
-                        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchTarget)}`
-                        : "https://www.google.com/maps");
-                      window.open(url, "_blank");
-                    }}
-                    className="text-[10px] text-primary hover:underline flex items-center gap-1 font-semibold"
-                    title="Buka Google Maps di tab baru"
+                    onClick={handleOpenMapPicker}
+                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-xs sm:text-sm bg-primary text-primary-foreground hover:bg-primary/90 active:scale-[0.99] transition shadow-xs flex items-center justify-center gap-2 mb-3"
+                    title="Buka Halaman Peta Lengkap untuk memilih titik lokasi secara presisi"
                   >
-                    <ExternalLink size={11} />
-                    <span>Buka Google Maps Web</span>
+                    <MapPin size={16} />
+                    <span>Pilih Titik pada Peta Interaktif</span>
                   </button>
+
+                  {/* Kolom Link / Tempel Koordinat */}
+                  <div className="space-y-1.5">
+                    <input
+                      type="text"
+                      placeholder="Link hasil klik lokasi dari peta (atau tempel link Google Maps)"
+                      value={gmapsInput}
+                      onChange={(e) => handleGmapsChange(e.target.value)}
+                      className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs font-mono"
+                    />
+
+                    <div className="flex justify-end text-[11px] sm:text-xs px-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const searchTarget = [address, villageName, districtName, cityName, provinceName]
+                            .filter(Boolean)
+                            .join(", ");
+                          const url = gmapsInput || (searchTarget
+                            ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchTarget)}`
+                            : "https://www.google.com/maps");
+                          window.open(url, "_blank");
+                        }}
+                        className="text-[10px] sm:text-[11px] text-primary hover:underline flex items-center gap-1 font-semibold"
+                        title="Buka Google Maps di tab baru"
+                      >
+                        <ExternalLink size={12} />
+                        <span>Buka Google Maps Web</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-4 flex items-center justify-end gap-3 border-t border-border/60">
+            {/* Bagian 4: Action Buttons */}
+            <div className="pt-4 sm:pt-6 flex items-center justify-end gap-3 sm:gap-4 border-t border-border/60">
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-5 py-2.5 rounded-xl border border-border font-bold text-muted-foreground hover:bg-muted transition"
+                className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl border border-border font-bold text-xs sm:text-sm text-muted-foreground hover:bg-muted transition"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-black shadow hover:opacity-90 transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl bg-primary text-primary-foreground font-black text-xs sm:text-sm shadow hover:opacity-90 transition active:scale-95 disabled:opacity-50 flex items-center gap-2"
               >
-                <Check size={16} />
+                <Check size={16} className="sm:w-5 sm:h-5" />
                 <span>{isSubmitting ? "Menyimpan..." : "Simpan Mitra Toko"}</span>
               </button>
             </div>
