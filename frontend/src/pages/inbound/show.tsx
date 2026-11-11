@@ -62,10 +62,19 @@ export const InboundShow = () => {
             <p className="font-medium text-lg">{formatDate(batch.production_date)}</p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Produk & Varian</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Produk</h3>
+            <p className="font-medium text-lg text-foreground">{batch.product_name || batch.product_id}</p>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Varian</h3>
             <p className="font-medium text-lg">
-              {batch.product_name || batch.product_id}
-              {batch.variant_name && <span className="text-muted-foreground text-base ml-2">({batch.variant_name})</span>}
+              {batch.variant_name ? (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-primary/10 text-primary border border-primary/20">
+                  {batch.variant_name}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
             </p>
           </div>
           <div>
@@ -83,7 +92,7 @@ export const InboundShow = () => {
         <div className="space-y-4">
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Jumlah Stok (Qty)</h3>
-            <p className="font-medium text-2xl text-primary">{new Intl.NumberFormat("id-ID").format(batch.quantity)}</p>
+            <p className="font-medium text-2xl text-primary">{new Intl.NumberFormat("id-ID").format(batch.quantity)} <span className="text-sm font-normal text-muted-foreground">pcs</span></p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tanggal Kedaluwarsa</h3>

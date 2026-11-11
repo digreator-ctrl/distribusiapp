@@ -17,7 +17,10 @@ import {
   Building2,
   Warehouse,
   Calendar,
-  Clock
+  Clock,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 
@@ -79,6 +82,7 @@ export const InboundList = () => {
   // Filter, Search, Sort, Pagination States
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSupplier, setFilterSupplier] = useState("ALL");
+  const [filterVariant, setFilterVariant] = useState("ALL");
   const [sortOption, setSortOption] = useState("date_desc");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,21 +91,36 @@ export const InboundList = () => {
   // Get unique suppliers for filter dropdown
   const uniqueSuppliers = useMemo(() => {
     const suppliers = new Set(batches.map((b: any) => b.supplier_name || "Internal"));
-    return ["ALL", ...Array.from(suppliers)];
+    return ["ALL", ...Array.from(suppliers).sort()];
   }, [batches]);
 
-  // Active filter count for mobile badge
-  const activeFilterCount = (filterSupplier !== "ALL" ? 1 : 0) + (sortOption !== "date_desc" ? 1 : 0);
+  // Get unique variants for filter dropdown
+  const uniqueVariants = useMemo(() => {
+    const variants = new Set(
+      batches
+        .map((b: any) => b.variant_name)
+        .filter((v: any) => Boolean(v && typeof v === "string" && v.trim()))
+    );
+    return ["ALL", ...Array.from(variants).sort()];
+  }, [batches]);
+
+  // Active filter count for badge and reset indicator
+  const activeFilterCount = 
+    (filterSupplier !== "ALL" ? 1 : 0) + 
+    (filterVariant !== "ALL" ? 1 : 0) + 
+    (sortOption !== "date_desc" ? 1 : 0) +
+    (searchQuery.trim() ? 1 : 0);
 
   // Apply Filter, Search & Sort
   const processedBatches = useMemo(() => {
     let result = [...batches];
 
-    // Search
+    // Search: mencakup Nama Produk, Varian, ID Produk, dan Supplier
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter((b: any) => 
         (b.product_name?.toLowerCase().includes(q) || "") ||
+        (b.variant_name?.toLowerCase().includes(q) || "") ||
         (b.product_id?.toLowerCase().includes(q) || "") ||
         (b.supplier_name?.toLowerCase().includes(q) || "")
       );
@@ -110,6 +129,11 @@ export const InboundList = () => {
     // Filter Supplier
     if (filterSupplier !== "ALL") {
       result = result.filter((b: any) => (b.supplier_name || "Internal") === filterSupplier);
+    }
+
+    // Filter Varian
+    if (filterVariant !== "ALL") {
+      result = result.filter((b: any) => (b.variant_name || "") === filterVariant);
     }
 
     // Sort
@@ -123,6 +147,14 @@ export const InboundList = () => {
           return (a.product_name || "").localeCompare(b.product_name || "");
         case "product_desc":
           return (b.product_name || "").localeCompare(a.product_name || "");
+        case "variant_asc":
+          return (a.variant_name || "").localeCompare(b.variant_name || "");
+        case "variant_desc":
+          return (b.variant_name || "").localeCompare(a.variant_name || "");
+        case "supplier_asc":
+          return (a.supplier_name || "Internal").localeCompare(b.supplier_name || "Internal");
+        case "supplier_desc":
+          return (b.supplier_name || "Internal").localeCompare(a.supplier_name || "Internal");
         case "qty_desc":
           return (Number(b.quantity) || 0) - (Number(a.quantity) || 0);
         case "qty_asc":
@@ -137,7 +169,51 @@ export const InboundList = () => {
     });
 
     return result;
-  }, [batches, searchQuery, filterSupplier, sortOption]);
+  }, [batches, searchQuery, filterSupplier, filterVariant, sortOption]);
+
+  // Handler klik header kolom tabel untuk sorting cepat
+  const handleSortClick = (column: "date" | "product" | "variant" | "supplier" | "qty" | "exp") => {
+    setCurrentPage(1);
+    switch (column) {
+      case "date":
+        setSortOption(prev => prev === "date_desc" ? "date_asc" : "date_desc");
+        break;
+      case "product":
+        setSortOption(prev => prev === "product_asc" ? "product_desc" : "product_asc");
+        break;
+      case "variant":
+        setSortOption(prev => prev === "variant_asc" ? "variant_desc" : "variant_asc");
+        break;
+      case "supplier":
+        setSortOption(prev => prev === "supplier_asc" ? "supplier_desc" : "supplier_asc");
+        break;
+      case "qty":
+        setSortOption(prev => prev === "qty_desc" ? "qty_asc" : "qty_desc");
+        break;
+      case "exp":
+        setSortOption(prev => prev === "exp_asc" ? "exp_desc" : "exp_asc");
+        break;
+    }
+  };
+
+  const renderSortIcon = (column: "date" | "product" | "variant" | "supplier" | "qty" | "exp") => {
+    const isCurrent = sortOption.startsWith(column);
+    if (!isCurrent) {
+      return <ArrowUpDown size={13} className="text-muted-foreground/35 group-hover:text-foreground transition-colors shrink-0" />;
+    }
+    if (sortOption.endsWith("_asc")) {
+      return <ArrowUp size={13} className="text-primary font-bold shrink-0" />;
+    }
+    return <ArrowDown size={13} className="text-primary font-bold shrink-0" />;
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setFilterSupplier("ALL");
+    setFilterVariant("ALL");
+    setSortOption("date_desc");
+    setCurrentPage(1);
+  };
 
   // Pagination Logic
   const totalPages = Math.ceil(processedBatches.length / itemsPerPage);
@@ -153,13 +229,12 @@ export const InboundList = () => {
     currentPage * itemsPerPage
   );
 
-  
   return (
     <>
       {successMsg && <Toast message={successMsg} onClose={() => setSuccessMsg("")} />}
       <div className="bg-card p-3.5 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
         {/* ============================================================== */}
-        {/* 1. HEADER & CONTROLS UNTUK DESKTOP / TABLET (TIDAK BERUBAH)    */}
+        {/* 1. HEADER & CONTROLS UNTUK DESKTOP / TABLET                    */}
         {/* ============================================================== */}
         <div className="hidden sm:flex flex-row items-center justify-between gap-4 mb-6">
           <div>
@@ -175,19 +250,31 @@ export const InboundList = () => {
         </div>
 
         {/* Desktop / Tablet Control Bar: Search, Filters, Sort */}
-        <div className="hidden sm:grid sm:grid-cols-2 lg:flex gap-3 mb-6">
-          <input 
-            type="text"
-            placeholder="Cari produk atau supplier..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            className="p-2.5 border rounded-xl lg:flex-1 focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
-          />
+        <div className="hidden sm:grid sm:grid-cols-2 lg:flex lg:items-center gap-3 mb-6">
+          <div className="relative lg:flex-1">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input 
+              type="text"
+              placeholder="Cari produk, varian, atau supplier..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full pl-9 pr-8 py-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => { setSearchQuery(""); setCurrentPage(1); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
           
           <select 
             value={filterSupplier}
             onChange={(e) => { setFilterSupplier(e.target.value); setCurrentPage(1); }}
-            className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
+            className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background cursor-pointer"
           >
             <option value="ALL">Semua Supplier</option>
             {uniqueSuppliers.filter(s => s !== "ALL").map(s => (
@@ -196,23 +283,48 @@ export const InboundList = () => {
           </select>
 
           <select 
+            value={filterVariant}
+            onChange={(e) => { setFilterVariant(e.target.value); setCurrentPage(1); }}
+            className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background cursor-pointer"
+          >
+            <option value="ALL">Semua Varian</option>
+            {uniqueVariants.filter(v => v !== "ALL").map(v => (
+              <option key={v as string} value={v as string}>{v as string}</option>
+            ))}
+          </select>
+
+          <select 
             value={sortOption}
             onChange={(e) => { setSortOption(e.target.value); setCurrentPage(1); }}
-            className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
+            className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background cursor-pointer"
           >
             <option value="date_desc">Tanggal Masuk (Terbaru)</option>
             <option value="date_asc">Tanggal Masuk (Terlama)</option>
             <option value="product_asc">Nama Produk (A-Z)</option>
             <option value="product_desc">Nama Produk (Z-A)</option>
+            <option value="variant_asc">Nama Varian (A-Z)</option>
+            <option value="variant_desc">Nama Varian (Z-A)</option>
+            <option value="supplier_asc">Supplier (A-Z)</option>
+            <option value="supplier_desc">Supplier (Z-A)</option>
             <option value="qty_desc">Jumlah (Terbanyak)</option>
             <option value="qty_asc">Jumlah (Sedikit)</option>
             <option value="exp_asc">Kedaluwarsa (Terdekat)</option>
             <option value="exp_desc">Kedaluwarsa (Terjauh)</option>
           </select>
+
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="px-3.5 py-2.5 text-xs font-semibold text-destructive hover:bg-destructive/10 border border-destructive/20 rounded-xl transition-colors whitespace-nowrap shrink-0"
+            >
+              Reset Filter
+            </button>
+          )}
         </div>
 
         {/* ============================================================== */}
-        {/* 2. HEADER & CONTROLS KHUSUS MOBILE (UI/UX MOBILE-FIRST)         */}
+        {/* 2. HEADER & CONTROLS KHUSUS MOBILE                             */}
         {/* ============================================================== */}
         {/* Mobile Top Header: Judul + Counter + Tombol Tambah Kompak */}
         <div className="flex sm:hidden items-center justify-between gap-2 mb-3">
@@ -239,7 +351,7 @@ export const InboundList = () => {
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input 
               type="text"
-              placeholder="Cari produk atau supplier..."
+              placeholder="Cari produk, varian, atau supplier..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="w-full pl-9 pr-8 py-2 text-xs bg-muted/40 border border-border/80 rounded-xl focus:bg-background focus:ring-2 focus:ring-primary/40 outline-none transition-all placeholder:text-muted-foreground"
@@ -315,16 +427,28 @@ export const InboundList = () => {
               {activeFilterCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setFilterSupplier("ALL");
-                    setSortOption("date_desc");
-                    setCurrentPage(1);
-                  }}
+                  onClick={handleResetFilters}
                   className="text-[11px] font-bold text-destructive hover:underline"
                 >
                   Reset Filter
                 </button>
               )}
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">
+                Filter Varian
+              </label>
+              <select 
+                value={filterVariant}
+                onChange={(e) => { setFilterVariant(e.target.value); setCurrentPage(1); }}
+                className="w-full p-2 border rounded-xl text-xs bg-card focus:ring-2 focus:ring-primary/40 outline-none"
+              >
+                <option value="ALL">Semua Varian</option>
+                {uniqueVariants.filter(v => v !== "ALL").map(v => (
+                  <option key={v as string} value={v as string}>{v as string}</option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -340,6 +464,10 @@ export const InboundList = () => {
                 <option value="date_asc">Tanggal Masuk (Terlama)</option>
                 <option value="product_asc">Nama Produk (A-Z)</option>
                 <option value="product_desc">Nama Produk (Z-A)</option>
+                <option value="variant_asc">Nama Varian (A-Z)</option>
+                <option value="variant_desc">Nama Varian (Z-A)</option>
+                <option value="supplier_asc">Supplier (A-Z)</option>
+                <option value="supplier_desc">Supplier (Z-A)</option>
                 <option value="qty_desc">Jumlah (Terbanyak)</option>
                 <option value="qty_asc">Jumlah (Sedikit)</option>
                 <option value="exp_asc">Kedaluwarsa (Terdekat)</option>
@@ -356,7 +484,7 @@ export const InboundList = () => {
           <div className="py-10 text-center text-muted-foreground animate-pulse text-sm">Memuat data stok masuk...</div>
         ) : (
           <div className="flex flex-col gap-4">
-            {/* A. TAMPILAN KHUSUS MOBILE: KARTU LIST STOK MASUK RINGKAS & EFISIEN */}
+            {/* A. TAMPILAN KHUSUS MOBILE: KARTU LIST STOK MASUK */}
             <div className="sm:hidden space-y-2.5">
               {paginatedBatches.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground border border-dashed rounded-2xl bg-muted/10">
@@ -388,7 +516,7 @@ export const InboundList = () => {
                       {/* Baris 2: Varian jika ada */}
                       {batch.variant_name && (
                         <p className="text-xs text-muted-foreground mb-1.5 font-medium">
-                          Varian: <span className="text-foreground">{batch.variant_name}</span>
+                          Varian: <span className="text-foreground font-semibold bg-muted px-1.5 py-0.5 rounded">{batch.variant_name}</span>
                         </p>
                       )}
 
@@ -423,22 +551,77 @@ export const InboundList = () => {
               )}
             </div>
 
-            {/* B. TAMPILAN DESKTOP & TABLET: TABEL LENGKAP (TIDAK BERUBAH) */}
+            {/* B. TAMPILAN DESKTOP & TABLET: TABEL DENGAN KOLOM VARIAN TERPISAH & SORTING */}
             <div className="hidden sm:block overflow-x-auto rounded-xl border border-border/50">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                   <tr>
-                    <th className="px-6 py-4 font-semibold">Tanggal Stok Masuk</th>
-                    <th className="px-6 py-4 font-semibold">Produk</th>
-                    <th className="px-6 py-4 font-semibold">Supplier</th>
-                    <th className="px-6 py-4 font-semibold text-right">Jumlah</th>
-                    <th className="px-6 py-4 font-semibold text-destructive">Kedaluwarsa</th>
+                    <th 
+                      onClick={() => handleSortClick("date")}
+                      className="px-6 py-4 font-semibold cursor-pointer select-none hover:text-foreground group transition-colors"
+                      title="Klik untuk mengurutkan berdasarkan Tanggal Masuk"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Tanggal Stok Masuk</span>
+                        {renderSortIcon("date")}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSortClick("product")}
+                      className="px-6 py-4 font-semibold cursor-pointer select-none hover:text-foreground group transition-colors"
+                      title="Klik untuk mengurutkan berdasarkan Produk"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Produk</span>
+                        {renderSortIcon("product")}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSortClick("variant")}
+                      className="px-6 py-4 font-semibold cursor-pointer select-none hover:text-foreground group transition-colors"
+                      title="Klik untuk mengurutkan berdasarkan Varian"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Varian</span>
+                        {renderSortIcon("variant")}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSortClick("supplier")}
+                      className="px-6 py-4 font-semibold cursor-pointer select-none hover:text-foreground group transition-colors"
+                      title="Klik untuk mengurutkan berdasarkan Supplier"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Supplier</span>
+                        {renderSortIcon("supplier")}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSortClick("qty")}
+                      className="px-6 py-4 font-semibold text-right cursor-pointer select-none hover:text-foreground group transition-colors"
+                      title="Klik untuk mengurutkan berdasarkan Jumlah"
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Jumlah</span>
+                        {renderSortIcon("qty")}
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleSortClick("exp")}
+                      className="px-6 py-4 font-semibold text-destructive cursor-pointer select-none hover:text-destructive/80 group transition-colors"
+                      title="Klik untuk mengurutkan berdasarkan Kedaluwarsa"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Kedaluwarsa</span>
+                        {renderSortIcon("exp")}
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedBatches.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
+                      <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
                         {batches.length === 0 ? "Belum ada riwayat stok masuk." : "Tidak ada data yang cocok dengan pencarian/filter."}
                       </td>
                     </tr>
@@ -449,20 +632,30 @@ export const InboundList = () => {
                         onClick={() => navigate(`/inbound_batches/${batch.id}`)}
                         className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
                       >
-                        <td className="px-6 py-4 font-medium">{formatDate(batch.production_date)}</td>
-                        <td className="px-6 py-4 font-semibold">
+                        <td className="px-6 py-4 font-medium whitespace-nowrap">{formatDate(batch.production_date)}</td>
+                        <td className="px-6 py-4 font-semibold text-foreground">
                           {batch.product_name || batch.product_id}
-                          {batch.variant_name && <span className="text-muted-foreground ml-1 text-xs">({batch.variant_name})</span>}
                         </td>
                         <td className="px-6 py-4">
+                          {batch.variant_name ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                              {batch.variant_name}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
                           {batch.supplier_name ? (
-                            <span className="text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-100">{batch.supplier_name}</span>
+                            <span className="text-blue-700 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-200/60">{batch.supplier_name}</span>
                           ) : (
                             <span className="text-muted-foreground bg-muted/50 px-2.5 py-1 rounded-full text-xs font-medium border border-border/50">Internal</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right font-medium">{new Intl.NumberFormat('id-ID').format(batch.quantity)}</td>
-                        <td className="px-6 py-4 text-destructive font-medium">{formatDate(batch.expired_date)}</td>
+                        <td className="px-6 py-4 text-right font-bold text-foreground whitespace-nowrap">
+                          {new Intl.NumberFormat('id-ID').format(batch.quantity)} <span className="text-xs font-normal text-muted-foreground">pcs</span>
+                        </td>
+                        <td className="px-6 py-4 text-destructive font-medium whitespace-nowrap">{formatDate(batch.expired_date)}</td>
                       </tr>
                     ))
                   )}
