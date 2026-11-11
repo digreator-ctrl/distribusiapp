@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "../../utils/date";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { User as UserIcon, ArrowLeft, Shield, MapPin, Phone, Calendar, Edit3, Trash2 } from "lucide-react";
@@ -135,7 +136,7 @@ export const UserShow = () => {
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-1">Terdaftar Pada</p>
-              <p className="font-medium">{new Date(user.created_at).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}</p>
+              <p className="font-medium">{formatDateTime(user.created_at)}</p>
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground mb-1">Status Akses (RBAC)</p>
@@ -156,7 +157,7 @@ export const UserShow = () => {
               <div>
                 <p className="text-xs font-semibold text-muted-foreground">Tempat, Tanggal Lahir</p>
                 <p className="font-medium">
-                  {!user.place_of_birth && !user.date_of_birth ? '-' : `${user.place_of_birth || '-'} ${user.date_of_birth ? `, ${new Date(user.date_of_birth).toLocaleDateString('id-ID')}` : ''}`}
+                  {!user.place_of_birth && !user.date_of_birth ? '-' : `${user.place_of_birth || '-'} ${user.date_of_birth ? `, ${formatDate(user.date_of_birth)}` : ''}`}
                 </p>
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { formatDate as formatDateUtil } from "../../utils/date";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -359,19 +360,7 @@ export const SalesStoreDetail = () => {
   const formatRupiah = (num: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "-";
-    try {
-      const d = new Date(dateStr.includes("T") ? dateStr : dateStr.replace(" ", "T"));
-      return d.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
+  const formatDate = (dateStr?: string) => formatDateUtil(dateStr);
 
   const getExpiryMeta = (expiredDateStr?: string) => {
     if (!expiredDateStr) return { text: "Exp: -", color: "bg-muted text-muted-foreground border-border/50", isUrgent: false };
@@ -383,11 +372,7 @@ export const SalesStoreDetail = () => {
       const diffTime = exp.getTime() - today.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      const formatted = exp.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
+      const formatted = formatDateUtil(exp);
 
       if (diffDays < 0) {
         return {

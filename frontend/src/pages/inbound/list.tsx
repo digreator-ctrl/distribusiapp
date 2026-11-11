@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import {
   useState,
   useEffect,
@@ -152,16 +153,7 @@ export const InboundList = () => {
     currentPage * itemsPerPage
   );
 
-  const formatDate = (dateStr: string | null | undefined) => {
-    if (!dateStr) return "-";
-    try {
-      const d = new Date(dateStr);
-      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-    } catch {
-      return dateStr;
-    }
-  };
-
+  
   return (
     <>
       {successMsg && <Toast message={successMsg} onClose={() => setSuccessMsg("")} />}
@@ -457,7 +449,7 @@ export const InboundList = () => {
                         onClick={() => navigate(`/inbound_batches/${batch.id}`)}
                         className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
                       >
-                        <td className="px-6 py-4 font-medium">{new Date(batch.production_date).toLocaleDateString('id-ID')}</td>
+                        <td className="px-6 py-4 font-medium">{formatDate(batch.production_date)}</td>
                         <td className="px-6 py-4 font-semibold">
                           {batch.product_name || batch.product_id}
                           {batch.variant_name && <span className="text-muted-foreground ml-1 text-xs">({batch.variant_name})</span>}
@@ -470,7 +462,7 @@ export const InboundList = () => {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right font-medium">{new Intl.NumberFormat('id-ID').format(batch.quantity)}</td>
-                        <td className="px-6 py-4 text-destructive font-medium">{new Date(batch.expired_date).toLocaleDateString('id-ID')}</td>
+                        <td className="px-6 py-4 text-destructive font-medium">{formatDate(batch.expired_date)}</td>
                       </tr>
                     ))
                   )}

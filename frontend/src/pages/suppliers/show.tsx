@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -167,7 +168,7 @@ export const SupplierShow = () => {
           <div>
             <p className="text-xs text-muted-foreground font-semibold">Tanggal Terdaftar</p>
             <p className="font-medium mt-0.5">
-              {supplier.created_at ? new Date(supplier.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
+              {supplier.created_at ? formatDate(supplier.created_at) : "-"}
             </p>
           </div>
           <div>

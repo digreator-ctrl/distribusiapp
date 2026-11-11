@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "../../utils/date";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -58,7 +59,7 @@ export const InboundShow = () => {
         <div className="space-y-4">
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tanggal Stok Masuk</h3>
-            <p className="font-medium text-lg">{new Date(batch.production_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p className="font-medium text-lg">{formatDate(batch.production_date)}</p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Produk & Varian</h3>
@@ -86,11 +87,11 @@ export const InboundShow = () => {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Tanggal Kedaluwarsa</h3>
-            <p className="font-medium text-lg text-destructive">{new Date(batch.expired_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p className="font-medium text-lg text-destructive">{formatDate(batch.expired_date)}</p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">Waktu Pencatatan Sistem</h3>
-            <p className="font-medium">{new Date(batch.created_at).toLocaleString('id-ID')}</p>
+            <p className="font-medium">{formatDateTime(batch.created_at)}</p>
           </div>
         </div>
       </div>

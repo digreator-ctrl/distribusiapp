@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { 
@@ -538,9 +539,7 @@ export const MobileReceivedStock = () => {
                         <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
                           <Calendar size={11} className="shrink-0 opacity-70" />
                           <span>
-                            {req.distribution_date
-                              ? new Date(req.distribution_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                              : new Date(req.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {formatDate(req.distribution_date || req.created_at)}
                           </span>
                         </p>
                       </div>
@@ -597,9 +596,7 @@ export const MobileReceivedStock = () => {
                         <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
                           <Calendar size={11} className="shrink-0 opacity-70" />
                           <span>
-                            {req.distribution_date
-                              ? new Date(req.distribution_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-                              : new Date(req.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {formatDate(req.distribution_date || req.created_at)}
                           </span>
                         </p>
                       </div>
@@ -679,7 +676,7 @@ export const MobileReceivedStock = () => {
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
                         <Calendar size={11} className="shrink-0" />
-                        {new Date(c.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {formatDate(c.created_at)}
                       </p>
                     </div>
 

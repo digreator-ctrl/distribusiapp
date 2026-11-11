@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -247,11 +248,7 @@ export const SalesVisitWizard = () => {
   const generateWhatsAppMessage = () => {
     if (!selectedStore) return "";
     const storeName = selectedStore.name;
-    const dateStr = new Date().toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    const dateStr = formatDate(new Date());
 
     if (isPerdana) {
       let msg = `*BUKTI TITIP STOK AWAL (KONSINYASI PERDANA)*\n`;

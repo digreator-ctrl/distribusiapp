@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { 
@@ -317,8 +318,8 @@ export const StockRequestList = () => {
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       {req.distribution_date 
-                        ? `Tgl Distribusi: ${new Date(req.distribution_date).toLocaleDateString('id-ID')}`
-                        : `Tgl Pengajuan: ${new Date(req.created_at).toLocaleDateString('id-ID')}`}
+                        ? `Tgl Distribusi: ${formatDate(req.distribution_date)}`
+                        : `Tgl Pengajuan: ${formatDate(req.created_at)}`}
                     </p>
                   </div>
                   <div>
@@ -410,8 +411,8 @@ export const StockRequestList = () => {
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5">
                         {req.distribution_date 
-                          ? new Date(req.distribution_date).toLocaleDateString('id-ID')
-                          : new Date(req.created_at).toLocaleDateString('id-ID')}
+                          ? formatDate(req.distribution_date)
+                          : formatDate(req.created_at)}
                       </div>
                     </td>
 

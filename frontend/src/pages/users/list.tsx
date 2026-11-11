@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect } from "react";
 
 import { useNavigate, useLocation } from "react-router-dom";
@@ -111,7 +112,7 @@ export const UserList = () => {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4">{new Date(user.created_at).toLocaleDateString('id-ID')}</td>
+                    <td className="px-6 py-4">{formatDate(user.created_at)}</td>
                   </tr>
                 ))
               )}

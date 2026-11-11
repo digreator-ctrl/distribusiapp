@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
@@ -407,17 +408,9 @@ export const SalesStores = () => {
       countdownText = `Kurang ${daysUntilDue} hari`;
     }
 
-    const nextDueDateFormatted = nextDueDate.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    const nextDueDateFormatted = formatDate(nextDueDate);
 
-    const lastVisitFormatted = lastVisit.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    const lastVisitFormatted = formatDate(lastVisit);
 
     return {
       hasVisited: true,
@@ -455,11 +448,7 @@ export const SalesStores = () => {
     const diffMs = expDay.getTime() - nowDay.getTime();
     const days = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-    const formattedDate = expDate.toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    const formattedDate = formatDate(expDate);
 
     // Ketentuan Pengguna Metode Kedaluwarsa:
     // > 61 hari -> Aman (Hijau)
@@ -1234,11 +1223,7 @@ export const SalesStores = () => {
                   {agendaStores.map((store) => {
                     const lastVisitDate = store.last_visit_date ? new Date(store.last_visit_date) : null;
                     const lastVisitFormatted = lastVisitDate
-                      ? lastVisitDate.toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
+                      ? formatDate(lastVisitDate)
                       : "-";
 
                     const remainingStock = Number(store.total_remaining_stock) || 0;

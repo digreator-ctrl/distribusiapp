@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -142,12 +143,7 @@ export const SalesStorePicker = () => {
             const debtAmount = Number(store.total_debt) || 0;
             const remainingStock = Number(store.total_remaining_stock) || 0;
             const lastVisitDate = store.last_visit_date ? new Date(store.last_visit_date) : null;
-            const lastVisitFormatted = lastVisitDate
-              ? lastVisitDate.toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                })
-              : null;
+            const lastVisitFormatted = lastVisitDate ? formatDate(lastVisitDate) : null;
 
             return (
               <div

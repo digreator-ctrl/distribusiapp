@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import {
   useState,
   useEffect } from "react";
@@ -88,11 +89,7 @@ export const SalesHistory = () => {
     return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const formatDate = (isoString?: string) => {
-    if (!isoString) return "-";
-    const d = new Date(isoString);
-    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-  };
+  // formatDate diimport dari utils/date
 
   // Filter events by period
   const todayStr = new Date().toISOString().split("T")[0];

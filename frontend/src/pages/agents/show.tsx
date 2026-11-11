@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ConfirmModal } from "../../components/ConfirmModal";
@@ -182,7 +183,7 @@ export const AgentShow = () => {
                 <Calendar className="w-3.5 h-3.5" /> Tanggal Terdaftar
               </p>
               <p className="font-medium mt-0.5">
-                {agent.created_at ? new Date(agent.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
+                {agent.created_at ? formatDate(agent.created_at) : "-"}
               </p>
             </div>
             <div>
@@ -259,8 +260,8 @@ export const AgentShow = () => {
                       </td>
                       <td className="px-5 py-3.5 text-muted-foreground">
                         {dist.distribution_date 
-                          ? new Date(dist.distribution_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
-                          : new Date(dist.created_at).toLocaleDateString("id-ID")}
+                          ? formatDate(dist.distribution_date)
+                          : formatDate(dist.created_at)}
                       </td>
                       <td className="px-5 py-3.5 text-center font-medium">
                         {dist.item_count || 0} Item

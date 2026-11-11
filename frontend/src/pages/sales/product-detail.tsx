@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -11,12 +12,7 @@ export const SalesProductDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const formatDate = (isoStr?: string) => {
-    if (!isoStr) return "-";
-    const d = new Date(isoStr);
-    if (isNaN(d.getTime())) return isoStr;
-    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-  };
+  // formatDate diimport dari utils/date
 
   const [activeSalesId] = useState<string>(
     localStorage.getItem("distribusi_user_id") || ""

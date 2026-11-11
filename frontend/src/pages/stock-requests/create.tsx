@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Plus, Trash2, Package, CheckCircle2, XCircle, FileText } from "lucide-react";
@@ -273,7 +274,7 @@ export const StockRequestCreate = () => {
                   Informasi Pengajuan
                 </h3>
                 <span className="text-[11px] font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-md border border-border/40">
-                  {new Date(distributionDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {formatDate(distributionDate)}
                 </span>
               </div>
 
@@ -412,7 +413,7 @@ export const StockRequestCreate = () => {
                             </option>
                             {availableBatches.map(b => (
                               <option key={b.id} value={b.id}>
-                                {new Date(b.expired_date).toLocaleDateString('id-ID')} (Sisa: {b.current_quantity !== undefined ? b.current_quantity : b.quantity} pcs)
+                                {formatDate(b.expired_date)} (Sisa: {b.current_quantity !== undefined ? b.current_quantity : b.quantity} pcs)
                               </option>
                             ))}
                           </select>
@@ -662,7 +663,7 @@ export const StockRequestCreate = () => {
                             <option value="" disabled>-- Pilih Kedaluwarsa Stok --</option>
                             {availableBatches.map(b => (
                               <option key={b.id} value={b.id}>
-                                Sisa: {b.current_quantity !== undefined ? b.current_quantity : b.quantity} pcs | Exp: {new Date(b.expired_date).toLocaleDateString('id-ID')}
+                                Sisa: {b.current_quantity !== undefined ? b.current_quantity : b.quantity} pcs | Exp: {formatDate(b.expired_date)}
                               </option>
                             ))}
                           </select>

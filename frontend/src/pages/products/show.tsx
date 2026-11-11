@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/date";
 import { CheckCircle2, AlertCircle, Building2, Warehouse, ExternalLink } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -308,7 +309,7 @@ export const ProductShow = () => {
           </div>
           <div>
             <p className="text-xs text-muted-foreground font-semibold">Dibuat pada</p>
-            <p className="font-medium mt-1">{product.created_at ? new Date(product.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}</p>
+            <p className="font-medium mt-1">{product.created_at ? formatDate(product.created_at) : "-"}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground font-semibold">ID Produk</p>
@@ -401,7 +402,7 @@ export const ProductShow = () => {
                       {product.inbound_batches.map((batch: any) => (
                         <tr key={batch.id} className="hover:bg-muted/40 transition-colors">
                           <td className="px-4 py-2 font-medium">
-                            {batch.production_date ? new Date(batch.production_date).toLocaleDateString("id-ID") : "-"}
+                            {batch.production_date ? formatDate(batch.production_date) : "-"}
                           </td>
                           <td className="px-4 py-2 font-medium text-foreground">
                             {batch.variant_name || "-"}
@@ -416,7 +417,7 @@ export const ProductShow = () => {
                             {Number(batch.current_quantity ?? batch.quantity).toLocaleString("id-ID")} pcs
                           </td>
                           <td className="px-4 py-2 text-muted-foreground text-xs font-mono">
-                            {batch.expired_date ? new Date(batch.expired_date).toLocaleDateString("id-ID") : "-"}
+                            {batch.expired_date ? formatDate(batch.expired_date) : "-"}
                           </td>
                         </tr>
                       ))}
@@ -457,7 +458,7 @@ export const ProductShow = () => {
                       {product.outbound_history.map((item: any) => (
                         <tr key={item.id} className="hover:bg-muted/40 transition-colors">
                           <td className="px-4 py-2 font-medium">
-                            {item.distribution_date ? new Date(item.distribution_date).toLocaleDateString("id-ID") : new Date(item.created_at).toLocaleDateString("id-ID")}
+                            {item.distribution_date ? formatDate(item.distribution_date) : formatDate(item.created_at)}
                           </td>
                           <td className="px-4 py-2 font-mono text-xs text-primary font-semibold">
                             {item.request_code || "-"}
@@ -522,7 +523,7 @@ export const ProductShow = () => {
                     {product.transactions.map((tx: any) => (
                       <tr key={tx.id} className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors">
                         <td className="px-5 py-3 font-medium">
-                          {new Date(tx.created_at).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {formatDate(tx.created_at)}
                         </td>
                         <td className="px-5 py-3 font-semibold text-primary">{tx.variant_name || "-"}</td>
                         <td className="px-5 py-3 font-medium">{tx.store_name || "-"}</td>

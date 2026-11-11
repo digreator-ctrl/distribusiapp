@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "../../utils/date";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { 
@@ -316,7 +317,7 @@ export const StockRequestShow = () => {
                   {getStatusBadge(request.status)}
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                  {request.type === 'request' ? (isSales ? 'Pengajuan Saya' : 'Pengajuan Sales') : 'Rekomendasi Admin'} • {new Date(request.created_at).toLocaleDateString('id-ID')}
+                  {request.type === 'request' ? (isSales ? 'Pengajuan Saya' : 'Pengajuan Sales') : 'Rekomendasi Admin'} • {formatDate(request.created_at)}
                 </p>
               </div>
             </div>
@@ -340,7 +341,7 @@ export const StockRequestShow = () => {
                 Informasi Dokumen
               </h3>
               <span className="text-xs text-muted-foreground">
-                {request.distribution_date ? `Tgl: ${new Date(request.distribution_date).toLocaleDateString('id-ID')}` : '-'}
+                {request.distribution_date ? `Tgl: ${formatDate(request.distribution_date)}` : '-'}
               </span>
             </div>
 
@@ -410,7 +411,7 @@ export const StockRequestShow = () => {
                     {item.expired_date && (
                       <div className="text-[10px] text-muted-foreground pt-1.5 border-t border-border/30 flex justify-between">
                         <span>Kedaluwarsa:</span>
-                        <span className="font-medium text-foreground">{new Date(item.expired_date).toLocaleDateString('id-ID')}</span>
+                        <span className="font-medium text-foreground">{formatDate(item.expired_date)}</span>
                       </div>
                     )}
 
@@ -546,7 +547,7 @@ export const StockRequestShow = () => {
                   <FileText size={14} /> 
                   {request.type === 'request' ? 'Pengajuan dari Sales' : 'Rekomendasi dari Admin'}
                   <span className="opacity-50">•</span>
-                  {new Date(request.created_at).toLocaleString('id-ID')}
+                  {formatDateTime(request.created_at)}
                 </p>
               </div>
             </div>
@@ -586,7 +587,7 @@ export const StockRequestShow = () => {
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-xs">Tgl Distribusi</span>
-                    <span className="font-semibold">{request.distribution_date ? new Date(request.distribution_date).toLocaleDateString('id-ID') : '-'}</span>
+                    <span className="font-semibold">{request.distribution_date ? formatDate(request.distribution_date) : '-'}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-xs">Prioritas</span>
@@ -627,7 +628,7 @@ export const StockRequestShow = () => {
                               <span className="text-xs text-muted-foreground">{item.variant_name} {item.sku ? `(${item.sku})` : ''}</span>
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">
-                              {item.expired_date ? new Date(item.expired_date).toLocaleDateString('id-ID') : '-'}
+                              {item.expired_date ? formatDate(item.expired_date) : '-'}
                             </td>
                             <td className="px-4 py-3 text-center font-bold">
                               {item.quantity} pcs

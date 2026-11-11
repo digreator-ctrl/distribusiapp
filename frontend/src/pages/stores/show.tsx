@@ -1,3 +1,4 @@
+import { formatDate as formatDateUtil } from "../../utils/date";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -82,19 +83,7 @@ export const StoreShow = () => {
   const formatRupiah = (num: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "-";
-    try {
-      const d = new Date(dateStr.includes("T") ? dateStr : dateStr.replace(" ", "T"));
-      return d.toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      return dateStr;
-    }
-  };
+  const formatDate = (dateStr?: string) => formatDateUtil(dateStr);
 
   if (isLoading && !store) {
     return (
