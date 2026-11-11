@@ -184,11 +184,11 @@ function App() {
               </Authenticated>
             }
           >
-            {/* 1. 🏠 Beranda (Dashboard Ringkasan) */}
+            {/* 1. Beranda (Dashboard Ringkasan) */}
             <Route index element={<SalesDashboard />} />
             <Route path="dashboard" element={<SalesDashboard />} />
 
-            {/* 2. 🏪 Toko (Mitra Konsinyasi & Wizard Kunjungan) */}
+            {/* 2. Toko (Mitra Konsinyasi & Wizard Kunjungan) */}
             <Route path="toko" element={<SalesStores />} />
             <Route path="toko/baru" element={<SalesStoreCreate />} />
             <Route path="toko/pilih-kunjungan" element={<SalesStorePicker />} />
@@ -197,7 +197,7 @@ function App() {
             <Route path="visit-wizard/:storeId" element={<SalesVisitWizard />} />
             <Route path="visit-wizard" element={<SalesVisitWizard />} />
 
-            {/* 3. 📦 Stok */}
+            {/* 3. Stok */}
             <Route path="stock" element={<MobileReceivedStock />} />
             <Route path="received-stock" element={<MobileReceivedStock />} />
             <Route path="stock/product/:variantId" element={<SalesProductDetail />} />
@@ -206,7 +206,7 @@ function App() {
             <Route path="stock-requests/create" element={<StockRequestCreate />} />
             <Route path="stock-requests/:id" element={<StockRequestShow />} />
 
-            {/* 4. 🕒 Riwayat Aktivitas Harian */}
+            {/* 4. Riwayat Aktivitas Harian */}
             <Route path="history" element={<SalesHistory />} />
 
             {/* Rute Pendukung / Kompatibilitas */}

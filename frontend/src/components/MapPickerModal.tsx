@@ -248,7 +248,7 @@ export const MapPickerModal = ({
           </form>
           {addressHint && (
             <p className="text-[10px] text-muted-foreground mt-1.5 truncate px-1 font-medium">
-              📍 {addressHint}
+              <span className="inline-flex items-center gap-1"><MapPin size={11} className="text-primary shrink-0" /><span className="truncate">{addressHint}</span></span>
             </p>
           )}
         </div>

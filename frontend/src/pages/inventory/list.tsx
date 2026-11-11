@@ -1,11 +1,17 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  Search, 
-  SlidersHorizontal, 
-  X, 
-  ChevronRight, 
-  Package 
+  Search,
+  SlidersHorizontal,
+  X,
+  ChevronRight,
+  Package,
+  Building2,
+  Warehouse
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 
@@ -370,11 +376,11 @@ export const InventoryList = () => {
                         )}
                         {item.supplier_name ? (
                           <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300 px-2 py-0.5 rounded-md border border-blue-200/60 truncate max-w-[120px]">
-                            🏢 {item.supplier_name}
+                            <Building2 size={11} className="inline mr-1 text-blue-600 shrink-0" />{item.supplier_name}
                           </span>
                         ) : (
                           <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
-                            🏭 Internal
+                            <Warehouse size={11} className="inline mr-1 text-muted-foreground shrink-0" />Internal
                           </span>
                         )}
                       </div>

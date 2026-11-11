@@ -706,7 +706,7 @@ export const StoreCreate = () => {
                 </label>
                 {latitude !== null && longitude !== null && (
                   <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                    ✓ Koordinat: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                    Koordinat: {latitude.toFixed(5)}, {longitude.toFixed(5)}
                   </span>
                 )}
               </div>

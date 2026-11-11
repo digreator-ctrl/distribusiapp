@@ -192,7 +192,7 @@ export const SalesDashboard = () => {
             <div className="w-10 h-10 mx-auto bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-2">
               <TrendingUp size={20} />
             </div>
-            <p className="text-xs font-bold text-emerald-800">Semua Toko Sudah Dikunjungi! 🎉</p>
+            <p className="text-xs font-bold text-emerald-800">Semua Toko Sudah Dikunjungi</p>
             <p className="text-[11px] text-emerald-600 mt-0.5">
               Atau belum ada toko mitra yang terdaftar. Tambah toko baru di menu Toko.
             </p>

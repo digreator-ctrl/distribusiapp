@@ -1212,7 +1212,7 @@ export const SalesStoreDetail = () => {
 
                 {editLat !== null && editLng !== null && (
                   <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded text-[10px] border border-emerald-200 inline-block">
-                    ✓ Koordinat: {editLat.toFixed(5)}, {editLng?.toFixed(5)}
+                    Koordinat: {editLat.toFixed(5)}, {editLng?.toFixed(5)}
                   </span>
                 )}
               </div>

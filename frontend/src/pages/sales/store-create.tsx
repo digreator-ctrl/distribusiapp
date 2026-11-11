@@ -1,7 +1,15 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  Store, X, MapPin, AlertCircle, RefreshCw
+  useState,
+  useEffect } from "react";
+import { useNavigate,
+  useSearchParams } from "react-router-dom";
+import {
+  Store,
+  X,
+  MapPin,
+  AlertCircle,
+  RefreshCw,
+  Check
 } from "lucide-react";
 import {
   PROVINCES_DATA,
@@ -600,7 +608,7 @@ export const SalesStoreCreate = () => {
 
           {newLat !== null && newLng !== null && (
             <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-              <span>✓ Koordinat: {newLat.toFixed(5)}, {newLng.toFixed(5)}</span>
+              <span className="inline-flex items-center gap-1"><Check size={12} className="shrink-0 text-emerald-600" /> Koordinat: {newLat.toFixed(5)}, {newLng.toFixed(5)}</span>
             </p>
           )}
         </div>

@@ -1,13 +1,22 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback } from "react";
+import { useNavigate,
+  useLocation } from "react-router-dom";
 import { 
-  CheckCircle2, 
-  X, 
-  Plus, 
-  Search, 
-  SlidersHorizontal, 
-  ChevronRight, 
-  ArrowDownToLine 
+  CheckCircle2,
+  X,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  ChevronRight,
+  ArrowDownToLine,
+  Building2,
+  Warehouse,
+  Calendar,
+  Clock
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 
@@ -395,21 +404,21 @@ export const InboundList = () => {
                       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                         {batch.supplier_name ? (
                           <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300 px-2 py-0.5 rounded-md border border-blue-200/60 truncate max-w-[130px]">
-                            🏢 {batch.supplier_name}
+                            <Building2 size={11} className="inline mr-1 text-blue-600 shrink-0" />{batch.supplier_name}
                           </span>
                         ) : (
                           <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
-                            🏭 Internal
+                            <Warehouse size={11} className="inline mr-1 text-muted-foreground shrink-0" />Internal
                           </span>
                         )}
 
                         <span className="text-[10px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-md font-medium">
-                          📅 {formatDate(batch.production_date)}
+                          <Calendar size={11} className="inline mr-1 text-muted-foreground shrink-0" />{formatDate(batch.production_date)}
                         </span>
 
                         {batch.expired_date && (
                           <span className="text-[10px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md border border-destructive/20">
-                            ⏳ Exp: {formatDate(batch.expired_date)}
+                            <Clock size={11} className="inline mr-1 text-destructive shrink-0" />Exp: {formatDate(batch.expired_date)}
                           </span>
                         )}
                       </div>

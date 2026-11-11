@@ -1,3 +1,4 @@
+import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -20,7 +21,7 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
           ? "bg-green-50 border-green-200 text-green-800" 
           : "bg-red-50 border-red-200 text-red-800"
       }`}>
-        <span className="text-lg mt-0.5">{type === "success" ? "✅" : "❌"}</span>
+        {type === "success" ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />}
         <div className="flex-1">
           <p className="font-bold">{type === "success" ? "Berhasil!" : "Gagal!"}</p>
           <p className="text-xs mt-0.5 opacity-80">{message}</p>
@@ -213,7 +214,7 @@ export const ProductCreate = () => {
                 className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none ${errors.name ? 'border-red-500 bg-red-50' : 'bg-background'}`} 
                 placeholder="Contoh: Kopi Kapsul Premium"
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.name}</p>}
+              {errors.name && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><AlertCircle size={13} className="shrink-0" /> {errors.name}</p>}
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1">
@@ -315,7 +316,7 @@ export const ProductCreate = () => {
                 </div>
               </div>
             </div>
-            {errors.prices && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.prices}</p>}
+            {errors.prices && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><AlertCircle size={13} className="shrink-0" /> {errors.prices}</p>}
           </div>
         </div>
 
@@ -342,7 +343,7 @@ export const ProductCreate = () => {
                   <div className="absolute top-0 right-0 bg-red-50 hover:bg-red-100 rounded-bl-xl rounded-tr-xl border-b border-l transition">
                     <button type="button" onClick={() => {
                       const newV = [...formData.variants]; newV.splice(idx, 1); setFormData({...formData, variants: newV});
-                    }} className="px-3 py-1.5 text-red-600 font-bold text-xs">Hapus Varian ✕</button>
+                    }} className="px-3 py-1.5 text-red-600 font-bold text-xs">Hapus Varian</button>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-16 mb-4">
@@ -364,7 +365,7 @@ export const ProductCreate = () => {
                         className={`w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none ${errors.variants?.[idx] ? 'border-red-500 bg-red-50' : ''}`} 
                         placeholder="Misal: Kemasan 500gr" 
                       />
-                      {errors.variants?.[idx] && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.variants[idx]}</p>}
+                      {errors.variants?.[idx] && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><AlertCircle size={13} className="shrink-0" /> {errors.variants[idx]}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">SKU (Kode Barcode)</label>

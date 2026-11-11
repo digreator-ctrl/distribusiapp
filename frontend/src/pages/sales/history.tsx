@@ -1,8 +1,14 @@
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Clock, Store,
-  ChevronRight, ArrowDownLeft, RefreshCw
+  Clock,
+  Store,
+  ChevronRight,
+  ArrowDownLeft,
+  RefreshCw,
+  X
 } from "lucide-react";
 
 export const SalesHistory = () => {
@@ -319,7 +325,7 @@ export const SalesHistory = () => {
                 }}
                 className="p-1 rounded-full text-muted-foreground hover:bg-muted"
               >
-                ✕
+                <X size={15} />
               </button>
             </div>
 

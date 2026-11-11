@@ -544,7 +544,7 @@ export const StockRequestCreate = () => {
                       }`}
                     >
                       <option value="" disabled>-- Pilih Nama Sales --</option>
-                      <option value="all">📢 Semua Sales (Broadcast ke Seluruh Sales)</option>
+                      <option value="all">Semua Sales (Broadcast ke Seluruh Sales)</option>
                       {users.map(u => (
                         <option key={u.id} value={u.id}>{u.full_name || u.username}</option>
                       ))}

@@ -1,3 +1,4 @@
+import { CheckCircle2, AlertCircle, Building2, Warehouse, ExternalLink } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ConfirmModal } from "../../components/ConfirmModal";
@@ -16,7 +17,7 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
       <div className={`flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl border text-sm max-w-sm ${
         type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
       }`}>
-        <span className="text-lg mt-0.5">{type === "success" ? "✅" : "❌"}</span>
+        {type === "success" ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />}
         <div className="flex-1">
           <p className="font-bold">{type === "success" ? "Berhasil!" : "Gagal!"}</p>
           <p className="text-xs mt-0.5 opacity-80">{message}</p>
@@ -141,11 +142,11 @@ export const ProductShow = () => {
                   className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-blue-100 transition"
                   title="Klik untuk melihat detail supplier"
                 >
-                  🏢 Supplier: {product.supplier_name} ↗
+                  <Building2 size={13} className="shrink-0 inline mr-1" /> Supplier: {product.supplier_name} <ExternalLink size={12} className="shrink-0 inline ml-1" />
                 </span>
               ) : (
                 <span className="text-xs bg-muted border px-3 py-1 rounded-full text-muted-foreground font-semibold">
-                  🏭 Internal (Produksi Sendiri)
+                  <Warehouse size={13} className="shrink-0 inline mr-1" /> Internal (Produksi Sendiri)
                 </span>
               )}
               <span className={`text-xs px-3 py-1 rounded-full font-bold ${product.is_active ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-600 border border-red-200'}`}>

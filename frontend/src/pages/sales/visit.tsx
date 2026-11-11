@@ -1,4 +1,9 @@
-import { MapPin, Navigation, Store } from "lucide-react";
+import {
+  MapPin,
+  Navigation,
+  Store,
+  Check
+} from "lucide-react";
 
 export const MobileVisit = () => {
   const stores = [
@@ -43,7 +48,7 @@ export const MobileVisit = () => {
                     <button className="flex-1 bg-primary text-primary-foreground text-xs font-semibold py-2 rounded-lg shadow-sm">Check-in</button>
                   ) : (
                     <div className="flex-1 bg-green-100 text-green-700 text-xs font-semibold py-2 rounded-lg text-center flex items-center justify-center gap-1">
-                      ✓ Selesai
+                      <Check size={13} className="inline mr-1" /> Selesai
                     </div>
                   )}
                 </div>

@@ -105,7 +105,7 @@ export const DashboardPage = () => {
               </span>
             </div>
             <h1 className="text-base sm:text-2xl font-black tracking-tight text-foreground truncate">
-              Hai, {userName}! 👋
+              Selamat datang, {userName}!
             </h1>
             <p className="text-xs text-muted-foreground hidden sm:block mt-0.5">
               Pantau performa rantai pasok dan operasional distribusi Anda secara real-time.

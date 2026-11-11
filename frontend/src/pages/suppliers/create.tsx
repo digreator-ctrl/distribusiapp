@@ -1,3 +1,4 @@
+import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -18,7 +19,7 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
           ? "bg-green-50 border-green-200 text-green-800" 
           : "bg-red-50 border-red-200 text-red-800"
       }`}>
-        <span className="text-lg mt-0.5">{type === "success" ? "✅" : "❌"}</span>
+        {type === "success" ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />}
         <div className="flex-1">
           <p className="font-bold">{type === "success" ? "Berhasil!" : "Gagal Validasi!"}</p>
           <p className="text-xs mt-0.5 opacity-80">{message}</p>
@@ -129,7 +130,7 @@ export const SupplierCreate = () => {
             />
             {errors.name && (
               <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1">
-                <span>⚠️</span> {errors.name}
+                <AlertCircle size={13} className="shrink-0" /> {errors.name}
               </p>
             )}
           </div>

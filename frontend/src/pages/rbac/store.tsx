@@ -1,5 +1,10 @@
-import { useEffect } from "react";
-import { Check, X } from "lucide-react";
+import {
+  useEffect } from "react";
+import { Check,
+  X,
+  CheckCircle2,
+  AlertCircle
+} from "lucide-react";
 
 export type Permission = {
   read: boolean;
@@ -166,7 +171,7 @@ export const Toast = ({ message, type, onClose }: { message: string; type: "succ
       <div className={`flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl border text-sm max-w-sm ${
         type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
       }`}>
-        <span className="text-lg mt-0.5">{type === "success" ? "✅" : "❌"}</span>
+        {type === "success" ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />}
         <div className="flex-1">
           <p className="font-bold">{type === "success" ? "Berhasil!" : "Gagal!"}</p>
           <p className="text-xs mt-0.5 opacity-80">{message}</p>

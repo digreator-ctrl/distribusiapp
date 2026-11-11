@@ -282,7 +282,7 @@ export const SalesVisitWizard = () => {
         msg += `*Catatan Penempatan:* ${paymentNotes}\n`;
       }
       msg += `--------------------------------\n`;
-      msg += `Terima kasih atas kerja samanya. 🙏`;
+      msg += `Terima kasih atas kerja samanya.`;
       return encodeURIComponent(msg);
     }
 
@@ -318,7 +318,7 @@ export const SalesVisitWizard = () => {
     }
 
     msg += `--------------------------------\n`;
-    msg += `Terima kasih atas kerja samanya. 🙏`;
+    msg += `Terima kasih atas kerja samanya.`;
 
     return encodeURIComponent(msg);
   };
@@ -340,7 +340,7 @@ export const SalesVisitWizard = () => {
             <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
               Mitra Baru Terdaftar
             </span>
-            <h2 className="text-xl font-black text-foreground mt-2">Titip Stok Perdana Sukses! 🎉</h2>
+            <h2 className="text-xl font-black text-foreground mt-2">Titip Stok Perdana Sukses!</h2>
             <p className="text-xs text-muted-foreground mt-1">
               Stok konsinyasi awal ke <span className="font-bold text-foreground">{selectedStore?.name}</span> telah berhasil dicatat ke sistem.
             </p>
@@ -443,7 +443,7 @@ export const SalesVisitWizard = () => {
         </div>
 
         <div>
-          <h2 className="text-xl font-black text-foreground">Kunjungan Selesai! 🎉</h2>
+          <h2 className="text-xl font-black text-foreground">Kunjungan Selesai!</h2>
           <p className="text-xs text-muted-foreground mt-1">
             Data kunjungan ke <span className="font-bold text-foreground">{selectedStore?.name}</span> telah disimpan.
           </p>
@@ -1096,7 +1096,7 @@ export const SalesVisitWizard = () => {
             >
               <span>{currentOutstanding > 0 ? "Sisa Piutang Toko:" : "Status Pembayaran:"}</span>
               <span className="font-black text-sm">
-                {currentOutstanding > 0 ? formatRupiah(currentOutstanding) : "LUNAS ✓"}
+                {currentOutstanding > 0 ? formatRupiah(currentOutstanding) : "LUNAS"}
               </span>
             </div>
 

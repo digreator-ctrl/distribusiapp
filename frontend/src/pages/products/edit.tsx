@@ -1,3 +1,4 @@
+import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -15,7 +16,7 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
       <div className={`flex items-start gap-3 px-5 py-4 rounded-xl shadow-2xl border text-sm max-w-sm ${
         type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
       }`}>
-        <span className="text-lg mt-0.5">{type === "success" ? "✅" : "❌"}</span>
+        {type === "success" ? <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />}
         <div className="flex-1">
           <p className="font-bold">{type === "success" ? "Berhasil!" : "Gagal!"}</p>
           <p className="text-xs mt-0.5 opacity-80">{message}</p>
@@ -217,7 +218,7 @@ export const ProductEdit = () => {
                 className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none ${errors.name ? "border-red-500 bg-red-50" : "bg-background"}`}
                 placeholder="Contoh: Kopi Kapsul Premium"
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.name}</p>}
+              {errors.name && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><AlertCircle size={13} className="shrink-0" /> {errors.name}</p>}
             </div>
 
             <div>
@@ -278,7 +279,7 @@ export const ProductEdit = () => {
                 );
               })}
             </div>
-            {errors.prices && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><span>⚠️</span> {errors.prices}</p>}
+            {errors.prices && <p className="text-red-500 text-xs mt-1.5 font-bold flex items-center gap-1"><AlertCircle size={13} className="shrink-0" /> {errors.prices}</p>}
           </div>
         </div>
 
@@ -301,14 +302,14 @@ export const ProductEdit = () => {
               formData.variants.map((v, idx) => (
                 <div key={idx} className="bg-background p-5 rounded-xl border shadow-sm relative">
                   <div className="absolute top-0 right-0 bg-red-50 hover:bg-red-100 rounded-bl-xl rounded-tr-xl border-b border-l transition">
-                    <button type="button" onClick={() => { const nv = [...formData.variants]; nv.splice(idx, 1); setFormData({ ...formData, variants: nv }); }} className="px-3 py-1.5 text-red-600 font-bold text-xs">Hapus ✕</button>
+                    <button type="button" onClick={() => { const nv = [...formData.variants]; nv.splice(idx, 1); setFormData({ ...formData, variants: nv }); }} className="px-3 py-1.5 text-red-600 font-bold text-xs">Hapus</button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-16 mb-4">
                     <div>
                       <label className={`block text-sm font-semibold mb-1 ${errors.variants?.[idx] ? "text-red-600" : ""}`}>Nama Varian <span className="text-red-500">*</span></label>
                       <input type="text" value={v.name} onChange={(e) => { updateVariant(idx, "name", e.target.value); if (errors.variants?.[idx]) { const ne = { ...errors.variants }; delete ne[idx]; setErrors({ ...errors, variants: Object.keys(ne).length ? ne : undefined }); } }}
                         className={`w-full p-2.5 rounded-lg border focus:ring-2 focus:ring-primary/50 outline-none ${errors.variants?.[idx] ? "border-red-500 bg-red-50" : ""}`} placeholder="Misal: 500gr" />
-                      {errors.variants?.[idx] && <p className="text-red-500 text-xs mt-1.5 font-bold"><span>⚠️</span> {errors.variants[idx]}</p>}
+                      {errors.variants?.[idx] && <p className="text-red-500 text-xs mt-1.5 font-bold"><AlertCircle size={13} className="shrink-0" /> {errors.variants[idx]}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">SKU</label>
