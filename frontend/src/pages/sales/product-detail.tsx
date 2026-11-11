@@ -6,6 +6,7 @@ import {
   X, Phone
 } from "lucide-react";
 import { invalidateStockCache } from "./received-stock";
+import { cache } from "../../utils/cache";
 
 export const SalesProductDetail = () => {
   const { variantId } = useParams<{ variantId: string }>();
@@ -19,10 +20,11 @@ export const SalesProductDetail = () => {
   );
 
   // State produk dari router state atau fetch
-  const [productData, setProductData] = useState<any>(location.state?.item || null);
+  const cachedProduct = variantId ? cache.get<any>(`sales_product_${variantId}`) : null;
+  const [productData, setProductData] = useState<any>(location.state?.item || cachedProduct || null);
   const [consignments, setConsignments] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(!productData);
+  const [isLoading, setIsLoading] = useState(!productData && !cachedProduct);
 
   // Active Tab: "exp" (Rincian Tanggal Exp) vs "stores" (Sebaran di Toko)
   const [activeTab, setActiveTab] = useState<"exp" | "stores">("exp");
@@ -35,10 +37,10 @@ export const SalesProductDetail = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const fetchDetail = async () => {
+  const fetchDetail = async (isBackground = false) => {
     if (!variantId || !activeSalesId) return;
     try {
-      setIsLoading(true);
+      if (!isBackground && !productData && !cachedProduct) setIsLoading(true);
 
       // 1. Fetch sales inventory untuk varian ini jika belum ada dari state
       const resInv = await fetch(`http://localhost:8787/api/sales-inventory/${activeSalesId}`);
@@ -47,6 +49,7 @@ export const SalesProductDetail = () => {
         const found = (invList || []).find((i: any) => i.variant_id === variantId);
         if (found) {
           setProductData(found);
+          if (variantId) cache.set(`sales_product_${variantId}`, found);
         }
       }
 
@@ -84,7 +87,7 @@ export const SalesProductDetail = () => {
   };
 
   useEffect(() => {
-    fetchDetail();
+    fetchDetail(Boolean(productData || cachedProduct));
   }, [variantId, activeSalesId]);
 
   // Konsolidasi sebaran toko (mengelompokkan per toko mitra)

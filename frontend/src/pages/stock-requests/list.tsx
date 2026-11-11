@@ -7,13 +7,15 @@ import {
   Search, ArrowRight, Clock, ShieldCheck
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 export const StockRequestList = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || "");
-  const [requests, setRequests] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedRequests = cache.get<any[]>("stock_requests_list");
+  const [requests, setRequests] = useState<any[]>(() => cachedRequests || []);
+  const [isLoading, setIsLoading] = useState(!cachedRequests);
   
   // Filter Tabs: Rekomendasi (Admin -> Sales/Agen) vs Pengajuan Sales (Sales -> Admin)
   const [filterType, setFilterType] = useState<"recommendation" | "request">("recommendation");
@@ -28,24 +30,27 @@ export const StockRequestList = () => {
   }, [location, navigate]);
 
   // Fetch seluruh data stok request/rekomendasi (Semua Sales & Agen untuk Sisi Owner/Admin)
-  const fetchAllRequests = async () => {
-    setIsLoading(true);
+  const fetchAllRequests = async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
     try {
       // Pada sisi Owner/Admin, muat seluruh data tanpa dibatasi oleh sales_id tertentu
       const res = await fetch(`${API_BASE_URL}/stock-requests`);
       if (res.ok) {
         const json = await res.json();
-        setRequests(Array.isArray(json) ? json : []);
+        const data = Array.isArray(json) ? json : [];
+        setRequests(data);
+        cache.set("stock_requests_list", data);
       }
     } catch (err) {
       console.error("Gagal memuat data distribusi & approval:", err);
+      if (!cachedRequests) setRequests([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAllRequests();
+    fetchAllRequests(Boolean(cachedRequests));
   }, []);
 
   // Hitung jumlah item pending per tab untuk badge notifikasi Admin/Owner

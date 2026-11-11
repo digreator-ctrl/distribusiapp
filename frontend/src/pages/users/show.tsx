@@ -5,6 +5,7 @@ import { User as UserIcon, ArrowLeft, Shield, MapPin, Phone, Calendar, Edit3, Tr
 import { ConfirmModal } from "../../components/ConfirmModal";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 const API_URL = API_BASE_URL;
 
@@ -12,25 +13,28 @@ export const UserShow = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const role = localStorage.getItem("distribusi_role") || "admin";
-  const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedUser = id ? cache.get<any>(`user_${id}`) : null;
+  const [user, setUser] = useState<any>(() => cachedUser || null);
+  const [isLoading, setIsLoading] = useState(!cachedUser);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUser = async (isBackground = false) => {
       try {
+        if (!isBackground) setIsLoading(true);
         const res = await fetch(`${API_URL}/users/${id}`);
         if (!res.ok) throw new Error("Gagal mengambil detail pengguna");
         const data = await res.json();
         setUser(data);
+        if (id) cache.set(`user_${id}`, data);
       } catch (err) {
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchUser();
+    fetchUser(Boolean(cachedUser));
   }, [id]);
 
   const handleDelete = async () => {

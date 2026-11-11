@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, X } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -36,24 +37,30 @@ export const UserList = () => {
     }
   }, [location, navigate]);
 
-  const [users, setUsers] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedUsers = cache.get<any[]>("users_list");
+  const [users, setUsers] = useState<any[]>(() => cachedUsers || []);
+  const [isLoading, setIsLoading] = useState(!cachedUsers);
+
+  const fetchUsers = async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/users`);
+      if (res.ok) {
+        const json = await res.json();
+        const data = Array.isArray(json) ? json : [];
+        setUsers(data);
+        cache.set("users_list", data);
+      }
+    } catch (err) {
+      console.error(err);
+      if (!cachedUsers) setUsers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/users`);
-        if (res.ok) {
-          const json = await res.json();
-          setUsers(Array.isArray(json) ? json : []);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUsers();
+    fetchUsers(Boolean(cachedUsers));
   }, []);
 
   return (

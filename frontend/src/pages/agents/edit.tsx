@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Save, CheckCircle2, XCircle } from "lucide-react";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 // Toast Kustom
@@ -37,20 +38,22 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
 export const AgentEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    contact: "",
-    status: "Aktif",
-    notes: ""
-  });
+  const cachedAgent = id ? cache.get<any>(`agent_${id}`) : null;
+  const [formData, setFormData] = useState(() => ({
+    name: cachedAgent?.name || "",
+    contact: cachedAgent?.contact || "",
+    status: cachedAgent?.status || "Aktif",
+    notes: cachedAgent?.notes || ""
+  }));
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedAgent);
 
   useEffect(() => {
-    const fetchAgent = async () => {
+    const fetchAgent = async (isBackground = false) => {
       try {
+        if (!isBackground) setIsLoading(true);
         const res = await fetch(`${API_URL}/agents/${id}`);
         if (!res.ok) throw new Error("Agen tidak ditemukan");
         const data = await res.json();
@@ -60,13 +63,16 @@ export const AgentEdit = () => {
           status: data.status || "Aktif",
           notes: data.notes || ""
         });
+        if (id) cache.set(`agent_${id}`, data);
       } catch (err: any) {
-        setToast({ message: err.message, type: "error" });
+        if (!cachedAgent) {
+          setToast({ message: err.message, type: "error" });
+        }
       } finally {
         setIsLoading(false);
       }
     };
-    fetchAgent();
+    fetchAgent(Boolean(cachedAgent));
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,6 +98,8 @@ export const AgentEdit = () => {
 
       if (!res.ok) throw new Error("Gagal memperbarui data agen");
 
+      cache.invalidate("agents_list");
+      if (id) cache.invalidate(`agent_${id}`);
       setToast({ message: "Data agen berhasil diperbarui.", type: "success" });
       setTimeout(() => navigate(`/agents/${id}`), 1200);
     } catch (err: any) {

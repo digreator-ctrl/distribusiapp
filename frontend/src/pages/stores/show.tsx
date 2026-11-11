@@ -6,6 +6,7 @@ import {
   AlertCircle, User, MapPin
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 export const StoreShow = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +18,7 @@ export const StoreShow = () => {
   const canUpdate = isOwner; // Hanya Owner yang bisa Edit (Admin & Sales hanya CR)
   const canDelete = isOwner; // Hanya Owner yang bisa Hapus (Admin & Sales hanya CR)
 
-  const initialStore = location.state?.store;
+  const initialStore = location.state?.store || (id ? cache.get<any>(`store_${id}`) : null);
   const [store, setStore] = useState<any | null>(initialStore || null);
   const [isLoading, setIsLoading] = useState(!initialStore);
   const [error, setError] = useState("");
@@ -33,6 +34,7 @@ export const StoreShow = () => {
       if (res.ok) {
         const data = await res.json();
         setStore(data);
+        if (id) cache.set(`store_${id}`, data);
       } else {
         if (!store) {
           setError("Toko tidak ditemukan.");

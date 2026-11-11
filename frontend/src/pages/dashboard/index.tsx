@@ -16,6 +16,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 interface DashboardData {
   total_products: number;
@@ -27,7 +28,8 @@ interface DashboardData {
 }
 
 export const DashboardPage = () => {
-  const [data, setData] = useState<DashboardData>({
+  const cachedDashboard = cache.get<DashboardData>("dashboard_summary");
+  const [data, setData] = useState<DashboardData>(() => cachedDashboard || {
     total_products: 0,
     inbound_today_qty: 0,
     active_deliveries: 0,
@@ -35,7 +37,7 @@ export const DashboardPage = () => {
     total_stores: 0,
     total_sales: 0,
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedDashboard);
   const [error, setError] = useState<string | null>(null);
 
   const role = localStorage.getItem("distribusi_role") || "admin";
@@ -50,8 +52,8 @@ export const DashboardPage = () => {
     return () => window.removeEventListener("userProfileUpdated", handleProfile);
   }, []);
 
-  const fetchSummary = async () => {
-    setLoading(true);
+  const fetchSummary = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     setError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/dashboard-summary`);
@@ -61,17 +63,20 @@ export const DashboardPage = () => {
       const json = await res.json();
       if (json.success && json.data) {
         setData(json.data);
+        cache.set("dashboard_summary", json.data);
       }
     } catch (err: any) {
       console.error("Dashboard summary fetch error:", err);
-      setError(err.message || "Gagal memuat data dashboard");
+      if (!cachedDashboard) {
+        setError(err.message || "Gagal memuat data dashboard");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSummary();
+    fetchSummary(Boolean(cachedDashboard));
   }, []);
 
   const formatRupiah = (val: number) => {
@@ -113,7 +118,7 @@ export const DashboardPage = () => {
           </div>
 
           <button
-            onClick={fetchSummary}
+            onClick={() => fetchSummary(false)}
             disabled={loading}
             className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-semibold text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted border rounded-xl transition-all disabled:opacity-50 shrink-0"
             title="Perbarui data"
@@ -128,7 +133,7 @@ export const DashboardPage = () => {
         <div className="p-3.5 sm:p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs sm:text-sm flex items-center justify-between">
           <span className="truncate mr-2">{error}</span>
           <button 
-            onClick={fetchSummary}
+            onClick={() => fetchSummary(false)}
             className="text-xs font-bold underline hover:no-underline shrink-0"
           >
             Coba Lagi

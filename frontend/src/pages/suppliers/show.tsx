@@ -5,6 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ConfirmModal } from "../../components/ConfirmModal";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 // Toast Kustom
@@ -32,27 +33,30 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
 export const SupplierShow = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [supplier, setSupplier] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedSupplier = id ? cache.get<any>(`supplier_${id}`) : null;
+  const [supplier, setSupplier] = useState<any>(() => cachedSupplier || null);
+  const [isLoading, setIsLoading] = useState(!cachedSupplier);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const userRole = localStorage.getItem("distribusi_role") || "admin";
 
   useEffect(() => {
-    const fetchSupplier = async () => {
+    const fetchSupplier = async (isBackground = false) => {
       try {
+        if (!isBackground) setIsLoading(true);
         const res = await fetch(`${API_URL}/suppliers/${id}`);
         if (!res.ok) throw new Error("Gagal mengambil detail supplier");
         const data = await res.json();
         setSupplier(data);
+        if (id) cache.set(`supplier_${id}`, data);
       } catch (err) {
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchSupplier();
+    fetchSupplier(Boolean(cachedSupplier));
   }, [id]);
 
   const toggleStatus = async () => {

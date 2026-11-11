@@ -5,6 +5,7 @@ import {
   CheckCircle2, X, Trash2, Edit, Eye, Filter, Tag
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -42,30 +43,34 @@ export const StoreList = () => {
     }
   }, [location, navigate]);
 
-  const [stores, setStores] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedStores = cache.get<any[]>("stores_list");
+  const [stores, setStores] = useState<any[]>(() => cachedStores || []);
+  const [isLoading, setIsLoading] = useState(!cachedStores);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [provinceFilter, setProvinceFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const fetchStores = async () => {
+  const fetchStores = async (isBackground = false) => {
     try {
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
       const res = await fetch(`${API_BASE_URL}/stores`);
       if (res.ok) {
         const json = await res.json();
-        setStores(Array.isArray(json) ? json : []);
+        const data = Array.isArray(json) ? json : [];
+        setStores(data);
+        cache.set("stores_list", data);
       }
     } catch (err) {
       console.error("Gagal memuat toko:", err);
+      if (!cachedStores) setStores([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStores();
+    fetchStores(Boolean(cachedStores));
   }, []);
 
   const handleDelete = async (storeId: string, storeName: string) => {

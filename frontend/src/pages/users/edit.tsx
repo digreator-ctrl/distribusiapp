@@ -12,6 +12,7 @@ import { ChevronRight,
   AlertCircle
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 const API_URL = API_BASE_URL;
 
@@ -43,27 +44,29 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
 export const UserEdit = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const cachedUser = id ? cache.get<any>(`user_${id}`) : null;
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({
-    username: "",
+  const [formData, setFormData] = useState(() => ({
+    username: cachedUser?.username || "",
     password: "", // Opsional saat edit
-    role: "admin",
-    full_name: "",
-    place_of_birth: "",
-    date_of_birth: "",
-    gender: "L",
-    address: "",
-    phone: ""
-  });
+    role: cachedUser?.role || "admin",
+    full_name: cachedUser?.full_name || "",
+    place_of_birth: cachedUser?.place_of_birth || "",
+    date_of_birth: cachedUser?.date_of_birth || "",
+    gender: cachedUser?.gender || "L",
+    address: cachedUser?.address || "",
+    phone: cachedUser?.phone || ""
+  }));
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedUser);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUser = async (isBackground = false) => {
       try {
+        if (!isBackground) setIsLoading(true);
         const res = await fetch(`${API_URL}/users/${id}`);
         if (!res.ok) throw new Error("Gagal mengambil data");
         const data = await res.json();
@@ -78,13 +81,14 @@ export const UserEdit = () => {
           address: data.address || "",
           phone: data.phone || ""
         });
+        if (id) cache.set(`user_${id}`, data);
       } catch (err) {
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchUser();
+    fetchUser(Boolean(cachedUser));
   }, [id]);
 
   const handleNextStep = () => {
@@ -132,6 +136,9 @@ export const UserEdit = () => {
       });
 
       if (!res.ok) throw new Error("Gagal menyimpan perubahan pengguna");
+
+      cache.invalidate("users_list");
+      if (id) cache.invalidate(`user_${id}`);
 
       // Sinkronkan nama profil di sesi login jika yang diubah adalah akun pengguna aktif
       const currentUserId = localStorage.getItem("distribusi_user_id");

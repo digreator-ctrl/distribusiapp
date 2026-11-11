@@ -8,6 +8,7 @@ import {
   ArrowUpDown, SlidersHorizontal, RotateCcw,
   RefreshCw, Hourglass, ChevronRight
 } from "lucide-react";
+import { cache } from "../../utils/cache";
 
 // Komponen Floating Toast Notification Kustom (Bukan Bawaan Browser)
 const Toast = ({
@@ -96,8 +97,9 @@ export const SalesStores = () => {
   const [mainTab, setMainTabState] = useState<"stores" | "schedules">(getInitialMainTab);
 
   // Stores State
-  const [stores, setStores] = useState<any[]>([]);
-  const [isLoadingStores, setIsLoadingStores] = useState(true);
+  const cachedStores = cache.get<any[]>("stores_list");
+  const [stores, setStores] = useState<any[]>(() => cachedStores || []);
+  const [isLoadingStores, setIsLoadingStores] = useState(!cachedStores);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Sort & Filter state untuk Tab Data Toko
@@ -176,23 +178,26 @@ export const SalesStores = () => {
 
 
 
-  const fetchStores = async () => {
+  const fetchStores = async (isBackground = false) => {
     try {
-      setIsLoadingStores(true);
+      if (!isBackground) setIsLoadingStores(true);
       const res = await fetch("http://localhost:8787/api/stores");
       if (res.ok) {
         const data = await res.json();
-        setStores(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        setStores(list);
+        cache.set("stores_list", list);
       }
     } catch (err) {
       console.error("Fetch stores error:", err);
+      if (!cachedStores) setStores([]);
     } finally {
       setIsLoadingStores(false);
     }
   };
 
   useEffect(() => {
-    fetchStores();
+    fetchStores(Boolean(cachedStores));
   }, []);
 
 

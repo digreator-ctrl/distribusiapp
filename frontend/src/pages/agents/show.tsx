@@ -5,6 +5,7 @@ import { ConfirmModal } from "../../components/ConfirmModal";
 import { Phone, Calendar, FileText, CheckCircle2, XCircle, ArrowLeft, Edit3, Trash2, Package } from "lucide-react";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 // Toast Kustom
@@ -36,27 +37,30 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
 export const AgentShow = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [agent, setAgent] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedAgent = id ? cache.get<any>(`agent_${id}`) : null;
+  const [agent, setAgent] = useState<any>(() => cachedAgent || null);
+  const [isLoading, setIsLoading] = useState(!cachedAgent);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const userRole = localStorage.getItem("distribusi_role") || "admin";
 
   useEffect(() => {
-    const fetchAgent = async () => {
+    const fetchAgent = async (isBackground = false) => {
       try {
+        if (!isBackground) setIsLoading(true);
         const res = await fetch(`${API_URL}/agents/${id}`);
         if (!res.ok) throw new Error("Gagal mengambil detail agen");
         const data = await res.json();
         setAgent(data);
+        if (id) cache.set(`agent_${id}`, data);
       } catch (err) {
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchAgent();
+    fetchAgent(Boolean(cachedAgent));
   }, [id]);
 
   const toggleStatus = async () => {

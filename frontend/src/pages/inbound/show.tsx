@@ -3,28 +3,32 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 export const InboundShow = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [batch, setBatch] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedBatch = id ? cache.get<any>(`inbound_batch_${id}`) : null;
+  const [batch, setBatch] = useState<any>(() => cachedBatch || null);
+  const [isLoading, setIsLoading] = useState(!cachedBatch);
 
   useEffect(() => {
-    const fetchBatch = async () => {
+    const fetchBatch = async (isBackground = false) => {
       try {
+        if (!isBackground) setIsLoading(true);
         const res = await fetch(`${API_URL}/inbound_batches/${id}`);
         if (!res.ok) throw new Error("Gagal mengambil detail stok masuk");
         const data = await res.json();
         setBatch(data);
+        if (id) cache.set(`inbound_batch_${id}`, data);
       } catch (err) {
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchBatch();
+    fetchBatch(Boolean(cachedBatch));
   }, [id]);
 
   if (isLoading) {

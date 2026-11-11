@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 export const SupplierList = () => {
   const navigate = useNavigate();
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedSuppliers = cache.get<any[]>("suppliers_list");
+  const [suppliers, setSuppliers] = useState<any[]>(() => cachedSuppliers || []);
+  const [isLoading, setIsLoading] = useState(!cachedSuppliers);
 
   // Pagination & Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,24 +17,26 @@ export const SupplierList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const fetchSuppliers = useCallback(async () => {
-    setIsLoading(true);
+  const fetchSuppliers = useCallback(async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/suppliers`);
       if (!res.ok) throw new Error("Gagal mengambil data");
       const data = await res.json();
-      setSuppliers(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setSuppliers(list);
+      cache.set("suppliers_list", list);
     } catch (err) {
       console.error(err);
-      setSuppliers([]);
+      if (!cachedSuppliers) setSuppliers([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [cachedSuppliers]);
 
   useEffect(() => {
-    fetchSuppliers();
-  }, [fetchSuppliers]);
+    fetchSuppliers(Boolean(cachedSuppliers));
+  }, [fetchSuppliers, cachedSuppliers]);
 
   // Derived State: Filtered & Sorted
   const filteredAndSortedSuppliers = useMemo(() => {

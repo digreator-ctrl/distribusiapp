@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle2, X } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -34,24 +35,30 @@ export const AgentList = () => {
     }
   }, [location, navigate]);
 
-  const [agents, setAgents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedAgents = cache.get<any[]>("agents_list");
+  const [agents, setAgents] = useState<any[]>(() => cachedAgents || []);
+  const [isLoading, setIsLoading] = useState(!cachedAgents);
+
+  const fetchAgents = async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/agents`);
+      if (res.ok) {
+        const json = await res.json();
+        const data = Array.isArray(json) ? json : [];
+        setAgents(data);
+        cache.set("agents_list", data);
+      }
+    } catch (err) {
+      console.error("Gagal memuat agen:", err);
+      if (!cachedAgents) setAgents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/agents`);
-        if (res.ok) {
-          const json = await res.json();
-          setAgents(Array.isArray(json) ? json : []);
-        }
-      } catch (err) {
-        console.error("Gagal memuat agen:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchAgents();
+    fetchAgents(Boolean(cachedAgents));
   }, []);
 
   return (

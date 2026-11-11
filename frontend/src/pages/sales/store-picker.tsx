@@ -5,29 +5,34 @@ import {
   ShoppingBag, X, Search, MapPin, ChevronRight,
   AlertCircle, Plus, Calendar, Package
 } from "lucide-react";
+import { cache } from "../../utils/cache";
 
 export const SalesStorePicker = () => {
   const navigate = useNavigate();
-  const [stores, setStores] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedStores = cache.get<any[]>("stores_list");
+  const [stores, setStores] = useState<any[]>(() => cachedStores || []);
+  const [isLoading, setIsLoading] = useState(!cachedStores);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const fetchStores = async () => {
-      setIsLoading(true);
+    const fetchStores = async (isBackground = false) => {
+      if (!isBackground) setIsLoading(true);
       try {
         const res = await fetch("http://localhost:8787/api/stores");
         if (res.ok) {
           const data = await res.json();
-          setStores(Array.isArray(data) ? data : []);
+          const list = Array.isArray(data) ? data : [];
+          setStores(list);
+          cache.set("stores_list", list);
         }
       } catch (err) {
         console.error("Gagal memuat toko:", err);
+        if (!cachedStores) setStores([]);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchStores();
+    fetchStores(Boolean(cachedStores));
   }, []);
 
   const filteredStores = useMemo(() => {

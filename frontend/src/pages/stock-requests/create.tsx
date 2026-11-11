@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Plus, Trash2, Package, CheckCircle2, XCircle, FileText } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 // Komponen Floating Toast Notification
 const Toast = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {
@@ -57,10 +58,27 @@ export const StockRequestCreate = () => {
   
   const [items, setItems] = useState<any[]>([{ variant_id: "", batch_id: "", quantity: "" }]);
   
-  const [variants, setVariants] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [agents, setAgents] = useState<any[]>([]);
-  const [batches, setBatches] = useState<any[]>([]);
+  const cachedProducts = cache.get<any[]>("products_list");
+  const cachedBatches = cache.get<any[]>("inbound_batches_list");
+  const cachedUsers = cache.get<any[]>("users_list");
+  const cachedAgents = cache.get<any[]>("agents_list");
+
+  const [variants, setVariants] = useState<any[]>(() => {
+    if (!cachedProducts) return [];
+    let allVariants: any[] = [];
+    cachedProducts.forEach((p: any) => {
+      p.variants?.forEach((v: any) => {
+        allVariants.push({ ...v, product_id: p.id, product_name: p.name });
+      });
+    });
+    return allVariants;
+  });
+  const [users, setUsers] = useState<any[]>(() => {
+    if (!cachedUsers) return [];
+    return cachedUsers.filter((u: any) => u.role === "sales");
+  });
+  const [agents, setAgents] = useState<any[]>(() => cachedAgents || []);
+  const [batches, setBatches] = useState<any[]>(() => cachedBatches || []);
   const [isLoading, setIsLoading] = useState(false);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -73,6 +91,7 @@ export const StockRequestCreate = () => {
         const resProd = await fetch(`${API_BASE_URL}/products`);
         if (resProd.ok) {
           const products = await resProd.json();
+          cache.set("products_list", products);
           let allVariants: any[] = [];
           products.forEach((p: any) => {
             p.variants?.forEach((v: any) => {
@@ -85,7 +104,9 @@ export const StockRequestCreate = () => {
         // Fetch batches (inbound)
         const resBatches = await fetch(`${API_BASE_URL}/inbound_batches`);
         if (resBatches.ok) {
-          setBatches(await resBatches.json());
+          const batchesData = await resBatches.json();
+          cache.set("inbound_batches_list", batchesData);
+          setBatches(batchesData);
         }
 
         // Fetch targets if admin
@@ -93,12 +114,15 @@ export const StockRequestCreate = () => {
           const resUsers = await fetch(`${API_BASE_URL}/users`);
           if (resUsers.ok) {
             const data = await resUsers.json();
+            cache.set("users_list", data);
             setUsers(data.filter((u: any) => u.role === "sales"));
           }
           
           const resAgents = await fetch(`${API_BASE_URL}/agents`);
           if (resAgents.ok) {
-            setAgents(await resAgents.json());
+            const agentsData = await resAgents.json();
+            cache.set("agents_list", agentsData);
+            setAgents(agentsData);
           }
         }
       } catch (err) {
@@ -216,6 +240,7 @@ export const StockRequestCreate = () => {
 
       if (res.ok) {
         const data = await res.json();
+        cache.invalidate("stock_requests_list");
         setToast({ message: `Berhasil membuat ${isSales ? "pengajuan" : "distribusi"} stok (${data.code})`, type: "success" });
         setTimeout(() => {
           navigate(isSales ? "/sales/stock?tab=masuk&subTab=request" : "/stock-requests", {

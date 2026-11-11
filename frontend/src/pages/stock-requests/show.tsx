@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { ConfirmModal } from "../../components/ConfirmModal";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 
 // Komponen Web Toast Floating Notification
 const Toast = ({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) => {
@@ -65,8 +66,9 @@ export const StockRequestShow = () => {
     }
   };
   
-  const [request, setRequest] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedRequest = id ? cache.get<any>(`stock_request_${id}`) : null;
+  const [request, setRequest] = useState<any>(() => cachedRequest || null);
+  const [isLoading, setIsLoading] = useState(!cachedRequest);
   const [isProcessing, setIsProcessing] = useState(false);
   const [responseNote, setResponseNote] = useState("");
   const [confirmAction, setConfirmAction] = useState<{isOpen: boolean, action: 'delete' | 'approved' | 'rejected' | null}>({isOpen: false, action: null});
@@ -75,8 +77,9 @@ export const StockRequestShow = () => {
   const [qtyErrors, setQtyErrors] = useState<{ [itemId: string]: string }>({});
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const fetchRequest = async () => {
+  const fetchRequest = async (isBackground = false) => {
     try {
+      if (!isBackground) setIsLoading(true);
       const res = await fetch(`${API_BASE_URL}/stock-requests/${id}`);
       if (res.ok) {
         const data = await res.json();
@@ -89,24 +92,30 @@ export const StockRequestShow = () => {
             ? (i.approved_quantity !== null && i.approved_quantity !== undefined ? i.approved_quantity : "")
             : (i.approved_quantity !== null && i.approved_quantity !== undefined ? i.approved_quantity : i.quantity)
         }));
-        setRequest({ ...data, items: formattedItems });
+        const finalData = { ...data, items: formattedItems };
+        setRequest(finalData);
+        if (id) cache.set(`stock_request_${id}`, finalData);
         setQtyErrors({});
       } else {
-        setToast({ message: "Data dokumen tidak ditemukan", type: "error" });
-        setTimeout(() => {
-          navigate(isSales ? `/sales/stock?tab=masuk&subTab=${searchParams.get("subTab") || "recommendation"}` : "/stock-requests");
-        }, 1500);
+        if (!cachedRequest) {
+          setToast({ message: "Data dokumen tidak ditemukan", type: "error" });
+          setTimeout(() => {
+            navigate(isSales ? `/sales/stock?tab=masuk&subTab=${searchParams.get("subTab") || "recommendation"}` : "/stock-requests");
+          }, 1500);
+        }
       }
     } catch (err) {
       console.error(err);
-      setToast({ message: "Gagal memuat data dokumen", type: "error" });
+      if (!cachedRequest) {
+        setToast({ message: "Gagal memuat data dokumen", type: "error" });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRequest();
+    fetchRequest(Boolean(cachedRequest));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

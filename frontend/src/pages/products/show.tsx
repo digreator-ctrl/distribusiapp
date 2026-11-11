@@ -5,6 +5,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ConfirmModal } from "../../components/ConfirmModal";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 // Toast Kustom
@@ -32,8 +33,9 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
 export const ProductShow = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedProduct = id ? cache.get<any>(`product_${id}`) : null;
+  const [product, setProduct] = useState<any>(() => cachedProduct || null);
+  const [isLoading, setIsLoading] = useState(!cachedProduct);
   const [error, setError] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -56,21 +58,26 @@ export const ProductShow = () => {
 
   const userRole = localStorage.getItem("distribusi_role") || "admin";
 
-  const fetchProduct = useCallback(async () => {
-    setIsLoading(true);
+  const fetchProduct = useCallback(async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/products/${id}`);
       if (!res.ok) throw new Error("Produk tidak ditemukan");
       const data = await res.json();
       setProduct(data);
+      if (id) cache.set(`product_${id}`, data);
     } catch (err: any) {
-      setError(err.message);
+      if (!cachedProduct) {
+        setError(err.message);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [id, cachedProduct]);
 
-  useEffect(() => { fetchProduct(); }, [fetchProduct]);
+  useEffect(() => {
+    fetchProduct(Boolean(cachedProduct));
+  }, [fetchProduct, cachedProduct]);
 
   const toggleStatus = async () => {
     if (!product) return;

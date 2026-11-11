@@ -11,6 +11,7 @@ import {
   RefreshCw,
   X
 } from "lucide-react";
+import { cache } from "../../utils/cache";
 
 export const SalesHistory = () => {
   const navigate = useNavigate();
@@ -18,34 +19,41 @@ export const SalesHistory = () => {
     localStorage.getItem("distribusi_user_id") || ""
   );
 
+  const cachedHistory = activeSalesId ? cache.get<{ visits: any[]; inbounds: any[] }>(`sales_history_${activeSalesId}`) : null;
   const [filterPeriod, setFilterPeriod] = useState<"today" | "week" | "all">("today");
-  const [visits, setVisits] = useState<any[]>([]);
-  const [inbounds, setInbounds] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [visits, setVisits] = useState<any[]>(() => cachedHistory?.visits || []);
+  const [inbounds, setInbounds] = useState<any[]>(() => cachedHistory?.inbounds || []);
+  const [isLoading, setIsLoading] = useState(!cachedHistory);
 
   // Detail Modal
   const [selectedVisit, setSelectedVisit] = useState<any | null>(null);
   const [visitDetail, setVisitDetail] = useState<any | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
-  const fetchData = async (salesId: string) => {
+  const fetchData = async (salesId: string, isBackground = false) => {
     if (!salesId) return;
     try {
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
 
       // 1. Fetch visits
       const resVisits = await fetch(`http://localhost:8787/api/visits?sales_id=${salesId}`);
+      let vList: any[] = [];
       if (resVisits.ok) {
         const vData = await resVisits.json();
-        setVisits(Array.isArray(vData) ? vData : []);
+        vList = Array.isArray(vData) ? vData : [];
+        setVisits(vList);
       }
 
       // 2. Fetch approved stock requests (ambil gudang)
       const resSr = await fetch(`http://localhost:8787/api/stock-requests?sales_id=${salesId}&status=approved`);
+      let srList: any[] = [];
       if (resSr.ok) {
         const srData = await resSr.json();
-        setInbounds(Array.isArray(srData) ? srData : []);
+        srList = Array.isArray(srData) ? srData : [];
+        setInbounds(srList);
       }
+
+      cache.set(`sales_history_${salesId}`, { visits: vList, inbounds: srList });
     } catch (err) {
       console.error("Fetch history error:", err);
     } finally {
@@ -54,7 +62,7 @@ export const SalesHistory = () => {
   };
 
   useEffect(() => {
-    fetchData(activeSalesId);
+    fetchData(activeSalesId, Boolean(cachedHistory));
 
     const handleSalesChanged = () => {
       const newId = localStorage.getItem("distribusi_user_id") || "";

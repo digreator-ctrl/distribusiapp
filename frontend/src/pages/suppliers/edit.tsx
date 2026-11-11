@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 const API_URL = API_BASE_URL;
 
 // Toast Kustom
@@ -33,20 +34,22 @@ const Toast = ({ message, type, onClose }: { message: string; type: "success" | 
 export const SupplierEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    contact_person: "",
-    phone: "",
-    address: ""
-  });
+  const cachedSupplier = id ? cache.get<any>(`supplier_${id}`) : null;
+  const [formData, setFormData] = useState(() => ({
+    name: cachedSupplier?.name || "",
+    contact_person: cachedSupplier?.contact_person || "",
+    phone: cachedSupplier?.phone || "",
+    address: cachedSupplier?.address || ""
+  }));
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedSupplier);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   useEffect(() => {
-    const fetchSupplier = async () => {
+    const fetchSupplier = async (isBackground = false) => {
       try {
+        if (!isBackground) setIsLoading(true);
         const res = await fetch(`${API_URL}/suppliers/${id}`);
         if (!res.ok) throw new Error("Supplier tidak ditemukan");
         const data = await res.json();
@@ -56,13 +59,16 @@ export const SupplierEdit = () => {
           phone: data.phone || "",
           address: data.address || ""
         });
+        if (id) cache.set(`supplier_${id}`, data);
       } catch (err: any) {
-        setToast({ message: err.message, type: "error" });
+        if (!cachedSupplier) {
+          setToast({ message: err.message, type: "error" });
+        }
       } finally {
         setIsLoading(false);
       }
     };
-    fetchSupplier();
+    fetchSupplier(Boolean(cachedSupplier));
   }, [id]);
 
   // Hanya perbolehkan input angka pada kolom nomor HP
@@ -99,6 +105,8 @@ export const SupplierEdit = () => {
       });
       if (!res.ok) throw new Error("Gagal menyimpan data supplier");
 
+      cache.invalidate("suppliers_list");
+      if (id) cache.invalidate(`supplier_${id}`);
       setToast({ message: "Data supplier berhasil diperbarui.", type: "success" });
       setTimeout(() => {
         navigate(-1);

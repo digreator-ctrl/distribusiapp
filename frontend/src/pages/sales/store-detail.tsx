@@ -14,6 +14,7 @@ import {
   parseGmapsInput,
   type RegionItem
 } from "../../lib/wilayah";
+import { cache } from "../../utils/cache";
 
 export const SalesStoreDetail = () => {
   const { storeId } = useParams<{ storeId: string }>();
@@ -26,7 +27,8 @@ export const SalesStoreDetail = () => {
   const canDelete = isOwner; // Hanya Owner yang bisa Hapus (Admin & Sales hanya CR)
 
   // Ambil state toko yang dioper dari halaman list toko untuk transisi instan tanpa jeda
-  const initialStore = location.state?.store;
+  const cachedStore = storeId ? cache.get<any>(`store_${storeId}`) : null;
+  const initialStore = location.state?.store || cachedStore;
   const [store, setStore] = useState<any | null>(initialStore || null);
   const [isLoading, setIsLoading] = useState(!initialStore);
   const [isFetchingDetail, setIsFetchingDetail] = useState(false);
@@ -113,6 +115,7 @@ export const SalesStoreDetail = () => {
       if (res.ok) {
         const data = await res.json();
         setStore(data);
+        if (storeId) cache.set(`store_${storeId}`, data);
         setIsLoading(false); // Selesaikan loading langsung tanpa menunggu panggilan API luar
 
         setEditForm({

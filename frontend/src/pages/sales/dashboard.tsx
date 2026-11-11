@@ -4,23 +4,26 @@ import {
   Home, Store, Package,
   ChevronRight, TrendingUp, MapPin, Briefcase, Bell
 } from "lucide-react";
+import { cache } from "../../utils/cache";
 
 export const SalesDashboard = () => {
   const navigate = useNavigate();
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeSalesId, setActiveSalesId] = useState<string>(
     localStorage.getItem("distribusi_user_id") || ""
   );
+  const cachedDashboard = activeSalesId ? cache.get<any>(`sales_dashboard_${activeSalesId}`) : null;
+  const [dashboard, setDashboard] = useState<any>(() => cachedDashboard || null);
+  const [isLoading, setIsLoading] = useState(!cachedDashboard);
 
-  const fetchDashboard = async (salesId: string) => {
+  const fetchDashboard = async (salesId: string, isBackground = false) => {
     if (!salesId) return;
     try {
-      setIsLoading(true);
+      if (!isBackground) setIsLoading(true);
       const res = await fetch(`http://localhost:8787/api/sales-dashboard/${salesId}`);
       if (res.ok) {
         const data = await res.json();
         setDashboard(data);
+        cache.set(`sales_dashboard_${salesId}`, data);
       }
     } catch (err) {
       console.error("Dashboard fetch error:", err);
@@ -30,7 +33,7 @@ export const SalesDashboard = () => {
   };
 
   useEffect(() => {
-    fetchDashboard(activeSalesId);
+    fetchDashboard(activeSalesId, Boolean(cachedDashboard));
 
     const handleSalesChanged = () => {
       const newId = localStorage.getItem("distribusi_user_id") || "";

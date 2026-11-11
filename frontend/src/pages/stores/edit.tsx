@@ -5,6 +5,7 @@ import {
   MapPin, ExternalLink, Loader2
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { cache } from "../../utils/cache";
 import { CategoryCombobox } from "../../components/CategoryCombobox";
 import {
   PROVINCES_DATA,
@@ -57,18 +58,20 @@ export const StoreEdit = () => {
   const [isLoadingVillages, setIsLoadingVillages] = useState(false);
 
   // UI state
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedStore = id ? cache.get<any>(`store_${id}`) : null;
+  const [isLoading, setIsLoading] = useState(!cachedStore);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchStore = async () => {
+    const fetchStore = async (isBackground = false) => {
       if (!id) return;
       try {
-        setIsLoading(true);
+        if (!isBackground) setIsLoading(true);
         const res = await fetch(`${API_BASE_URL}/stores/${id}`);
         if (res.ok) {
           const data = await res.json();
+          cache.set(`store_${id}`, data);
           setName(data.name || "");
           setCategory(data.category || "");
           setOwnerName(data.owner_name || "");
@@ -118,7 +121,7 @@ export const StoreEdit = () => {
       }
     };
 
-    fetchStore();
+    fetchStore(Boolean(cachedStore));
 
     // Cek draf dan koordinat baru yang dipilih dari MapPickerPage
     const rawDraft = sessionStorage.getItem("stores_edit_draft_" + id);
@@ -361,6 +364,8 @@ export const StoreEdit = () => {
       });
 
       if (res.ok) {
+        cache.invalidate("stores_list");
+        if (id) cache.invalidate(`store_${id}`);
         navigate(`/stores/${id}`, {
           state: { successMessage: `Data mitra toko "${name.trim()}" berhasil diperbarui!` },
         });
