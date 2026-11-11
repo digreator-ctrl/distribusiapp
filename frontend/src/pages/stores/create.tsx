@@ -14,6 +14,7 @@ import {
   type RegionItem,
 } from "../../lib/wilayah";
 import { SearchableSelect } from "../../components/SearchableSelect";
+import { CategoryCombobox } from "../../components/CategoryCombobox";
 
 // Komponen Floating Toast Notification Kustom
 const Toast = ({
@@ -67,6 +68,7 @@ export const StoreCreate = () => {
 
   // Basic form states
   const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [waNumber, setWaNumber] = useState("");
   const [address, setAddress] = useState("");
@@ -105,6 +107,7 @@ export const StoreCreate = () => {
       try {
         const d = JSON.parse(rawDraft);
         if (d.name) setName(d.name);
+        if (d.category) setCategory(d.category);
         if (d.ownerName) setOwnerName(d.ownerName);
         if (d.waNumber) setWaNumber(d.waNumber);
         if (d.address) setAddress(d.address);
@@ -183,6 +186,7 @@ export const StoreCreate = () => {
     sessionStorage.removeItem("store_create_draft");
     sessionStorage.removeItem("picked_map_location");
     setName("");
+    setCategory("");
     setOwnerName("");
     setWaNumber("");
     setAddress("");
@@ -236,6 +240,7 @@ export const StoreCreate = () => {
   const handleOpenMapPicker = () => {
     const draft = {
       name,
+      category,
       ownerName,
       waNumber,
       address,
@@ -422,6 +427,7 @@ export const StoreCreate = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          category: category.trim() || null,
           owner_name: ownerName.trim(),
           wa_number: waNumber.trim(),
           status: "Aktif",
@@ -502,8 +508,8 @@ export const StoreCreate = () => {
           </div>
 
           <form onSubmit={handleSubmit} noValidate className="space-y-6 text-xs sm:text-sm">
-            {/* Bagian 1: Data Utama Toko (Nama, Pemilik/PIC, WhatsApp) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {/* Bagian 1: Data Utama Toko (Nama, Kategori, Pemilik/PIC, WhatsApp) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {/* Nama Toko */}
               <div>
                 <label
@@ -535,6 +541,17 @@ export const StoreCreate = () => {
                     {errors.name}
                   </p>
                 )}
+              </div>
+
+              {/* Kategori Mitra (Otomatis Dropdown + Ketik Baru) */}
+              <div>
+                <CategoryCombobox
+                  id="field-category"
+                  label="Kategori Mitra Toko"
+                  value={category}
+                  onChange={setCategory}
+                  placeholder="Pilih atau ketik kategori toko..."
+                />
               </div>
 
               {/* Nama Pemilik / PIC Toko */}
@@ -571,7 +588,7 @@ export const StoreCreate = () => {
               </div>
 
               {/* Nomor WhatsApp Toko */}
-              <div className="sm:col-span-2 lg:col-span-1">
+              <div>
                 <div className="flex items-center justify-between mb-1 sm:mb-1.5">
                   <label
                     htmlFor="field-waNumber"

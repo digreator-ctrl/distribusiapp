@@ -135,6 +135,11 @@ export const StoreShow = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">{store.name}</h1>
+              {store.category && (
+                <span className="px-2.5 py-0.5 text-xs font-bold rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {store.category}
+                </span>
+              )}
               <span
                 className={`px-2.5 py-0.5 text-xs font-black rounded-full border ${
                   isStoreActive
@@ -148,7 +153,12 @@ export const StoreShow = () => {
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
               <span className="flex items-center gap-1.5">
                 <User size={13} />
-                <span>Pemilik / PIC: <strong className="text-foreground">{store.owner_name || "-"}</strong></span>
+                <span>Pemilik / PIC: <strong className="text-foreground">{store.owner_name || "-"}</strong></span>{store.category && (
+                <>
+                  <span>•</span>
+                  <span>Kategori: <strong className="text-foreground">{store.category}</strong></span>
+                </>
+              )}
               </span>
               <span>•</span>
               <span className="truncate">{regionText}</span>

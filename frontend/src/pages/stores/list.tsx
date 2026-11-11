@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Store, Plus, Search, MapPin, Phone,
-  CheckCircle2, X, Trash2, Edit, Eye, Filter
+  CheckCircle2, X, Trash2, Edit, Eye, Filter, Tag
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 
@@ -47,6 +47,7 @@ export const StoreList = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [provinceFilter, setProvinceFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   const fetchStores = async () => {
     try {
@@ -99,25 +100,36 @@ export const StoreList = () => {
     stores.forEach((s) => {
       if (s.province) pSet.add(s.province);
     });
-    return Array.from(pSet);
+    return Array.from(pSet).sort();
+  }, [stores]);
+
+  const categories = useMemo(() => {
+    const cSet = new Set<string>();
+    stores.forEach((s) => {
+      if (s.category && s.category.trim()) cSet.add(s.category.trim());
+    });
+    return Array.from(cSet).sort();
   }, [stores]);
 
   const filteredStores = useMemo(() => {
     return stores.filter((s) => {
+      const q = search.toLowerCase().trim();
       const matchesSearch =
-        search === "" ||
-        s.name?.toLowerCase().includes(search.toLowerCase()) ||
-        s.owner_name?.toLowerCase().includes(search.toLowerCase()) ||
-        s.city?.toLowerCase().includes(search.toLowerCase()) ||
-        s.address?.toLowerCase().includes(search.toLowerCase());
+        q === "" ||
+        s.name?.toLowerCase().includes(q) ||
+        s.owner_name?.toLowerCase().includes(q) ||
+        s.category?.toLowerCase().includes(q) ||
+        s.city?.toLowerCase().includes(q) ||
+        s.address?.toLowerCase().includes(q);
 
       const sStatus = s.status || "Aktif";
       const matchesStatus = statusFilter === "all" || sStatus === statusFilter;
       const matchesProvince = provinceFilter === "all" || s.province === provinceFilter;
+      const matchesCategory = categoryFilter === "all" || s.category === categoryFilter;
 
-      return matchesSearch && matchesStatus && matchesProvince;
+      return matchesSearch && matchesStatus && matchesProvince && matchesCategory;
     });
-  }, [stores, search, statusFilter, provinceFilter]);
+  }, [stores, search, statusFilter, provinceFilter, categoryFilter]);
 
   const formatRupiah = (num: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
@@ -178,33 +190,62 @@ export const StoreList = () => {
         {/* Table & Filter Container */}
         <div className="bg-card rounded-2xl border shadow-sm p-4 sm:p-6 space-y-4">
           {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="relative w-full sm:w-72">
+          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <input
                 type="text"
-                placeholder="Cari nama toko, PIC, wilayah..."
+                placeholder="Cari nama toko, PIC, kategori, wilayah..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Filter Kategori */}
+              {categories.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/60 text-xs">
+                  <Tag size={13} className="text-primary" />
+                  <span className="text-muted-foreground font-semibold">Kategori:</span>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="bg-transparent font-bold text-foreground focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">Semua Kategori</option>
+                    {categories.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Filter Status */}
               <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/60 text-xs">
                 <Filter size={13} className="text-muted-foreground" />
                 <span className="text-muted-foreground font-semibold">Status:</span>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-transparent font-bold text-foreground focus:outline-none"
+                  className="bg-transparent font-bold text-foreground focus:outline-none cursor-pointer"
                 >
-                  <option value="all">Semua</option>
+                  <option value="all">Semua Status</option>
                   <option value="Aktif">Aktif</option>
                   <option value="Tidak Aktif">Tidak Aktif</option>
                 </select>
               </div>
 
+              {/* Filter Provinsi */}
               {provinces.length > 0 && (
                 <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/60 text-xs">
                   <MapPin size={13} className="text-muted-foreground" />
@@ -212,14 +253,29 @@ export const StoreList = () => {
                   <select
                     value={provinceFilter}
                     onChange={(e) => setProvinceFilter(e.target.value)}
-                    className="bg-transparent font-bold text-foreground focus:outline-none"
+                    className="bg-transparent font-bold text-foreground focus:outline-none cursor-pointer"
                   >
-                    <option value="all">Semua</option>
+                    <option value="all">Semua Provinsi</option>
                     {provinces.map((p) => (
                       <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
                 </div>
+              )}
+
+              {(categoryFilter !== "all" || statusFilter !== "all" || provinceFilter !== "all" || search) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCategoryFilter("all");
+                    setStatusFilter("all");
+                    setProvinceFilter("all");
+                    setSearch("");
+                  }}
+                  className="px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition font-semibold"
+                >
+                  Reset
+                </button>
               )}
             </div>
           </div>
@@ -239,6 +295,7 @@ export const StoreList = () => {
                 <thead className="text-[11px] text-muted-foreground uppercase bg-muted/50 border-b border-border/60 font-bold">
                   <tr>
                     <th className="px-5 py-3.5">Nama Toko & PIC</th>
+                    <th className="px-5 py-3.5">Kategori</th>
                     <th className="px-5 py-3.5">Wilayah</th>
                     <th className="px-5 py-3.5">Kontak</th>
                     <th className="px-5 py-3.5 text-center">Stok di Rak</th>
@@ -261,6 +318,17 @@ export const StoreList = () => {
                           <p className="text-[11px] text-muted-foreground mt-0.5">
                             PIC: {store.owner_name || "-"}
                           </p>
+                        </td>
+
+                        {/* Kolom Baru: Kategori Mitra */}
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          {store.category ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                              {store.category}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-[11px] italic">-</span>
+                          )}
                         </td>
 
                         <td className="px-5 py-3.5 text-muted-foreground max-w-xs truncate">

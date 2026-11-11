@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS stores (
     city TEXT,
     district TEXT,
     village TEXT,
+    category TEXT,
     status TEXT DEFAULT 'Aktif',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(tenant_id) REFERENCES tenants(id)

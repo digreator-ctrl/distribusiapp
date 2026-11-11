@@ -1222,6 +1222,7 @@ app.get('/api/stores', async (c) => {
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN district TEXT').run() } catch (e) { }
     try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN village TEXT').run() } catch (e) { }
     try { await c.env.DB.prepare("ALTER TABLE stores ADD COLUMN status TEXT DEFAULT 'Aktif'").run() } catch (e) { }
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN category TEXT').run() } catch (e) { }
     try { await c.env.DB.prepare('ALTER TABLE consignments ADD COLUMN batch_id TEXT').run() } catch (e) { }
     try { await c.env.DB.prepare('ALTER TABLE consignments ADD COLUMN expired_date DATE').run() } catch (e) { }
 
@@ -1276,6 +1277,23 @@ app.get('/api/stores', async (c) => {
   }
 })
 
+
+app.get('/api/store_categories', async (c) => {
+  const tenant_id = getTenantId(c)
+  try {
+    try { await c.env.DB.prepare('ALTER TABLE stores ADD COLUMN category TEXT').run() } catch (e) { }
+    const { results } = await c.env.DB.prepare(`
+      SELECT DISTINCT category FROM stores 
+      WHERE tenant_id = ? AND category IS NOT NULL AND TRIM(category) != ''
+      ORDER BY category ASC
+    `).bind(tenant_id).all()
+    const categories = (results || []).map((r: any) => r.category)
+    return c.json(categories)
+  } catch (e: any) {
+    return c.json([])
+  }
+})
+
 app.post('/api/stores', async (c) => {
   const body = await c.req.json()
   const id = crypto.randomUUID()
@@ -1290,7 +1308,7 @@ app.post('/api/stores', async (c) => {
 
     const status = body.status || 'Aktif'
     await c.env.DB.prepare(
-      'INSERT INTO stores (id, tenant_id, name, owner_name, address, wa_number, latitude, longitude, province, city, district, village, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO stores (id, tenant_id, name, owner_name, address, wa_number, latitude, longitude, province, city, district, village, status, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(
       id,
       tenant_id,
@@ -1304,7 +1322,8 @@ app.post('/api/stores', async (c) => {
       body.city || null,
       body.district || null,
       body.village || null,
-      status
+      status,
+      body.category ? body.category.trim() : null
     ).run()
 
     const store = await c.env.DB.prepare('SELECT * FROM stores WHERE id = ?').bind(id).first()
@@ -1419,7 +1438,7 @@ app.put('/api/stores/:id', async (c) => {
     try { await c.env.DB.prepare("ALTER TABLE stores ADD COLUMN status TEXT DEFAULT 'Aktif'").run() } catch (e) { }
 
     await c.env.DB.prepare(
-      'UPDATE stores SET name = ?, owner_name = ?, address = ?, wa_number = ?, latitude = ?, longitude = ?, province = ?, city = ?, district = ?, village = ?, status = ? WHERE id = ?'
+      'UPDATE stores SET name = ?, owner_name = ?, address = ?, wa_number = ?, latitude = ?, longitude = ?, province = ?, city = ?, district = ?, village = ?, status = ?, category = ? WHERE id = ?'
     ).bind(
       body.name,
       body.owner_name || '',
@@ -1432,6 +1451,7 @@ app.put('/api/stores/:id', async (c) => {
       body.district || null,
       body.village || null,
       body.status || 'Aktif',
+      body.category ? body.category.trim() : null,
       id
     ).run()
 

@@ -5,6 +5,7 @@ import {
   MapPin, ExternalLink, Loader2
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
+import { CategoryCombobox } from "../../components/CategoryCombobox";
 import {
   PROVINCES_DATA,
   fetchRegencies,
@@ -28,6 +29,7 @@ export const StoreEdit = () => {
 
   // Basic form states
   const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [waNumber, setWaNumber] = useState("");
   const [status, setStatus] = useState("Aktif");
@@ -68,6 +70,7 @@ export const StoreEdit = () => {
         if (res.ok) {
           const data = await res.json();
           setName(data.name || "");
+          setCategory(data.category || "");
           setOwnerName(data.owner_name || "");
           setWaNumber(data.wa_number ? String(data.wa_number).replace(/\D/g, "") : "");
           setStatus(data.status || "Aktif");
@@ -343,6 +346,7 @@ export const StoreEdit = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          category: category.trim() || null,
           owner_name: ownerName.trim(),
           wa_number: waNumber.trim(),
           status: status,
@@ -381,7 +385,7 @@ export const StoreEdit = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="w-full max-w-5xl mx-auto space-y-6 sm:space-y-8">
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <button
@@ -394,7 +398,7 @@ export const StoreEdit = () => {
         </button>
       </div>
 
-      <div className="bg-card p-4 sm:p-6 lg:p-8 rounded-2xl border shadow-sm space-y-6">
+      <div className="bg-card p-4 sm:p-7 lg:p-9 rounded-2xl border shadow-sm space-y-6 sm:space-y-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Store className="text-primary w-6 h-6" />
@@ -412,11 +416,11 @@ export const StoreEdit = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-6 text-xs sm:text-sm">
           {/* Baris 1: Nama Toko & PIC */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div>
-              <label className="font-bold text-foreground block mb-1">
+              <label className="font-bold text-foreground text-xs sm:text-sm block mb-1 sm:mb-1.5">
                 Nama Toko <span className="text-red-500">*</span>
               </label>
               <input
@@ -424,12 +428,22 @@ export const StoreEdit = () => {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div>
-              <label className="font-bold text-foreground block mb-1">
+              <CategoryCombobox
+                id="edit-category"
+                label="Kategori Mitra Toko"
+                value={category}
+                onChange={setCategory}
+                placeholder="Pilih atau ketik kategori..."
+              />
+            </div>
+
+            <div>
+              <label className="font-bold text-foreground text-xs sm:text-sm block mb-1 sm:mb-1.5">
                 Nama Pemilik / PIC Toko <span className="text-red-500">*</span>
               </label>
               <input
@@ -437,24 +451,22 @@ export const StoreEdit = () => {
                 required
                 value={ownerName}
                 onChange={(e) => setOwnerName(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
-          </div>
 
-          {/* Baris 2: Kontak WA & Status */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-foreground">
+              <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+                <label className="font-bold text-foreground text-xs sm:text-sm">
                   Nomor WhatsApp Toko <span className="text-red-500">*</span>
                 </label>
-                <span className={`text-[10px] font-semibold ${waNumber.length >= 11 && waNumber.length <= 15
+                <span className={`text-[10px] sm:text-[11px] font-semibold ${
+                  waNumber.length >= 11 && waNumber.length <= 15
                     ? "text-emerald-600"
                     : waNumber.length > 0
-                      ? "text-amber-600"
-                      : "text-muted-foreground"
-                  }`}>
+                    ? "text-amber-600"
+                    : "text-muted-foreground"
+                }`}>
                   {waNumber.length} / 15 digit (min. 11)
                 </span>
               </div>
@@ -464,18 +476,18 @@ export const StoreEdit = () => {
                 placeholder="Hanya angka, contoh: 081234567890"
                 value={waNumber}
                 onChange={handleWaChange}
-                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono text-xs"
+                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono text-xs sm:text-sm"
               />
             </div>
 
-            <div>
-              <label className="font-bold text-foreground block mb-1">
+            <div className="sm:col-span-2">
+              <label className="font-bold text-foreground text-xs sm:text-sm block mb-1 sm:mb-1.5">
                 Status Mitra
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium"
+                className="w-full bg-background border border-border rounded-xl px-3.5 py-2.5 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium text-xs sm:text-sm cursor-pointer"
               >
                 <option value="Aktif">Aktif</option>
                 <option value="Tidak Aktif">Tidak Aktif</option>
