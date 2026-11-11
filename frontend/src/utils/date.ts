@@ -39,3 +39,4 @@ export function formatDateTime(val: string | number | Date | null | undefined): 
 
   return `${day} - ${month} - ${year} ${hours}:${minutes}`;
 }
+
