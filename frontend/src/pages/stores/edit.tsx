@@ -258,9 +258,14 @@ export const StoreEdit = () => {
 
     if (provId) {
       setIsLoadingRegencies(true);
-      const data = await fetchRegencies(provId);
-      setRegencies(data);
-      setIsLoadingRegencies(false);
+      try {
+        const data = await fetchRegencies(provId);
+        setRegencies(data);
+      } catch (err) {
+        console.error("Gagal load regencies:", err);
+      } finally {
+        setIsLoadingRegencies(false);
+      }
     }
   };
 
@@ -280,9 +285,14 @@ export const StoreEdit = () => {
 
     if (regId) {
       setIsLoadingDistricts(true);
-      const data = await fetchDistricts(regId);
-      setDistricts(data);
-      setIsLoadingDistricts(false);
+      try {
+        const data = await fetchDistricts(regId);
+        setDistricts(data);
+      } catch (err) {
+        console.error("Gagal load districts:", err);
+      } finally {
+        setIsLoadingDistricts(false);
+      }
     }
   };
 
@@ -298,9 +308,14 @@ export const StoreEdit = () => {
 
     if (distId) {
       setIsLoadingVillages(true);
-      const data = await fetchVillages(distId);
-      setVillages(data);
-      setIsLoadingVillages(false);
+      try {
+        const data = await fetchVillages(distId);
+        setVillages(data);
+      } catch (err) {
+        console.error("Gagal load villages:", err);
+      } finally {
+        setIsLoadingVillages(false);
+      }
     }
   };
 

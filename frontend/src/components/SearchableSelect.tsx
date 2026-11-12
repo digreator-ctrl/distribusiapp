@@ -47,17 +47,27 @@ export const SearchableSelect = ({
     }
   }, [value, isOpen]);
 
-  // Handle klik di luar untuk menutup dropdown
+  // Handle klik di luar untuk menutup dropdown & auto-match jika teks sesuai
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
+        if (searchQuery.trim()) {
+          const exact = options.find(
+            (opt) => opt.name.toLowerCase() === searchQuery.trim().toLowerCase()
+          );
+          if (exact) {
+            onSelect(exact);
+            setSearchQuery(exact.name);
+            return;
+          }
+        }
         setSearchQuery(value || "");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [value]);
+  }, [value, options, searchQuery, onSelect]);
 
   // Filter opsi berdasarkan input pencarian pengguna
   const filteredOptions = useMemo(() => {
@@ -75,6 +85,20 @@ export const SearchableSelect = ({
     // Jika dikosongkan total oleh user
     if (!val.trim() && value) {
       onSelect(null);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (filteredOptions.length > 0) {
+        const exact = filteredOptions.find(
+          (opt) => opt.name.toLowerCase() === searchQuery.trim().toLowerCase()
+        );
+        handleSelectOption(exact || filteredOptions[0]);
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
     }
   };
 
@@ -105,7 +129,7 @@ export const SearchableSelect = ({
         </label>
         {isLoading && (
           <span className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1 font-normal">
-            <Loader2 size={11} className="animate-spin text-primary" /> Memuat...
+            <Loader2 size={11} className="animate-spin text-primary" /> Memuat data...
           </span>
         )}
       </div>
@@ -120,11 +144,12 @@ export const SearchableSelect = ({
           id={id}
           ref={inputRef}
           type="text"
-          disabled={disabled || isLoading}
+          disabled={disabled}
           value={searchQuery}
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (!disabled && !isLoading) setIsOpen(true);
+            if (!disabled) setIsOpen(true);
           }}
           placeholder={disabled ? disabledPlaceholder : placeholder}
           autoComplete="off"
@@ -135,9 +160,12 @@ export const SearchableSelect = ({
           }`}
         />
 
-        {/* Clear & Dropdown Icon */}
+        {/* Clear & Dropdown Icon / Loading Spinner */}
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {value && !disabled && (
+          {isLoading && (
+            <Loader2 size={14} className="animate-spin text-primary mr-1" />
+          )}
+          {value && !disabled && !isLoading && (
             <button
               type="button"
               onClick={handleClear}
@@ -149,9 +177,9 @@ export const SearchableSelect = ({
           )}
           <button
             type="button"
-            disabled={disabled || isLoading}
+            disabled={disabled}
             onClick={() => {
-              if (!disabled && !isLoading) {
+              if (!disabled) {
                 setIsOpen(!isOpen);
                 inputRef.current?.focus();
               }
@@ -166,7 +194,12 @@ export const SearchableSelect = ({
       {/* Dropdown Hasil Pencarian Float */}
       {isOpen && !disabled && (
         <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-card border border-border shadow-2xl rounded-xl max-h-56 overflow-y-auto text-xs sm:text-sm divide-y divide-border/40 animate-in fade-in slide-in-from-top-1">
-          {filteredOptions.length > 0 ? (
+          {isLoading ? (
+            <div className="px-3.5 py-4 text-center text-muted-foreground text-xs flex items-center justify-center gap-2">
+              <Loader2 size={14} className="animate-spin text-primary" />
+              <span>Memuat daftar data wilayah...</span>
+            </div>
+          ) : filteredOptions.length > 0 ? (
             filteredOptions.map((opt) => {
               const isSelected = opt.name === value || opt.id === value;
               return (
@@ -185,7 +218,7 @@ export const SearchableSelect = ({
             })
           ) : (
             <div className="px-3.5 py-3 text-center text-muted-foreground text-[11px] sm:text-xs">
-              {searchQuery ? `Tidak ada hasil untuk "${searchQuery}"` : "Belum ada opsi"}
+              {searchQuery ? `Tidak ada hasil untuk "${searchQuery}"` : "Belum ada opsi pilihan"}
             </div>
           )}
         </div>

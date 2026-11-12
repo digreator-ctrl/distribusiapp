@@ -1918,5 +1918,69 @@ app.get('/api/dashboard-summary', async (c) => {
   }
 })
 
+// ==========================================
+// REGIONS PROXY API (Wilayah Indonesia)
+// ==========================================
+
+app.get('/api/regions/regencies/:provinceId', async (c) => {
+  const provinceId = c.req.param('provinceId')
+  if (!provinceId) return c.json([], 200)
+
+  try {
+    let res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/regencies/${provinceId}.json`)
+    if (!res.ok) {
+      res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinceId}.json`)
+    }
+    if (res.ok) {
+      const data = await res.json()
+      c.header('Cache-Control', 'public, max-age=86400')
+      return c.json(data)
+    }
+  } catch (err: any) {
+    console.error('Proxy regencies error:', err)
+  }
+  return c.json([], 200)
+})
+
+app.get('/api/regions/districts/:regencyId', async (c) => {
+  const regencyId = c.req.param('regencyId')
+  if (!regencyId) return c.json([], 200)
+
+  try {
+    let res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/districts/${regencyId}.json`)
+    if (!res.ok) {
+      res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${regencyId}.json`)
+    }
+    if (res.ok) {
+      const data = await res.json()
+      c.header('Cache-Control', 'public, max-age=86400')
+      return c.json(data)
+    }
+  } catch (err: any) {
+    console.error('Proxy districts error:', err)
+  }
+  return c.json([], 200)
+})
+
+app.get('/api/regions/villages/:districtId', async (c) => {
+  const districtId = c.req.param('districtId')
+  if (!districtId) return c.json([], 200)
+
+  try {
+    let res = await fetch(`https://emsifa.github.io/api-wilayah-indonesia/api/villages/${districtId}.json`)
+    if (!res.ok) {
+      res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${districtId}.json`)
+    }
+    if (res.ok) {
+      const data = await res.json()
+      c.header('Cache-Control', 'public, max-age=86400')
+      return c.json(data)
+    }
+  } catch (err: any) {
+    console.error('Proxy villages error:', err)
+  }
+  return c.json([], 200)
+})
+
 export default app
 

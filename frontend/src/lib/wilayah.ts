@@ -1,4 +1,5 @@
 // Helper Data Wilayah Indonesia & Integrasi Google Maps
+import { API_BASE_URL } from "../config/api";
 
 export interface RegionItem {
   id: string;
@@ -47,6 +48,48 @@ export const PROVINCES_DATA: RegionItem[] = [
   { id: "12", name: "Sumatera Utara" },
 ].sort((a, b) => a.name.localeCompare(b.name, "id-ID"));
 
+// 38 Kabupaten / Kota di Jawa Timur (Provinsi ID: 35) sebagai Fallback Instan Offline
+export const JAWA_TIMUR_REGENCIES: RegionItem[] = [
+  { id: "3501", name: "Kabupaten Pacitan" },
+  { id: "3502", name: "Kabupaten Ponorogo" },
+  { id: "3503", name: "Kabupaten Trenggalek" },
+  { id: "3504", name: "Kabupaten Tulungagung" },
+  { id: "3505", name: "Kabupaten Blitar" },
+  { id: "3506", name: "Kabupaten Kediri" },
+  { id: "3507", name: "Kabupaten Malang" },
+  { id: "3508", name: "Kabupaten Lumajang" },
+  { id: "3509", name: "Kabupaten Jember" },
+  { id: "3510", name: "Kabupaten Banyuwangi" },
+  { id: "3511", name: "Kabupaten Bondowoso" },
+  { id: "3512", name: "Kabupaten Situbondo" },
+  { id: "3513", name: "Kabupaten Probolinggo" },
+  { id: "3514", name: "Kabupaten Pasuruan" },
+  { id: "3515", name: "Kabupaten Sidoarjo" },
+  { id: "3516", name: "Kabupaten Mojokerto" },
+  { id: "3517", name: "Kabupaten Jombang" },
+  { id: "3518", name: "Kabupaten Nganjuk" },
+  { id: "3519", name: "Kabupaten Madiun" },
+  { id: "3520", name: "Kabupaten Magetan" },
+  { id: "3521", name: "Kabupaten Ngawi" },
+  { id: "3522", name: "Kabupaten Bojonegoro" },
+  { id: "3523", name: "Kabupaten Tuban" },
+  { id: "3524", name: "Kabupaten Lamongan" },
+  { id: "3525", name: "Kabupaten Gresik" },
+  { id: "3526", name: "Kabupaten Bangkalan" },
+  { id: "3527", name: "Kabupaten Sampang" },
+  { id: "3528", name: "Kabupaten Pamekasan" },
+  { id: "3529", name: "Kabupaten Sumenep" },
+  { id: "3571", name: "Kota Kediri" },
+  { id: "3572", name: "Kota Blitar" },
+  { id: "3573", name: "Kota Malang" },
+  { id: "3574", name: "Kota Probolinggo" },
+  { id: "3575", name: "Kota Pasuruan" },
+  { id: "3576", name: "Kota Mojokerto" },
+  { id: "3577", name: "Kota Madiun" },
+  { id: "3578", name: "Kota Surabaya" },
+  { id: "3579", name: "Kota Batu" },
+].sort((a, b) => a.name.localeCompare(b.name, "id-ID"));
+
 export const toTitleCase = (str: string) => {
   if (!str) return "";
   return str
@@ -60,19 +103,52 @@ export const toTitleCase = (str: string) => {
 };
 
 // Cache API agar tidak memanggil ulang data yang sama
-const cacheRegencies: Record<string, RegionItem[]> = {};
+const cacheRegencies: Record<string, RegionItem[]> = {
+  "35": JAWA_TIMUR_REGENCIES,
+};
 const cacheDistricts: Record<string, RegionItem[]> = {};
 const cacheVillages: Record<string, RegionItem[]> = {};
 
+// Helper multi-source fetcher dengan fallback bertingkat
+const fetchWithFallback = async (urls: string[]): Promise<any[]> => {
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch {
+      // lanjut ke fallback berikutnya
+    }
+  }
+  return [];
+};
+
 export const fetchRegencies = async (provinceId: string): Promise<RegionItem[]> => {
   if (!provinceId) return [];
-  if (cacheRegencies[provinceId]) return cacheRegencies[provinceId];
+  if (cacheRegencies[provinceId] && cacheRegencies[provinceId].length > 0) {
+    return cacheRegencies[provinceId];
+  }
+
+  // Khusus Jawa Timur (35) selalu tersedia instan
+  if (provinceId === "35") {
+    cacheRegencies["35"] = JAWA_TIMUR_REGENCIES;
+    return JAWA_TIMUR_REGENCIES;
+  }
+
+  const urls = [
+    `${API_BASE_URL}/regions/regencies/${provinceId}`,
+    `https://emsifa.github.io/api-wilayah-indonesia/api/regencies/${provinceId}.json`,
+    `https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinceId}.json`,
+  ];
 
   try {
-    const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/regencies/${provinceId}.json`);
-    if (res.ok) {
-      const data = await res.json();
-      const formatted: RegionItem[] = data.map((item: any) => ({
+    const raw = await fetchWithFallback(urls);
+    if (raw.length > 0) {
+      const formatted: RegionItem[] = raw.map((item: any) => ({
         id: String(item.id),
         name: toTitleCase(item.name),
       }));
@@ -83,18 +159,26 @@ export const fetchRegencies = async (provinceId: string): Promise<RegionItem[]> 
   } catch (err) {
     console.error("Gagal mengambil data kabupaten/kota:", err);
   }
+
   return [];
 };
 
 export const fetchDistricts = async (regencyId: string): Promise<RegionItem[]> => {
   if (!regencyId) return [];
-  if (cacheDistricts[regencyId]) return cacheDistricts[regencyId];
+  if (cacheDistricts[regencyId] && cacheDistricts[regencyId].length > 0) {
+    return cacheDistricts[regencyId];
+  }
+
+  const urls = [
+    `${API_BASE_URL}/regions/districts/${regencyId}`,
+    `https://emsifa.github.io/api-wilayah-indonesia/api/districts/${regencyId}.json`,
+    `https://www.emsifa.com/api-wilayah-indonesia/api/districts/${regencyId}.json`,
+  ];
 
   try {
-    const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/districts/${regencyId}.json`);
-    if (res.ok) {
-      const data = await res.json();
-      const formatted: RegionItem[] = data.map((item: any) => ({
+    const raw = await fetchWithFallback(urls);
+    if (raw.length > 0) {
+      const formatted: RegionItem[] = raw.map((item: any) => ({
         id: String(item.id),
         name: toTitleCase(item.name),
       }));
@@ -105,18 +189,26 @@ export const fetchDistricts = async (regencyId: string): Promise<RegionItem[]> =
   } catch (err) {
     console.error("Gagal mengambil data kecamatan:", err);
   }
+
   return [];
 };
 
 export const fetchVillages = async (districtId: string): Promise<RegionItem[]> => {
   if (!districtId) return [];
-  if (cacheVillages[districtId]) return cacheVillages[districtId];
+  if (cacheVillages[districtId] && cacheVillages[districtId].length > 0) {
+    return cacheVillages[districtId];
+  }
+
+  const urls = [
+    `${API_BASE_URL}/regions/villages/${districtId}`,
+    `https://emsifa.github.io/api-wilayah-indonesia/api/villages/${districtId}.json`,
+    `https://www.emsifa.com/api-wilayah-indonesia/api/villages/${districtId}.json`,
+  ];
 
   try {
-    const res = await fetch(`https://www.emsifa.com/api-wilayah-indonesia/api/villages/${districtId}.json`);
-    if (res.ok) {
-      const data = await res.json();
-      const formatted: RegionItem[] = data.map((item: any) => ({
+    const raw = await fetchWithFallback(urls);
+    if (raw.length > 0) {
+      const formatted: RegionItem[] = raw.map((item: any) => ({
         id: String(item.id),
         name: toTitleCase(item.name),
       }));
@@ -127,6 +219,7 @@ export const fetchVillages = async (districtId: string): Promise<RegionItem[]> =
   } catch (err) {
     console.error("Gagal mengambil data kelurahan/desa:", err);
   }
+
   return [];
 };
 

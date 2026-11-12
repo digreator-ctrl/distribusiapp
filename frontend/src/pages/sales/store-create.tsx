@@ -150,9 +150,14 @@ export const SalesStoreCreate = () => {
     setVillages([]);
 
     setIsLoadingRegencies(true);
-    const data = await fetchRegencies(opt.id);
-    setRegencies(data);
-    setIsLoadingRegencies(false);
+    try {
+      const data = await fetchRegencies(opt.id);
+      setRegencies(data);
+    } catch (err) {
+      console.error("Gagal load regencies:", err);
+    } finally {
+      setIsLoadingRegencies(false);
+    }
   };
 
   const handleRegSelect = async (opt: RegionItem | null) => {
@@ -178,9 +183,14 @@ export const SalesStoreCreate = () => {
     setVillages([]);
 
     setIsLoadingDistricts(true);
-    const data = await fetchDistricts(opt.id);
-    setDistricts(data);
-    setIsLoadingDistricts(false);
+    try {
+      const data = await fetchDistricts(opt.id);
+      setDistricts(data);
+    } catch (err) {
+      console.error("Gagal load districts:", err);
+    } finally {
+      setIsLoadingDistricts(false);
+    }
   };
 
   const handleDistSelect = async (opt: RegionItem | null) => {
@@ -200,9 +210,14 @@ export const SalesStoreCreate = () => {
     setVillages([]);
 
     setIsLoadingVillages(true);
-    const data = await fetchVillages(opt.id);
-    setVillages(data);
-    setIsLoadingVillages(false);
+    try {
+      const data = await fetchVillages(opt.id);
+      setVillages(data);
+    } catch (err) {
+      console.error("Gagal load villages:", err);
+    } finally {
+      setIsLoadingVillages(false);
+    }
   };
 
   const handleVillageSelect = (opt: RegionItem | null) => {

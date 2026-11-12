@@ -111,16 +111,43 @@ export const StoreCreate = () => {
         if (d.ownerName) setOwnerName(d.ownerName);
         if (d.waNumber) setWaNumber(d.waNumber);
         if (d.address) setAddress(d.address);
-        if (d.selectedProvinceId) setSelectedProvinceId(d.selectedProvinceId);
         if (d.provinceName) setProvinceName(d.provinceName);
-        if (d.selectedRegencyId) setSelectedRegencyId(d.selectedRegencyId);
         if (d.cityName) setCityName(d.cityName);
-        if (d.selectedDistrictId) setSelectedDistrictId(d.selectedDistrictId);
         if (d.districtName) setDistrictName(d.districtName);
         if (d.villageName) setVillageName(d.villageName);
         if (d.gmapsInput) setGmapsInput(d.gmapsInput);
         if (d.latitude) setLatitude(d.latitude);
         if (d.longitude) setLongitude(d.longitude);
+
+        // Pulihkan ID provinsi dan cascading regencies/districts/villages
+        const provIdToLoad = d.selectedProvinceId || PROVINCES_DATA.find((p) => p.name.toLowerCase() === (d.provinceName || "").toLowerCase())?.id;
+        if (provIdToLoad) {
+          setSelectedProvinceId(provIdToLoad);
+          setIsLoadingRegencies(true);
+          fetchRegencies(provIdToLoad)
+            .then((regData) => {
+              setRegencies(regData);
+              const regIdToLoad = d.selectedRegencyId || regData.find((r) => r.name.toLowerCase() === (d.cityName || "").toLowerCase())?.id;
+              if (regIdToLoad) {
+                setSelectedRegencyId(regIdToLoad);
+                setIsLoadingDistricts(true);
+                fetchDistricts(regIdToLoad)
+                  .then((distData) => {
+                    setDistricts(distData);
+                    const distIdToLoad = d.selectedDistrictId || distData.find((ds) => ds.name.toLowerCase() === (d.districtName || "").toLowerCase())?.id;
+                    if (distIdToLoad) {
+                      setSelectedDistrictId(distIdToLoad);
+                      setIsLoadingVillages(true);
+                      fetchVillages(distIdToLoad)
+                        .then((vilData) => setVillages(vilData))
+                        .finally(() => setIsLoadingVillages(false));
+                    }
+                  })
+                  .finally(() => setIsLoadingDistricts(false));
+              }
+            })
+            .finally(() => setIsLoadingRegencies(false));
+        }
       } catch (e) {
         console.warn("Restore draft error:", e);
       }
@@ -301,9 +328,14 @@ export const StoreCreate = () => {
     setVillages([]);
 
     setIsLoadingRegencies(true);
-    const data = await fetchRegencies(opt.id);
-    setRegencies(data);
-    setIsLoadingRegencies(false);
+    try {
+      const data = await fetchRegencies(opt.id);
+      setRegencies(data);
+    } catch (err) {
+      console.error("Gagal load regencies:", err);
+    } finally {
+      setIsLoadingRegencies(false);
+    }
   };
 
   // 2. Regency/City Select Handler
@@ -332,9 +364,14 @@ export const StoreCreate = () => {
     setVillages([]);
 
     setIsLoadingDistricts(true);
-    const data = await fetchDistricts(opt.id);
-    setDistricts(data);
-    setIsLoadingDistricts(false);
+    try {
+      const data = await fetchDistricts(opt.id);
+      setDistricts(data);
+    } catch (err) {
+      console.error("Gagal load districts:", err);
+    } finally {
+      setIsLoadingDistricts(false);
+    }
   };
 
   // 3. District Select Handler
@@ -356,9 +393,14 @@ export const StoreCreate = () => {
     setVillages([]);
 
     setIsLoadingVillages(true);
-    const data = await fetchVillages(opt.id);
-    setVillages(data);
-    setIsLoadingVillages(false);
+    try {
+      const data = await fetchVillages(opt.id);
+      setVillages(data);
+    } catch (err) {
+      console.error("Gagal load villages:", err);
+    } finally {
+      setIsLoadingVillages(false);
+    }
   };
 
   // 4. Village Select Handler
