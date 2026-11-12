@@ -515,7 +515,7 @@ export const SalesStoreCreate = () => {
         </div>
 
         {/* Wilayah Dropdowns */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
           <SearchableSelect
             id="field-province"
             label="Provinsi"
@@ -542,7 +542,7 @@ export const SalesStoreCreate = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
           <SearchableSelect
             id="field-district"
             label="Kecamatan"

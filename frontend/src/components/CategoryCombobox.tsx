@@ -203,13 +203,22 @@ export const CategoryCombobox = ({
                 <button
                   key={cat}
                   type="button"
-                  onClick={() => handleSelect(cat)}
-                  className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between transition hover:bg-muted/80 ${
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelect(cat);
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelect(cat);
+                  }}
+                  className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between transition hover:bg-muted/80 cursor-pointer ${
                     isSelected ? "bg-primary/10 text-primary font-bold" : "text-foreground font-medium"
                   }`}
                 >
-                  <span className="truncate">{cat}</span>
-                  {isSelected && <Check size={14} className="text-primary shrink-0" />}
+                  <span className="truncate pointer-events-none">{cat}</span>
+                  {isSelected && <Check size={14} className="text-primary shrink-0 pointer-events-none" />}
                 </button>
               );
             })

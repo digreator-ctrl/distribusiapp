@@ -116,7 +116,10 @@ export const SearchableSelect = ({
   };
 
   return (
-    <div ref={containerRef} className="relative space-y-1">
+    <div
+      ref={containerRef}
+      className={`relative space-y-1 ${isOpen ? "z-50" : "z-10"}`}
+    >
       {/* Label & Loading Status */}
       <div className="flex items-center justify-between">
         <label
@@ -148,6 +151,9 @@ export const SearchableSelect = ({
           value={searchQuery}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onClick={() => {
+            if (!disabled && !isOpen) setIsOpen(true);
+          }}
           onFocus={() => {
             if (!disabled) setIsOpen(true);
           }}
@@ -178,7 +184,15 @@ export const SearchableSelect = ({
           <button
             type="button"
             disabled={disabled}
-            onClick={() => {
+            onMouseDown={(e) => {
+              e.preventDefault();
+              if (!disabled) {
+                setIsOpen(!isOpen);
+                inputRef.current?.focus();
+              }
+            }}
+            onClick={(e) => {
+              e.preventDefault();
               if (!disabled) {
                 setIsOpen(!isOpen);
                 inputRef.current?.focus();
@@ -206,13 +220,22 @@ export const SearchableSelect = ({
                 <button
                   key={opt.id}
                   type="button"
-                  onClick={() => handleSelectOption(opt)}
-                  className={`w-full text-left px-3.5 py-2 sm:py-2.5 flex items-center justify-between transition hover:bg-muted/80 ${
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelectOption(opt);
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelectOption(opt);
+                  }}
+                  className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between transition hover:bg-muted/80 cursor-pointer ${
                     isSelected ? "bg-primary/10 text-primary font-bold" : "text-foreground font-medium"
                   }`}
                 >
-                  <span className="truncate">{opt.name}</span>
-                  {isSelected && <Check size={14} className="text-primary shrink-0" />}
+                  <span className="truncate pointer-events-none">{opt.name}</span>
+                  {isSelected && <Check size={14} className="text-primary shrink-0 pointer-events-none" />}
                 </button>
               );
             })

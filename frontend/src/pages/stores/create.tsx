@@ -692,65 +692,73 @@ export const StoreCreate = () => {
               {/* Grid Wilayah: 1 Kolom di Mobile, 2 Kolom di Tablet & Desktop */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 {/* Searchable Input Provinsi */}
-                <SearchableSelect
-                  id="field-province"
-                  label="Provinsi"
-                  required
-                  placeholder="Ketik untuk mencari provinsi..."
-                  options={PROVINCES_DATA}
-                  value={provinceName}
-                  onSelect={handleProvinceSelect}
-                  hasError={!!errors.province}
-                  errorMessage={errors.province}
-                />
+                <div className="relative z-30">
+                  <SearchableSelect
+                    id="field-province"
+                    label="Provinsi"
+                    required
+                    placeholder="Ketik untuk mencari provinsi..."
+                    options={PROVINCES_DATA}
+                    value={provinceName}
+                    onSelect={handleProvinceSelect}
+                    hasError={!!errors.province}
+                    errorMessage={errors.province}
+                  />
+                </div>
 
                 {/* Searchable Input Kabupaten / Kota */}
-                <SearchableSelect
-                  id="field-city"
-                  label="Kabupaten / Kota"
-                  required
-                  placeholder="Ketik untuk mencari kab/kota..."
-                  options={regencies}
-                  value={cityName}
-                  disabled={!selectedProvinceId}
-                  disabledPlaceholder="Pilih Provinsi terlebih dahulu"
-                  isLoading={isLoadingRegencies}
-                  onSelect={handleRegencySelect}
-                  hasError={!!errors.city}
-                  errorMessage={errors.city}
-                />
+                <div className="relative z-30">
+                  <SearchableSelect
+                    id="field-city"
+                    label="Kabupaten / Kota"
+                    required
+                    placeholder="Ketik untuk mencari kab/kota..."
+                    options={regencies}
+                    value={cityName}
+                    disabled={!selectedProvinceId}
+                    disabledPlaceholder="Pilih Provinsi terlebih dahulu"
+                    isLoading={isLoadingRegencies}
+                    onSelect={handleRegencySelect}
+                    hasError={!!errors.city}
+                    errorMessage={errors.city}
+                  />
+                </div>
 
                 {/* Searchable Input Kecamatan */}
-                <SearchableSelect
-                  id="field-district"
-                  label="Kecamatan"
-                  required
-                  placeholder="Ketik untuk mencari kecamatan..."
-                  options={districts}
-                  value={districtName}
-                  disabled={!selectedRegencyId}
-                  disabledPlaceholder="Pilih Kabupaten/Kota terlebih dahulu"
-                  isLoading={isLoadingDistricts}
-                  onSelect={handleDistrictSelect}
-                  hasError={!!errors.district}
-                  errorMessage={errors.district}
-                />
+                <div className="relative z-20">
+                  <SearchableSelect
+                    id="field-district"
+                    label="Kecamatan"
+                    required
+                    placeholder="Ketik untuk mencari kecamatan..."
+                    options={districts}
+                    value={districtName}
+                    disabled={!selectedRegencyId}
+                    disabledPlaceholder="Pilih Kabupaten/Kota terlebih dahulu"
+                    isLoading={isLoadingDistricts}
+                    onSelect={handleDistrictSelect}
+                    hasError={!!errors.district}
+                    errorMessage={errors.district}
+                  />
+                </div>
 
                 {/* Searchable Input Desa / Kelurahan */}
-                <SearchableSelect
-                  id="field-village"
-                  label="Desa / Kelurahan"
-                  required
-                  placeholder="Ketik untuk mencari desa/kelurahan..."
-                  options={villages}
-                  value={villageName}
-                  disabled={!selectedDistrictId}
-                  disabledPlaceholder="Pilih Kecamatan terlebih dahulu"
-                  isLoading={isLoadingVillages}
-                  onSelect={handleVillageSelect}
-                  hasError={!!errors.village}
-                  errorMessage={errors.village}
-                />
+                <div className="relative z-20">
+                  <SearchableSelect
+                    id="field-village"
+                    label="Desa / Kelurahan"
+                    required
+                    placeholder="Ketik untuk mencari desa/kelurahan..."
+                    options={villages}
+                    value={villageName}
+                    disabled={!selectedDistrictId}
+                    disabledPlaceholder="Pilih Kecamatan terlebih dahulu"
+                    isLoading={isLoadingVillages}
+                    onSelect={handleVillageSelect}
+                    hasError={!!errors.village}
+                    errorMessage={errors.village}
+                  />
+                </div>
               </div>
             </div>
 
