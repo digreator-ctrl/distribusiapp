@@ -1,11 +1,20 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  Store, Plus, Search, MapPin, Phone,
-  CheckCircle2, X, Trash2, Edit, Eye, Filter, Tag
+  Plus,
+  Search,
+  SlidersHorizontal,
+  X,
+  ChevronRight,
+  Store,
+  CheckCircle2,
+  MapPin,
+  User,
 } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 import { cache } from "../../utils/cache";
+
+const API_URL = API_BASE_URL;
 
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => {
@@ -27,13 +36,12 @@ const Toast = ({ message, onClose }: { message: string; onClose: () => void }) =
   );
 };
 
+const regionText = (s: any) =>
+  [s.province, s.city, s.district, s.village].filter(Boolean).join(" - ") || "-";
+
 export const StoreList = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  const userRole = (localStorage.getItem("distribusi_role") || "admin").toLowerCase();
-  const isOwner = userRole === "owner";
-  const canUpdate = isOwner; // Hanya Owner yang bisa Edit
 
   const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || "");
 
@@ -46,375 +54,497 @@ export const StoreList = () => {
   const cachedStores = cache.get<any[]>("stores_list");
   const [stores, setStores] = useState<any[]>(() => cachedStores || []);
   const [isLoading, setIsLoading] = useState(!cachedStores);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [provinceFilter, setProvinceFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const fetchStores = async (isBackground = false) => {
-    try {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterProvince, setFilterProvince] = useState("ALL");
+  const [sortOption, setSortOption] = useState("name_asc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const itemsPerPage = 10;
+
+  const fetchStores = useCallback(
+    async (isBackground = false) => {
       if (!isBackground) setIsLoading(true);
-      const res = await fetch(`${API_BASE_URL}/stores`);
-      if (res.ok) {
-        const json = await res.json();
-        const data = Array.isArray(json) ? json : [];
-        setStores(data);
-        cache.set("stores_list", data);
+      try {
+        const res = await fetch(`${API_URL}/stores`);
+        if (res.ok) {
+          const json = await res.json();
+          const data = Array.isArray(json) ? json : [];
+          setStores(data);
+          cache.set("stores_list", data);
+        }
+      } catch (err) {
+        console.error("Gagal memuat toko:", err);
+        if (!cachedStores) setStores([]);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error("Gagal memuat toko:", err);
-      if (!cachedStores) setStores([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [cachedStores]
+  );
 
   useEffect(() => {
     fetchStores(Boolean(cachedStores));
-  }, []);
-
-  const handleDelete = async (storeId: string, storeName: string) => {
-    if (!isOwner) {
-      alert("Aksi hapus hanya dapat dilakukan oleh Owner.");
-      return;
-    }
-
-    if (!confirm(`Hapus mitra toko "${storeName}"? Seluruh data terkait akan dihapus secara permanen.`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/stores/${storeId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setSuccessMsg(`Toko "${storeName}" berhasil dihapus.`);
-        fetchStores();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Gagal menghapus toko.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Terjadi gangguan koneksi.");
-    }
-  };
+  }, [fetchStores, cachedStores]);
 
   const provinces = useMemo(() => {
     const pSet = new Set<string>();
     stores.forEach((s) => {
       if (s.province) pSet.add(s.province);
     });
-    return Array.from(pSet).sort();
+    return ["ALL", ...Array.from(pSet).sort()];
   }, [stores]);
 
-  const categories = useMemo(() => {
-    const cSet = new Set<string>();
-    stores.forEach((s) => {
-      if (s.category && s.category.trim()) cSet.add(s.category.trim());
+  const activeFilterCount =
+    (filterStatus !== "ALL" ? 1 : 0) +
+    (filterProvince !== "ALL" ? 1 : 0) +
+    (sortOption !== "name_asc" ? 1 : 0);
+
+  const filteredAndSortedStores = useMemo(() => {
+    let result = [...stores];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (s) =>
+          (s.name && s.name.toLowerCase().includes(q)) ||
+          (s.owner_name && s.owner_name.toLowerCase().includes(q)) ||
+          (s.province && s.province.toLowerCase().includes(q)) ||
+          (s.city && s.city.toLowerCase().includes(q)) ||
+          (s.district && s.district.toLowerCase().includes(q)) ||
+          (s.village && s.village.toLowerCase().includes(q)) ||
+          (s.address && s.address.toLowerCase().includes(q))
+      );
+    }
+
+    if (filterStatus !== "ALL") {
+      result = result.filter((s) => (s.status || "Aktif") === filterStatus);
+    }
+
+    if (filterProvince !== "ALL") {
+      result = result.filter((s) => s.province === filterProvince);
+    }
+
+    result.sort((a, b) => {
+      const nameA = a.name?.toLowerCase() || "";
+      const nameB = b.name?.toLowerCase() || "";
+      switch (sortOption) {
+        case "name_asc":
+          return nameA.localeCompare(nameB);
+        case "name_desc":
+          return nameB.localeCompare(nameA);
+        default:
+          return 0;
+      }
     });
-    return Array.from(cSet).sort();
-  }, [stores]);
 
-  const filteredStores = useMemo(() => {
-    return stores.filter((s) => {
-      const q = search.toLowerCase().trim();
-      const matchesSearch =
-        q === "" ||
-        s.name?.toLowerCase().includes(q) ||
-        s.owner_name?.toLowerCase().includes(q) ||
-        s.category?.toLowerCase().includes(q) ||
-        s.city?.toLowerCase().includes(q) ||
-        s.address?.toLowerCase().includes(q);
+    return result;
+  }, [stores, searchQuery, filterStatus, filterProvince, sortOption]);
 
-      const sStatus = s.status || "Aktif";
-      const matchesStatus = statusFilter === "all" || sStatus === statusFilter;
-      const matchesProvince = provinceFilter === "all" || s.province === provinceFilter;
-      const matchesCategory = categoryFilter === "all" || s.category === categoryFilter;
+  const totalPages = Math.ceil(filteredAndSortedStores.length / itemsPerPage);
 
-      return matchesSearch && matchesStatus && matchesProvince && matchesCategory;
-    });
-  }, [stores, search, statusFilter, provinceFilter, categoryFilter]);
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
-  const formatRupiah = (num: number) =>
-    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(num);
+  const paginatedStores = filteredAndSortedStores.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-  const totalActiveStores = stores.filter((s) => (s.status || "Aktif") === "Aktif").length;
-  const totalDebtStores = stores.reduce((sum, s) => sum + (Number(s.total_debt) || 0), 0);
-  const totalStockInStores = stores.reduce((sum, s) => sum + (Number(s.total_remaining_stock) || 0), 0);
+  const statusBadgeClass = (status?: string) =>
+    (status || "Aktif") === "Aktif"
+      ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+      : "bg-zinc-100 text-zinc-700 border-zinc-200";
 
   return (
-    <>
+    <div className="bg-card p-3.5 sm:p-6 lg:p-8 rounded-2xl border shadow-sm">
       {successMsg && <Toast message={successMsg} onClose={() => setSuccessMsg("")} />}
 
-      <div className="space-y-6">
-        {/* Header & Action Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 sm:p-6 rounded-2xl border shadow-sm">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Store className="text-primary w-6 h-6" />
-              Mitra Toko
-            </h1>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              Kelola data toko ritel mitra konsinyasi dan distribusi.
-            </p>
-          </div>
+      {/* ============================================================== */}
+      {/* 1. HEADER & CONTROLS UNTUK DESKTOP / TABLET                      */}
+      {/* ============================================================== */}
+      <div className="hidden sm:flex flex-row items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Store className="text-primary w-6 h-6 md:w-7 md:h-7" />
+            Mitra Toko
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Kelola data toko ritel mitra konsinyasi dan distribusi. Klik baris untuk melihat detail.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate("/stores/create")}
+          className="px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold shadow-xs hover:opacity-90 transition text-center shrink-0 text-sm"
+        >
+          + Tambah Mitra Toko
+        </button>
+      </div>
+
+      {/* Desktop / Tablet Control Bar (Search, Filters, Sort) */}
+      <div className="hidden sm:flex gap-3 mb-6">
+        <input
+          type="text"
+          placeholder="Cari nama toko, PIC, atau wilayah..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="p-2.5 border rounded-xl flex-1 focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
+        />
+
+        <select
+          value={filterStatus}
+          onChange={(e) => {
+            setFilterStatus(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
+        >
+          <option value="ALL">Semua Status</option>
+          <option value="Aktif">Aktif</option>
+          <option value="Tidak Aktif">Tidak Aktif</option>
+        </select>
+
+        <select
+          value={filterProvince}
+          onChange={(e) => {
+            setFilterProvince(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
+        >
+          <option value="ALL">Semua Provinsi</option>
+          {provinces
+            .filter((p) => p !== "ALL")
+            .map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+        </select>
+
+        <select
+          value={sortOption}
+          onChange={(e) => {
+            setSortOption(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="p-2.5 border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none text-sm bg-background"
+        >
+          <option value="name_asc">Nama (A-Z)</option>
+          <option value="name_desc">Nama (Z-A)</option>
+        </select>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 2. HEADER & CONTROLS KHUSUS MOBILE (UI/UX MOBILE-FIRST)          */}
+      {/* ============================================================== */}
+      {/* Mobile Top Header: Judul + Counter + Tombol Tambah Kompak */}
+      <div className="flex sm:hidden items-center justify-between gap-2 mb-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-black tracking-tight text-foreground flex items-center gap-2">
+            <Store className="text-primary w-5 h-5 shrink-0" />
+            <span>Mitra Toko</span>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              {filteredAndSortedStores.length}
+            </span>
+          </h1>
+        </div>
+        <button
+          onClick={() => navigate("/stores/create")}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold shadow-xs hover:opacity-90 active:scale-95 transition-all shrink-0"
+        >
+          <Plus size={14} />
+          <span>Tambah</span>
+        </button>
+      </div>
+
+      {/* Mobile Search & Filter Bar */}
+      <div className="flex sm:hidden items-center gap-2 mb-2.5">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Cari nama, PIC, wilayah..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full pl-9 pr-8 py-2 text-xs bg-muted/40 border border-border/80 rounded-xl focus:bg-background focus:ring-2 focus:ring-primary/40 outline-none transition-all placeholder:text-muted-foreground"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setCurrentPage(1);
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+          className={`p-2 rounded-xl border flex items-center justify-center shrink-0 transition-all active:scale-95 relative ${
+            activeFilterCount > 0 || isMobileFilterOpen
+              ? "bg-primary text-primary-foreground border-primary shadow-xs"
+              : "bg-card border-border/80 text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Filter dan Urutkan"
+        >
+          <SlidersHorizontal size={16} />
+          {activeFilterCount > 0 && !isMobileFilterOpen && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile Horizontal Scrolling Status Chips */}
+      <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto pb-1 mb-3 scrollbar-none -mx-1 px-1">
+        {["ALL", "Aktif", "Tidak Aktif"].map((status) => (
           <button
-            onClick={() => navigate("/stores/create")}
-            className="w-full sm:w-auto px-4 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold text-sm shadow hover:opacity-90 transition flex items-center justify-center gap-2"
+            key={status}
+            type="button"
+            onClick={() => {
+              setFilterStatus(status);
+              setCurrentPage(1);
+            }}
+            className={`px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap shrink-0 transition-all ${
+              filterStatus === status
+                ? "bg-primary text-primary-foreground shadow-2xs font-bold"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted"
+            }`}
           >
-            <Plus size={16} />
-            <span>Tambah Mitra Toko</span>
+            {status === "ALL" ? "Semua Status" : status}
           </button>
+        ))}
+      </div>
+
+      {/* Mobile Expandable Filter & Sort Drawer Panel */}
+      {isMobileFilterOpen && (
+        <div className="sm:hidden mb-3.5 p-3.5 bg-muted/30 border border-border/80 rounded-2xl space-y-3 animate-in fade-in duration-150">
+          <div className="flex items-center justify-between pb-2 border-b border-border/50">
+            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <SlidersHorizontal size={13} className="text-primary" />
+              <span>Opsi Filter &amp; Urutan</span>
+            </span>
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterStatus("ALL");
+                  setFilterProvince("ALL");
+                  setSortOption("name_asc");
+                  setCurrentPage(1);
+                }}
+                className="text-[11px] font-bold text-destructive hover:underline"
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">
+                Provinsi
+              </label>
+              <select
+                value={filterProvince}
+                onChange={(e) => {
+                  setFilterProvince(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full p-2 border rounded-xl text-xs bg-card focus:ring-2 focus:ring-primary/40 outline-none"
+              >
+                <option value="ALL">Semua Provinsi</option>
+                {provinces
+                  .filter((p) => p !== "ALL")
+                  .map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-1">
+                Urutkan Berdasarkan
+              </label>
+              <select
+                value={sortOption}
+                onChange={(e) => {
+                  setSortOption(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full p-2 border rounded-xl text-xs bg-card focus:ring-2 focus:ring-primary/40 outline-none"
+              >
+                <option value="name_asc">Nama (A-Z)</option>
+                <option value="name_desc">Nama (Z-A)</option>
+              </select>
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* Metrics Overview Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="bg-card p-4 sm:p-5 rounded-2xl border shadow-xs space-y-1">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Mitra Toko</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-black text-foreground">{stores.length}</span>
-              <span className="text-xs text-emerald-600 font-bold">({totalActiveStores} Aktif)</span>
-            </div>
-          </div>
-
-          <div className="bg-card p-4 sm:p-5 rounded-2xl border shadow-xs space-y-1">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Stok di Toko</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl sm:text-3xl font-black text-foreground">{totalStockInStores}</span>
-              <span className="text-xs text-muted-foreground font-semibold">pcs</span>
-            </div>
-          </div>
-
-          <div className="bg-card p-4 sm:p-5 rounded-2xl border shadow-xs space-y-1 sm:col-span-2 md:col-span-1">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Total Piutang Toko</span>
-            <p className="text-xl sm:text-2xl font-black text-amber-600">{formatRupiah(totalDebtStores)}</p>
-          </div>
+      {/* ============================================================== */}
+      {/* 3. KONTEN DAFTAR MITRA TOKO (DESKTOP TABEL vs MOBILE CARDS)      */}
+      {/* ============================================================== */}
+      {isLoading ? (
+        <div className="py-10 text-center text-muted-foreground animate-pulse text-sm">
+          Memuat data mitra toko...
         </div>
-
-        {/* Table & Filter Container */}
-        <div className="bg-card rounded-2xl border shadow-sm p-4 sm:p-6 space-y-4">
-          {/* Filter Bar */}
-          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Cari nama toko, PIC, kategori, wilayah..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground hover:text-foreground"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Filter Kategori */}
-              {categories.length > 0 && (
-                <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/60 text-xs">
-                  <Tag size={13} className="text-primary" />
-                  <span className="text-muted-foreground font-semibold">Kategori:</span>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="bg-transparent font-bold text-foreground focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">Semua Kategori</option>
-                    {categories.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Filter Status */}
-              <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/60 text-xs">
-                <Filter size={13} className="text-muted-foreground" />
-                <span className="text-muted-foreground font-semibold">Status:</span>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-transparent font-bold text-foreground focus:outline-none cursor-pointer"
-                >
-                  <option value="all">Semua Status</option>
-                  <option value="Aktif">Aktif</option>
-                  <option value="Tidak Aktif">Tidak Aktif</option>
-                </select>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {/* A. TAMPILAN KHUSUS MOBILE: KARTU LIST TOKO */}
+          <div className="sm:hidden space-y-2.5">
+            {paginatedStores.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground border border-dashed rounded-2xl bg-muted/10">
+                <Store className="w-8 h-8 mx-auto text-muted-foreground/60 mb-2" />
+                <p className="text-xs font-semibold">
+                  {stores.length === 0
+                    ? "Belum ada mitra toko di database."
+                    : "Tidak ada mitra toko yang cocok dengan pencarian."}
+                </p>
               </div>
-
-              {/* Filter Provinsi */}
-              {provinces.length > 0 && (
-                <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/60 text-xs">
-                  <MapPin size={13} className="text-muted-foreground" />
-                  <span className="text-muted-foreground font-semibold">Provinsi:</span>
-                  <select
-                    value={provinceFilter}
-                    onChange={(e) => setProvinceFilter(e.target.value)}
-                    className="bg-transparent font-bold text-foreground focus:outline-none cursor-pointer"
+            ) : (
+              paginatedStores.map((store) => {
+                const isActive = (store.status || "Aktif") === "Aktif";
+                return (
+                  <div
+                    key={store.id}
+                    onClick={() => navigate(`/stores/${store.id}`, { state: { store } })}
+                    className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs active:scale-[0.99] transition-all cursor-pointer flex items-center justify-between gap-3 group hover:border-primary/50"
                   >
-                    <option value="all">Semua Provinsi</option>
-                    {provinces.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                          {store.name}
+                        </h3>
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${isActive ? "bg-emerald-500" : "bg-zinc-400"}`}
+                          title={store.status || "Aktif"}
+                        />
+                      </div>
 
-              {(categoryFilter !== "all" || statusFilter !== "all" || provinceFilter !== "all" || search) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryFilter("all");
-                    setStatusFilter("all");
-                    setProvinceFilter("all");
-                    setSearch("");
-                  }}
-                  className="px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-lg transition font-semibold"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
+                      <p className="text-xs text-muted-foreground truncate mb-1.5 flex items-center gap-1">
+                        <User size={11} className="shrink-0" />
+                        <span>PIC: {store.owner_name || "-"}</span>
+                      </p>
+
+                      <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                        <MapPin size={11} className="shrink-0 text-primary" />
+                        <span>{regionText(store)}</span>
+                      </p>
+                    </div>
+
+                    <ChevronRight
+                      size={18}
+                      className="text-muted-foreground group-hover:text-primary transition-colors shrink-0"
+                    />
+                  </div>
+                );
+              })
+            )}
           </div>
 
-          {/* Desktop Table View */}
-          {isLoading ? (
-            <div className="py-12 text-center text-muted-foreground animate-pulse text-sm">
-              Memuat data mitra toko...
-            </div>
-          ) : filteredStores.length === 0 ? (
-            <div className="py-12 text-center text-muted-foreground text-sm border border-dashed rounded-xl">
-              Tidak ada mitra toko yang sesuai dengan pencarian atau filter.
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-border/60">
-              <table className="w-full text-xs text-left">
-                <thead className="text-[11px] text-muted-foreground uppercase bg-muted/50 border-b border-border/60 font-bold">
+          {/* B. TAMPILAN DESKTOP & TABLET: TABEL LENGKAP */}
+          <div className="hidden sm:block overflow-x-auto rounded-xl border border-border/50">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Nama Toko</th>
+                  <th className="px-6 py-4 font-semibold">PIC</th>
+                  <th className="px-6 py-4 font-semibold">Wilayah</th>
+                  <th className="px-6 py-4 font-semibold text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedStores.length === 0 ? (
                   <tr>
-                    <th className="px-5 py-3.5">Nama Toko & PIC</th>
-                    <th className="px-5 py-3.5">Kategori</th>
-                    <th className="px-5 py-3.5">Wilayah</th>
-                    <th className="px-5 py-3.5">Kontak</th>
-                    <th className="px-5 py-3.5 text-center">Stok di Rak</th>
-                    <th className="px-5 py-3.5 text-center">Status</th>
-                    <th className="px-5 py-3.5 text-right">Aksi</th>
+                    <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
+                      {stores.length === 0
+                        ? "Belum ada data mitra toko di database. Silakan tambah mitra toko baru."
+                        : "Tidak ada mitra toko yang cocok dengan pencarian/filter."}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-border/40">
-                  {filteredStores.map((store) => {
-                    const isStoreActive = (store.status || "Aktif") === "Aktif";
-                    const regionParts = [store.province, store.city, store.district].filter(Boolean);
-                    const regionText = regionParts.length > 0 ? regionParts.join(" - ") : (store.address || "-");
+                ) : (
+                  paginatedStores.map((store) => (
+                    <tr
+                      key={store.id}
+                      onClick={() => navigate(`/stores/${store.id}`, { state: { store } })}
+                      className="border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-4">
+                        <p className="font-semibold">{store.name}</p>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {store.owner_name || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {regionText(store)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`text-xs px-3 py-1 rounded-full font-bold border ${statusBadgeClass(
+                            store.status
+                          )}`}
+                        >
+                          {store.status || "Aktif"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                    return (
-                      <tr key={store.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <p className="font-bold text-sm text-foreground hover:text-primary transition-colors cursor-pointer" onClick={() => navigate(`/stores/${store.id}`, { state: { store } })}>
-                            {store.name}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
-                            PIC: {store.owner_name || "-"}
-                          </p>
-                        </td>
-
-                        {/* Kolom Baru: Kategori Mitra */}
-                        <td className="px-5 py-3.5 whitespace-nowrap">
-                          {store.category ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                              {store.category}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground text-[11px] italic">-</span>
-                          )}
-                        </td>
-
-                        <td className="px-5 py-3.5 text-muted-foreground max-w-xs truncate">
-                          <p className="font-medium text-foreground">{regionText}</p>
-                          {store.address && regionParts.length > 0 && (
-                            <p className="text-[10px] text-muted-foreground truncate">{store.address}</p>
-                          )}
-                        </td>
-
-                        <td className="px-5 py-3.5">
-                          {store.wa_number ? (
-                            <a
-                              href={`https://wa.me/${store.wa_number.replace(/\D/g, "")}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-emerald-700 hover:underline flex items-center gap-1 font-semibold"
-                            >
-                              <Phone size={12} />
-                              <span>{store.wa_number}</span>
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </td>
-
-                        <td className="px-5 py-3.5 text-center font-bold text-foreground">
-                          {store.total_remaining_stock || 0} pcs
-                        </td>
-
-                        <td className="px-5 py-3.5 text-center">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                              isStoreActive
-                                ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                                : "bg-zinc-100 text-zinc-700 border-zinc-200"
-                            }`}
-                          >
-                            {store.status || "Aktif"}
-                          </span>
-                        </td>
-
-                        <td className="px-5 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => navigate(`/stores/${store.id}`, { state: { store } })}
-                              className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition"
-                              title="Lihat Detail"
-                            >
-                              <Eye size={15} />
-                            </button>
-
-                            {canUpdate && (
-                              <button
-                                onClick={() => navigate(`/stores/${store.id}/edit`)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-muted transition"
-                                title="Edit Toko"
-                              >
-                                <Edit size={15} />
-                              </button>
-                            )}
-
-                            {isOwner && (
-                              <button
-                                onClick={() => handleDelete(store.id, store.name)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
-                                title="Khusus Owner: Hapus Toko"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {/* C. PAGINATION CONTROLS (RESPONSIF MOBILE & DESKTOP) */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 text-xs sm:text-sm text-muted-foreground mt-3 pt-2">
+              <div className="text-center sm:text-left text-xs">
+                Menampilkan {(currentPage - 1) * itemsPerPage + 1} -{" "}
+                {Math.min(currentPage * itemsPerPage, filteredAndSortedStores.length)} dari{" "}
+                {filteredAndSortedStores.length} mitra toko
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-xs"
+                >
+                  Sebelumnya
+                </button>
+                <div className="flex items-center px-2 font-medium text-xs">
+                  {currentPage} / {totalPages}
+                </div>
+                <button
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-xs"
+                >
+                  Selanjutnya
+                </button>
+              </div>
             </div>
           )}
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 };
