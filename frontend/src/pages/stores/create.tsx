@@ -311,6 +311,11 @@ export const StoreCreate = () => {
       return;
     }
 
+    // Jika provinsi yang dipilih sama persis dengan yang sudah terpilih, jangan reset anak-anaknya
+    if (opt.id === selectedProvinceId) {
+      return;
+    }
+
     setSelectedProvinceId(opt.id);
     setProvinceName(opt.name);
     setErrors((prev) => ({ ...prev, province: "" }));
@@ -351,6 +356,11 @@ export const StoreCreate = () => {
       return;
     }
 
+    // Jika kabupaten/kota yang dipilih sama persis, jangan reset kecamatan
+    if (opt.id === selectedRegencyId) {
+      return;
+    }
+
     setSelectedRegencyId(opt.id);
     setCityName(opt.name);
     setErrors((prev) => ({ ...prev, city: "" }));
@@ -381,6 +391,11 @@ export const StoreCreate = () => {
       setDistrictName("");
       setVillageName("");
       setVillages([]);
+      return;
+    }
+
+    // Jika kecamatan yang dipilih sama persis, jangan reset desa/kelurahan
+    if (opt.id === selectedDistrictId) {
       return;
     }
 

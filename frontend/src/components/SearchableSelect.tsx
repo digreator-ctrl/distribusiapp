@@ -49,12 +49,18 @@ export const SearchableSelect = ({
 
   // Handle klik di luar untuk menutup dropdown & auto-match jika teks sesuai
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
-        if (searchQuery.trim()) {
+        const trimmed = searchQuery.trim().toLowerCase();
+        const currentVal = (value || "").trim().toLowerCase();
+
+        // Hanya auto-select jika pengguna mengetik nama baru yang valid dan belum terpilih
+        if (trimmed && trimmed !== currentVal) {
           const exact = options.find(
-            (opt) => opt.name.toLowerCase() === searchQuery.trim().toLowerCase()
+            (opt) => opt.name.toLowerCase() === trimmed
           );
           if (exact) {
             onSelect(exact);
@@ -67,7 +73,7 @@ export const SearchableSelect = ({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [value, options, searchQuery, onSelect]);
+  }, [isOpen, value, options, searchQuery, onSelect]);
 
   // Filter opsi berdasarkan input pencarian pengguna
   const filteredOptions = useMemo(() => {

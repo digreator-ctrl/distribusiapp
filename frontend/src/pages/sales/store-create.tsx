@@ -136,6 +136,8 @@ export const SalesStoreCreate = () => {
       return;
     }
 
+    if (opt.id === selectedProvId) return;
+
     setSelectedProvId(opt.id);
     setNewProvince(opt.name);
     setAddErrors((prev) => ({ ...prev, province: "" }));
@@ -172,6 +174,8 @@ export const SalesStoreCreate = () => {
       return;
     }
 
+    if (opt.id === selectedRegId) return;
+
     setSelectedRegId(opt.id);
     setNewCity(opt.name);
     setAddErrors((prev) => ({ ...prev, city: "" }));
@@ -201,6 +205,8 @@ export const SalesStoreCreate = () => {
       setVillages([]);
       return;
     }
+
+    if (opt.id === selectedDistId) return;
 
     setSelectedDistId(opt.id);
     setNewDistrict(opt.name);
