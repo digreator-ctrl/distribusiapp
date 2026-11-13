@@ -2,7 +2,7 @@ import { formatDate } from "../../utils/date";
 import { useState, useEffect } from "react";
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, X, ChevronRight, Calendar, ShieldCheck } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 import { cache } from "../../utils/cache";
 
@@ -24,6 +24,17 @@ const Toast = ({ message, onClose }: { message: string; onClose: () => void }) =
       </button>
     </div>
   );
+};
+
+const roleBadgeClass = (role?: string) => {
+  switch (role) {
+    case "owner":
+      return "bg-amber-100 text-amber-800";
+    case "admin":
+      return "bg-emerald-100 text-emerald-800";
+    default:
+      return "bg-sky-100 text-sky-800";
+  }
 };
 
 export const UserList = () => {
@@ -83,48 +94,90 @@ export const UserList = () => {
       {isLoading ? (
         <div className="py-10 text-center text-muted-foreground animate-pulse">Memuat data dari API Hono...</div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border/50">
-          <table className="w-full text-sm text-left">
-            <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
-              <tr>
-                <th className="px-6 py-4 font-semibold">Nama Karyawan</th>
-                <th className="px-6 py-4 font-semibold">Role</th>
-                <th className="px-6 py-4 font-semibold">Terdaftar Pada</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                    Belum ada data pengguna.
-                  </td>
-                </tr>
-              ) : (
-                users.map((user: any) => (
-                  <tr 
-                    key={user.id} 
-                    onClick={() => navigate(`/users/${user.id}`)}
-                    className="border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
-                  >
-                    <td className="px-6 py-4 font-semibold">
-                      {user.full_name || user.username}
-                      {user.full_name && <div className="text-xs text-muted-foreground font-normal">@{user.username}</div>}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        user.role === 'owner' ? 'bg-amber-100 text-amber-800' :
-                        user.role === 'admin' ? 'bg-emerald-100 text-emerald-800' :
-                        'bg-sky-100 text-sky-800'
-                      }`}>
+        <div className="flex flex-col gap-4">
+          {/* Mobile Card List */}
+          <div className="sm:hidden space-y-2.5">
+            {users.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground border border-dashed rounded-2xl bg-muted/10">
+                <p className="text-xs font-semibold">Belum ada data pengguna.</p>
+              </div>
+            ) : (
+              users.map((user: any) => (
+                <div
+                  key={user.id}
+                  onClick={() => navigate(`/users/${user.id}`)}
+                  className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs active:scale-[0.99] transition-all cursor-pointer flex items-center justify-between gap-3 group hover:border-primary/50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                        {user.full_name || user.username}
+                      </h3>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${roleBadgeClass(user.role)}`}>
                         {user.role}
                       </span>
+                    </div>
+                    {user.full_name && (
+                      <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
+                        <ShieldCheck size={11} className="shrink-0" />
+                        <span>@{user.username}</span>
+                      </p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground truncate mt-1 flex items-center gap-1">
+                      <Calendar size={11} className="shrink-0" />
+                      <span>Terdaftar: {formatDate(user.created_at)}</span>
+                    </p>
+                  </div>
+                  <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop / Tablet Table */}
+          <div className="hidden sm:block overflow-x-auto rounded-xl border border-border/50">
+            <table className="w-full text-sm text-left">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+                <tr>
+                  <th className="px-6 py-4 font-semibold">Nama Karyawan</th>
+                  <th className="px-6 py-4 font-semibold">Role</th>
+                  <th className="px-6 py-4 font-semibold">Terdaftar Pada</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
+                      Belum ada data pengguna.
                     </td>
-                    <td className="px-6 py-4">{formatDate(user.created_at)}</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  users.map((user: any) => (
+                    <tr 
+                      key={user.id} 
+                      onClick={() => navigate(`/users/${user.id}`)}
+                      className="border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-4 font-semibold">
+                        {user.full_name || user.username}
+                        {user.full_name && <div className="text-xs text-muted-foreground font-normal">@{user.username}</div>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          user.role === 'owner' ? 'bg-amber-100 text-amber-800' :
+                          user.role === 'admin' ? 'bg-emerald-100 text-emerald-800' :
+                          'bg-sky-100 text-sky-800'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">{formatDate(user.created_at)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

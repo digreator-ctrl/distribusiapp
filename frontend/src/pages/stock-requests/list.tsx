@@ -132,7 +132,7 @@ export const StockRequestList = () => {
       {/* Header Halaman Sisi Owner & Admin */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-card p-6 rounded-2xl border shadow-sm">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Distribusi & Approval Stok
             </h1>
@@ -189,7 +189,8 @@ export const StockRequestList = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <span>Rekomendasi (Distribusi)</span>
+              <span className="sm:hidden">Rekomendasi</span>
+              <span className="hidden sm:inline">Rekomendasi (Distribusi)</span>
               {pendingRecCount > 0 && (
                 <span className="px-1.5 py-0.5 bg-amber-500 text-white font-black text-[10px] rounded-full">
                   {pendingRecCount}
@@ -209,7 +210,8 @@ export const StockRequestList = () => {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <span>Pengajuan Sales (Approval)</span>
+              <span className="sm:hidden">Pengajuan</span>
+              <span className="hidden sm:inline">Pengajuan Sales (Approval)</span>
               {pendingReqCount > 0 && (
                 <span className="px-1.5 py-0.5 bg-red-500 text-white font-black text-[10px] rounded-full animate-pulse">
                   {pendingReqCount}

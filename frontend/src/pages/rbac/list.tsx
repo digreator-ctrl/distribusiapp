@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, ChevronRight } from "lucide-react";
+import { Plus, ChevronRight, KeyRound } from "lucide-react";
 import type { Role } from "./store";
 import { MODULES, COLOR_CLASSES, loadRoles, countModuleAccess } from "./store";
 
@@ -28,9 +28,44 @@ export const RbacList = () => {
         </button>
       </div>
 
+      {/* Mobile Card List */}
+      <div className="sm:hidden space-y-2.5">
+        {roles.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground border border-dashed rounded-2xl bg-muted/10">
+            <p className="text-xs font-semibold">Tidak ada role yang ditemukan.</p>
+          </div>
+        ) : (
+          roles.map((role) => (
+            <div
+              key={role.id}
+              onClick={() => navigate(`/rbac/${role.id}`)}
+              className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs active:scale-[0.99] transition-all cursor-pointer flex items-center justify-between gap-3 group hover:border-primary/50"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                    {role.name}
+                  </h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border shrink-0 ${COLOR_CLASSES[role.color] || COLOR_CLASSES.purple}`}>
+                    {role.status}
+                  </span>
+                </div>
+                {role.description && (
+                  <p className="text-xs text-muted-foreground truncate mt-1">{role.description}</p>
+                )}
+                <p className="text-[11px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                  <KeyRound size={11} className="shrink-0 text-primary" />
+                  <span>Akses {countModuleAccess(role.permissions)} / {MODULES.length} modul</span>
+                </p>
+              </div>
+              <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+            </div>
+          ))
+        )}
+      </div>
 
-
-      <div className="overflow-x-auto rounded-xl border border-border/50">
+      {/* Desktop / Tablet Table */}
+      <div className="hidden sm:block overflow-x-auto rounded-xl border border-border/50">
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
             <tr>

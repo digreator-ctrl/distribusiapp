@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, X, ChevronRight, Phone, StickyNote } from "lucide-react";
 import { API_BASE_URL } from "../../config/api";
 import { cache } from "../../utils/cache";
 
@@ -81,45 +81,91 @@ export const AgentList = () => {
         {isLoading ? (
           <div className="py-10 text-center text-muted-foreground animate-pulse">Memuat data agen dari API...</div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-border/50">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
-                <tr>
-                  <th className="px-6 py-4 font-semibold">Nama Agen</th>
-                  <th className="px-6 py-4 font-semibold">Kontak</th>
-                  <th className="px-6 py-4 font-semibold">Status</th>
-                  <th className="px-6 py-4 font-semibold">Catatan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {agents.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                      Belum ada data agen.
-                    </td>
-                  </tr>
-                ) : (
-                  agents.map((agent: any) => (
-                    <tr 
-                      key={agent.id} 
+          <div className="flex flex-col gap-4">
+            {/* Mobile Card List */}
+            <div className="sm:hidden space-y-2.5">
+              {agents.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground border border-dashed rounded-2xl bg-muted/10">
+                  <p className="text-xs font-semibold">Belum ada data agen.</p>
+                </div>
+              ) : (
+                agents.map((agent: any) => {
+                  const isActive = agent.status === "Aktif";
+                  return (
+                    <div
+                      key={agent.id}
                       onClick={() => navigate(`/agents/${agent.id}`)}
-                      className="border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
+                      className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs active:scale-[0.99] transition-all cursor-pointer flex items-center justify-between gap-3 group hover:border-primary/50"
                     >
-                      <td className="px-6 py-4 font-semibold text-primary hover:underline">{agent.name}</td>
-                      <td className="px-6 py-4">{agent.contact}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          agent.status === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {agent.status}
-                        </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                            {agent.name}
+                          </h3>
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${isActive ? "bg-emerald-500" : "bg-red-500"}`}
+                            title={agent.status || ""}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
+                          <Phone size={11} className="shrink-0" />
+                          <span>{agent.contact || "-"}</span>
+                        </p>
+                        {agent.notes && (
+                          <p className="text-[11px] text-muted-foreground truncate mt-1 flex items-center gap-1">
+                            <StickyNote size={11} className="shrink-0" />
+                            <span>{agent.notes}</span>
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop / Tablet Table */}
+            <div className="hidden sm:block overflow-x-auto rounded-xl border border-border/50">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Nama Agen</th>
+                    <th className="px-6 py-4 font-semibold">Kontak</th>
+                    <th className="px-6 py-4 font-semibold">Status</th>
+                    <th className="px-6 py-4 font-semibold">Catatan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agents.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
+                        Belum ada data agen.
                       </td>
-                      <td className="px-6 py-4">{agent.notes || '-'}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    agents.map((agent: any) => (
+                      <tr 
+                        key={agent.id} 
+                        onClick={() => navigate(`/agents/${agent.id}`)}
+                        className="border-b border-border/50 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer"
+                      >
+                        <td className="px-6 py-4 font-semibold text-primary hover:underline">{agent.name}</td>
+                        <td className="px-6 py-4">{agent.contact}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            agent.status === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {agent.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">{agent.notes || '-'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

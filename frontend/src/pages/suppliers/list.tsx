@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronRight, Phone, MapPin, User } from "lucide-react";
 
 import { API_BASE_URL } from "../../config/api";
 import { cache } from "../../utils/cache";
@@ -110,7 +111,50 @@ export const SupplierList = () => {
         <div className="py-10 text-center text-muted-foreground animate-pulse">Memuat data...</div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="overflow-x-auto rounded-xl border border-border/50">
+          {/* Mobile Card List */}
+          <div className="sm:hidden space-y-2.5">
+            {paginatedSuppliers.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground border border-dashed rounded-2xl bg-muted/10">
+                <p className="text-xs font-semibold">
+                  {suppliers.length === 0
+                    ? "Belum ada data supplier."
+                    : "Tidak ada supplier yang cocok dengan pencarian/filter."}
+                </p>
+              </div>
+            ) : (
+              paginatedSuppliers.map((sup) => (
+                <div
+                  key={sup.id}
+                  onClick={() => navigate(`/suppliers/${sup.id}`)}
+                  className="p-3.5 rounded-2xl bg-card border border-border/80 shadow-2xs active:scale-[0.99] transition-all cursor-pointer flex items-center justify-between gap-3 group hover:border-primary/50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                      {sup.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
+                      <User size={11} className="shrink-0" />
+                      <span>Kontak: {sup.contact_person || "-"}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
+                      <Phone size={11} className="shrink-0" />
+                      <span>{sup.phone || "-"}</span>
+                    </p>
+                    {sup.address && (
+                      <p className="text-[11px] text-muted-foreground truncate mt-1 flex items-center gap-1">
+                        <MapPin size={11} className="shrink-0 text-primary" />
+                        <span>{sup.address}</span>
+                      </p>
+                    )}
+                  </div>
+                  <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop / Tablet Table */}
+          <div className="hidden sm:block overflow-x-auto rounded-xl border border-border/50">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border/50">
                 <tr>
