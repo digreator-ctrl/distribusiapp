@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "wrangler dev src/index.ts",
+    "dev:remote": "wrangler dev src/index.ts --remote",
     "build": "echo \"Backend ready\"",
     "deploy": "wrangler deploy src/index.ts",
     "d1:init:local": "wrangler d1 execute distribusiapp-db --local --file=./schema.sql --yes",
